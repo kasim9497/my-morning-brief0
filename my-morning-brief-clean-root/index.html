@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>☀️ 個人 AI 數位晨報 | Morning Brief</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Masthead Header -->
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <div>
+        <h1 class="brand-title">☀️ Morning Brief</h1>
+        <div class="sub-header">
+          <span id="header-date">2026 / 07 / 31 Friday</span>
+          <span>•</span>
+          <span id="header-updated-time">更新時間：08:00 AM</span>
+          <span>•</span>
+          <span>📍 新北市蘆洲區</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action" id="btn-refresh-brief">
+          🔄 重新整理晨報
+        </button>
+        <button class="btn-action btn-primary" id="btn-open-settings">
+          ⚙️ 未來規劃 & 設定
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- User Greeting Banner -->
+    <section class="greeting-banner">
+      <div class="greeting-text">
+        <h2 id="greeting-user">早安，Jinhao！</h2>
+        <p id="greeting-desc">這是為您整理的今日個人化 AI 數位晨報。</p>
+      </div>
+      <div style="font-size: 2rem;">🗞️</div>
+    </section>
+
+    <!-- Dashboard Main Grid -->
+    <div class="dashboard-grid">
+
+      <!-- 1. Weather Card -->
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">🌤️ 今日天氣</h3>
+          <span class="card-badge">中央氣象署 API (擬)</span>
+        </div>
+        <div id="weather-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 2. Horoscope Card -->
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">♍ 今日處女座運勢</h3>
+          <span class="card-badge">處女座 8/23 - 9/22</span>
+        </div>
+        <div id="horoscope-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 3. Exchange Rate Card -->
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">💰 人民幣匯率</h3>
+          <span class="card-badge">CNY / TWD</span>
+        </div>
+        <div id="rate-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 4. Scooter Driving Quiz Card -->
+      <article class="card quiz-card col-span-2">
+        <div class="card-header">
+          <h3 class="card-title">🛵 每日駕照筆試挑戰 (普通重型機車)</h3>
+          <span class="card-badge">公路局官方題庫 5 題</span>
+        </div>
+        <div id="quiz-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 5. Daily AI Personal Advice Card -->
+      <article class="card advice-card col-span-1">
+        <div class="card-header">
+          <h3 class="card-title">🎯 今日 AI 個人建議</h3>
+          <span class="card-badge">AI Agent 智能彙整</span>
+        </div>
+        <div id="advice-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 6. AI & Tech Today Focus Card -->
+      <article class="card col-span-3">
+        <div class="card-header">
+          <h3 class="card-title">🤖 今日 AI / 科技新聞焦點</h3>
+          <span class="card-badge">精選 3 則關鍵動態</span>
+        </div>
+        <div id="news-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Future Roadmap & Settings Modal Preview -->
+  <div class="modal-overlay" id="modal-roadmap">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ 個人化設定與未來擴充藍圖 (Phase 2 - Phase 6)</h3>
+        <button class="close-btn" id="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="roadmap-section">
+        <h4>📋 當前 MVP (Phase 1) 配置</h4>
+        <ul class="roadmap-list">
+          <li><strong>星座：</strong> 處女座 ♍</li>
+          <li><strong>觀察匯率：</strong> CNY / TWD</li>
+          <li><strong>目標地點：</strong> 台灣新北市蘆洲區</li>
+          <li><strong>駕照類型：</strong> 普通重型機車 (每日 5 題)</li>
+          <li><strong>新聞關注領域：</strong> AI 產業、Google、OpenAI、Anthropic</li>
+        </ul>
+      </div>
+
+      <div class="roadmap-section">
+        <h4>🚀 未來預計擴充模組 (Phase 2~Phase 6)</h4>
+        <ul class="roadmap-list">
+          <li>📅 <strong>Google Calendar 整合：</strong> 自動串接每日課表與重要日程。</li>
+          <li>📚 <strong>個人學習卡片：</strong> 每日 3 個英文單字 + 1 個 AI PM / UX 知識點。</li>
+          <li>💻 <strong>GitHub Trending & Product Hunt：</strong> 自動追蹤新開源專案與新工具。</li>
+          <li>🤖 <strong>Automated Daily Briefing (GitHub Actions)：</strong> 每日早上 08:00 自動定時跑腳本產出。</li>
+          <li>📩 <strong>多管道通知推送：</strong> 自動同步發送至 Email / Telegram / LINE Bot。</li>
+        </ul>
+      </div>
+
+      <div style="text-align: right; margin-top: 1.5rem;">
+        <button class="btn-action btn-primary" onclick="document.getElementById('modal-roadmap').classList.remove('active')">
+          關閉視窗
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>Personal AI Morning Brief System MVP Prototype</p>
+      <p style="font-size: 0.75rem; margin-top: 0.25rem;"> Designed for Liu Jinhao | Modern Digital Newspaper Style</p>
+    </div>
+  </footer>
+
+  <!-- App Entry Script (ES Module) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

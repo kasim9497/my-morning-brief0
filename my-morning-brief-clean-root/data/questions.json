@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "source": "中華民國交通部公路局 - 機車筆試題庫",
+    "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+    "updated_at": "2026-06-02",
+    "license_type": "普通重型機車",
+    "description": "精選自交通部公路局 2026 最新官方題庫檔案 (NTM-00725 機車筆試題庫中文版)"
+  },
+  "questions": [
+    {
+      "id": "q_mc_01",
+      "type": "single_choice",
+      "question": "下列何種情況不得超車？",
+      "options": [
+        { "key": "A", "text": "前車減速慢行" },
+        { "key": "B", "text": "交岔路口、轉彎處或鐵路平交道" },
+        { "key": "C", "text": "道路寬暢平坦無障礙" },
+        { "key": "D", "text": "前方無對向來車" }
+      ],
+      "answer": "B",
+      "category": "路權與超車規定",
+      "explanation": "依據《道路交通安全規則》第101條，在鐵路平交道、交岔路口、轉彎處、陡坡、狹橋或設有禁止超車標誌標線之處所，一律不得超車。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_02",
+      "type": "single_choice",
+      "question": "駕駛機車行經劃有雙黃實線（雙向禁止跨越線）之路段，下列何者正確？",
+      "options": [
+        { "key": "A", "text": "視路況及車流可隨時迴轉" },
+        { "key": "B", "text": "嚴禁跨越、超車或迴轉" },
+        { "key": "C", "text": "僅限超越慢速車時可暫時跨越" },
+        { "key": "D", "text": "夜間無車時可視情況跨越" }
+      ],
+      "answer": "B",
+      "category": "道路標線與標誌",
+      "explanation": "雙黃實線表示「雙向禁止跨越線」，用以分隔對向車道，雙向車輛均嚴禁跨越線條超車、迴轉或駛入對向車道。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_03",
+      "type": "single_choice",
+      "question": "騎乘機車配戴安全帽，下列規定何者正確？",
+      "options": [
+        { "key": "A", "text": "應扣緊繫帶，且帽體不可鬆動" },
+        { "key": "B", "text": "只要戴上即可，繫帶不需扣緊" },
+        { "key": "C", "text": "配戴工地用工程帽亦符合規定" },
+        { "key": "D", "text": "遮擋部分前方視線亦無妨" }
+      ],
+      "answer": "A",
+      "category": "安全裝備與駕駛規範",
+      "explanation": "安全帽須為合格標準產品，配戴時應戴正並扣緊繫帶（下巴留1~2指寬度），帽體不得任意鬆動，才能在撞擊時保護頭部。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_04",
+      "type": "single_choice",
+      "question": "行經未設號誌之交岔路口，支線道車與幹線道車同時到達時，何者應讓路？",
+      "options": [
+        { "key": "A", "text": "幹線道車應讓支線道車" },
+        { "key": "B", "text": "支線道車應讓幹線道車優先通行" },
+        { "key": "C", "text": "車速較快者擁有優先通行權" },
+        { "key": "D", "text": "機車自動擁有優先通行權" }
+      ],
+      "answer": "B",
+      "category": "交岔路口路權",
+      "explanation": "依《道路交通安全規則》第102條，支線道車輛應讓幹線道車輛優先通行；未劃分幹支線者，少線道車應讓多線道車。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_05",
+      "type": "single_choice",
+      "question": "駕駛人酒精濃度超過規定標準騎乘機車，除處以罰鍰外，將面臨何種處罰？",
+      "options": [
+        { "key": "A", "text": "僅扣留車輛三日" },
+        { "key": "B", "text": "當場移置保管車輛並吊扣駕駛執照" },
+        { "key": "C", "text": "僅記違規點數一點" },
+        { "key": "D", "text": "無其他行政處罰" }
+      ],
+      "answer": "B",
+      "category": "道路交通法規與罰則",
+      "explanation": "依《道路交通管理處罰條例》第35條，酒駕者當場移置保管該機車，並吊扣駕照1至2年；若附載未滿12歲兒童或致人受傷，處罰將大幅加重。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_06",
+      "type": "single_choice",
+      "question": "機車行經設有兩段式左轉標誌之交岔路口，應如何左轉？",
+      "options": [
+        { "key": "A", "text": "直接由內側車道左轉" },
+        { "key": "B", "text": "先駛入右側待轉區，等待橫向燈號變綠燈後再直行" },
+        { "key": "C", "text": "視後方無來車即可直接轉彎" },
+        { "key": "D", "text": "鳴喇叭後加速左轉" }
+      ],
+      "answer": "B",
+      "category": "路權與轉彎規範",
+      "explanation": "劃有兩段式左轉標誌或三車道以上道路，機車左轉應先直行進入右前方的機車待轉區停等，待橫向路口綠燈亮起後始得直行通過。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_07",
+      "type": "single_choice",
+      "question": "機車煞車時，下列何種煞車操作方式最為適當且穩定？",
+      "options": [
+        { "key": "A", "text": "僅使用後輪煞車" },
+        { "key": "B", "text": "僅使用前輪煞車" },
+        { "key": "C", "text": "前後輪煞車同時均勻使用" },
+        { "key": "D", "text": "急扣煞車打滑" }
+      ],
+      "answer": "C",
+      "category": "防禦駕駛與操作安全",
+      "explanation": "煞車時應平穩減速，同時均勻使用前輪與後輪煞車（前煞車制動力約占70%，後煞車占30%），避免單煞前輪導致翻車或單煞後輪導致甩尾打滑。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_mc_08",
+      "type": "single_choice",
+      "question": "路口劃有黃色網狀線（網狀黃線），其主要作用為何？",
+      "options": [
+        { "key": "A", "text": "供機車臨時停等紅燈" },
+        { "key": "B", "text": "告示車輛禁止在該區塊內臨時停車或積壓" },
+        { "key": "C", "text": "供行人穿越道路" },
+        { "key": "D", "text": "作為臨時裝卸貨區" }
+      ],
+      "answer": "B",
+      "category": "道路標線與標誌",
+      "explanation": "黃色網狀線用以告示車輛駕駛人禁止在設有本標線之範圍內臨時停車，防止交岔路口或特定出入口遭車流回堵阻塞。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    }
+  ]
+}
