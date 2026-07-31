@@ -1,0 +1,53 @@
+name: Daily Morning Brief Automated Pipeline
+
+on:
+  schedule:
+    # 23:30 UTC = 07:30 AM Taiwan Time (Runs daily to update pages by ~08:00 AM)
+    - cron: '30 23 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+# Permissions required for modern GitHub Pages Actions Artifact Deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Daily Briefing Generation Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+        run: |
+          python scripts/generate_brief.py
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
