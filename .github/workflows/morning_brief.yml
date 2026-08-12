@@ -8,7 +8,7 @@ on:
 
 # Permissions required for modern GitHub Pages Actions Artifact Deployment
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -38,7 +38,61 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
         run: |
-          cd my-morning-brief-clean-root && python scripts/generate_brief.py
+          cd my-morning-brief-apple-design && python scripts/generate_brief.py
+
+      - name: Validate Generated today.json Data
+        run: |
+          cd my-morning-brief-apple-design
+          python - <<'PY'
+          import json, sys
+          from datetime import datetime, timezone, timedelta
+
+          try:
+              with open("data/today.json", encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception as e:
+              print(f"❌ ERROR: today.json is not valid JSON: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          today_str = datetime.now(timezone(timedelta(hours=8))).strftime("%Y / %m / %d")
+          
+          # 1. Check Date Freshness
+          brief_meta = data.get("briefMeta", {})
+          date_in_file = brief_meta.get("date", "")
+          if not date_in_file.startswith(today_str):
+              print(f"❌ ERROR: today.json date ({date_in_file}) does not match today Taiwan date ({today_str})", file=sys.stderr)
+              sys.exit(1)
+
+          # 2. Check Essential Sections & Data Types
+          if not isinstance(data.get("user"), dict):
+              print("❌ ERROR: 'user' field missing or invalid", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(data.get("weather"), dict):
+              print("❌ ERROR: 'weather' field missing or invalid", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(data.get("exchangeRate"), dict):
+              print("❌ ERROR: 'exchangeRate' field missing or invalid", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(data.get("aiNews"), list) or len(data.get("aiNews")) == 0:
+              print("❌ ERROR: 'aiNews' is missing or not a non-empty array", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(data.get("drivingQuiz"), list) or len(data.get("drivingQuiz")) == 0:
+              print("❌ ERROR: 'drivingQuiz' is missing or not a non-empty array", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"✅ ALL VALIDATIONS PASSED: today.json is valid, fresh ({date_in_file}), and contains all required sections!")
+          PY
+
+      - name: Send Telegram Notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          cd my-morning-brief-apple-design && python scripts/notify_telegram.py
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
@@ -46,7 +100,7 @@ jobs:
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'my-morning-brief-clean-root'
+          path: 'my-morning-brief-apple-design'
 
       - name: Deploy to GitHub Pages
         id: deployment
