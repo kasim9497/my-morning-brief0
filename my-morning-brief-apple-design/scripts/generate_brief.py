@@ -9,13 +9,34 @@ Clean Single Repository Root Architecture:
 """
 
 import os
+import re
 import json
 import random
+import html as html_module
 import urllib.request
 import urllib.parse
 import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
+
+def strip_html(raw: str) -> str:
+    """Remove all HTML tags and decode HTML entities from a string.
+    Does NOT require BeautifulSoup — uses stdlib re + html.unescape only.
+    Handles both direct HTML and HTML-entity-encoded HTML (double-encoded).
+    """
+    if not raw or not isinstance(raw, str):
+        return ""
+    # Step 1: Unescape entities first (&lt;img&gt; → <img>)
+    text = html_module.unescape(raw)
+    # Step 2: Remove <script>...</script> and <style>...</style> blocks
+    text = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # Step 3: Remove all remaining HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Step 4: Unescape any remaining entities (e.g. &amp; &nbsp;)
+    text = html_module.unescape(text)
+    # Step 5: Collapse whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 USER_PROFILE = {
     "name": "Jinhao",
@@ -197,16 +218,20 @@ def fetch_rss_news():
                 xml_data = resp.read()
                 root = ET.fromstring(xml_data)
                 for item in root.findall('.//item')[:2]:
-                    title = item.find('title').text if item.find('title') is not None else ''
-                    link = item.find('link').text if item.find('link') is not None else ''
-                    desc = item.find('description').text if item.find('description') is not None else ''
+                    title_el = item.find('title')
+                    link_el  = item.find('link')
+                    desc_el  = item.find('description')
+                    title = strip_html(title_el.text) if title_el is not None else ''
+                    link  = link_el.text.strip() if link_el is not None and link_el.text else ''
+                    desc  = strip_html(desc_el.text) if desc_el is not None and desc_el.text else ''
                     safe_link = sanitize_url(link)
                     if title:
                         candidate_items.append({
                             "source": source_name,
-                            "title": title.strip(),
+                            "title": title,
                             "link": safe_link,
-                            "snippet": desc[:200] if desc else title
+                            # Full cleaned plain-text snippet — no truncation
+                            "snippet": desc if desc else title
                         })
         except Exception as e:
             print(f"Failed to fetch RSS from {source_name}: {e}")
@@ -289,7 +314,8 @@ def process_gemini_news_output(parsed_json, rss_items):
             "source": rss_item.get("source", "Tech News"),
             "title": rss_item.get("title", ""),
             "link": sanitize_url(rss_item.get("link", "#")),
-            "summary": gemini_item.get("summary", rss_item.get("snippet", "")[:100]),
+            # Prefer Gemini summary; fallback to full RSS snippet (no truncation)
+            "summary": gemini_item.get("summary") or rss_item.get("snippet", ""),
             "whyImportant": gemini_item.get("whyImportant", "重點產業與技術動態趨勢。"),
             "myImpact": gemini_item.get("myImpact", "值得關注其商業落地與產品化應用價值。")
         })
@@ -306,7 +332,8 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
                 "source": item.get("source", "RSS Feed"),
                 "title": item.get("title", ""),
                 "link": sanitize_url(item.get("link", "#")),
-                "summary": item.get("snippet", "")[:100] + "...",
+                # Full RSS snippet — no truncation
+                "summary": item.get("snippet", ""),
                 "whyImportant": "即時科技趨勢動態。",
                 "myImpact": "值得關注其技術落地與產品化應用。"
             })
