@@ -1013,3 +1013,115 @@ body {
     -webkit-backdrop-filter: none !important;
   }
 }
+
+/* ============================================================
+   DEBUG WIDGET — 右上角可折疊 Debug 面板
+   ============================================================ */
+
+.debug-widget {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  font-family: var(--font-system);
+  font-size: 11px;
+}
+
+.debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(28, 28, 30, 0.75);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.debug-toggle:hover {
+  background: rgba(28, 28, 30, 0.88);
+}
+
+.debug-toggle:active {
+  transform: scale(0.96);
+}
+
+.debug-panel {
+  margin-top: 6px;
+  padding: 12px 14px;
+  background: rgba(28, 28, 30, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40);
+  min-width: 240px;
+  max-width: 300px;
+  color: rgba(255, 255, 255, 0.85);
+  animation: debugPanelIn 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes debugPanelIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.debug-panel[hidden] {
+  display: none;
+}
+
+.debug-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.debug-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.debug-val {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  word-break: break-all;
+}
+
+.debug-val.ok   { color: #34c759; }
+.debug-val.warn { color: #ff9500; }
+.debug-val.err  { color: #ff3b30; }
+
+.debug-url {
+  font-size: 9.5px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .debug-panel { animation: none !important; }
+}

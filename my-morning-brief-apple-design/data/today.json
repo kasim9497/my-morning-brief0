@@ -8,10 +8,16 @@
     "currencyPair": "CNY/TWD"
   },
   "briefMeta": {
-    "date": "2026 / 08 / 12 Wednesday",
-    "time": "09:11 AM",
+    "date": "2026 / 08 / 13 Wednesday",
+    "time": "09:38 AM",
     "greeting": "早安，Jinhao！這是為您整理的今日個人化 AI 數位晨報。",
-    "generatedAt": "2026-08-12T09:11:36.761459+08:00"
+    "generatedAt": "2026-08-13T09:38:00.000000+08:00"
+  },
+  "buildInfo": {
+    "generatedAt": "",
+    "githubRunId": "",
+    "commitHash": "",
+    "workflowRunNumber": ""
   },
   "weather": {
     "location": "新北市蘆洲區",

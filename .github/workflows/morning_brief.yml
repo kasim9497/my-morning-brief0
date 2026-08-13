@@ -6,9 +6,25 @@ on:
     - cron: '30 23 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
+# ============================================================
+# 部署策略：Strategy A（直接部署，不回寫 Repository）
+#
+#   GitHub Actions
+#     ↓ 執行 generate_brief.py
+#   產生 today.json（僅存在於 Actions Runner 的工作目錄）
+#     ↓ upload-pages-artifact
+#   直接打包成 GitHub Pages Artifact
+#     ↓ deploy-pages
+#   部署到 GitHub Pages
+#
+# 結論：Repository 裡的 data/today.json 是靜態佔位符（placeholder），
+#       它的日期「永遠不等於」GitHub Pages 上的日期，這是正常行為。
+#       GitHub Pages 上的 today.json 是由每次 Actions 執行後即時產生的。
+# ============================================================
+
 # Permissions required for modern GitHub Pages Actions Artifact Deployment
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -16,6 +32,11 @@ permissions:
 concurrency:
   group: 'pages'
   cancel-in-progress: true
+
+# Force all JavaScript-based actions to use Node.js 24 runtime
+# to suppress the "Node.js 20 is deprecated" warnings.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
@@ -37,6 +58,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+          # Build metadata injected into today.json → buildInfo
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           cd my-morning-brief-apple-design && python scripts/generate_brief.py
 
@@ -84,6 +109,11 @@ jobs:
               print("❌ ERROR: 'drivingQuiz' is missing or not a non-empty array", file=sys.stderr)
               sys.exit(1)
 
+          # 3. Check buildInfo
+          build_info = data.get("buildInfo", {})
+          run_number = build_info.get("workflowRunNumber", "")
+          commit = build_info.get("commitHash", "")
+          print(f"✅ BUILD INFO: Actions Run #{run_number} | Commit {commit}")
           print(f"✅ ALL VALIDATIONS PASSED: today.json is valid, fresh ({date_in_file}), and contains all required sections!")
           PY
 

@@ -90,10 +90,14 @@ async function loadAllBriefData() {
     // §16: Staggered card entrance after all content is rendered
     triggerCardStagger();
 
+    // Debug Widget: populate after all data is loaded
+    await renderDebugWidget(headerData);
+
   } catch (err) {
     console.error("Failed to render brief:", err);
   }
 }
+
 
 /**
  * §16: Staggered card entrance — each card animates in with an offset delay.
@@ -774,4 +778,90 @@ function setupEventListeners() {
   if (modalOverlay && modalContent) {
     window.fluidModalInstance = new AppleFluidModal(modalOverlay, modalContent, settingsBtn, closeModalBtn);
   }
+
+  // Debug Widget toggle
+  const debugToggle = document.getElementById('debug-toggle');
+  const debugPanel = document.getElementById('debug-panel');
+  if (debugToggle && debugPanel) {
+    debugToggle.addEventListener('click', () => {
+      const isHidden = debugPanel.hasAttribute('hidden');
+      if (isHidden) {
+        debugPanel.removeAttribute('hidden');
+        // Re-trigger animation when re-opening
+        debugPanel.style.animation = 'none';
+        void debugPanel.offsetWidth;
+        debugPanel.style.animation = '';
+      } else {
+        debugPanel.setAttribute('hidden', '');
+      }
+    });
+  }
 }
+
+/**
+ * Debug Widget — 填入資料來源資訊
+ * 顯示：日期、是否離線、是否 mock、today.json URL、Actions Run#、Commit、生成時間
+ */
+async function renderDebugWidget(headerData) {
+  const buildInfo = await dataService.getBuildInfo();
+  const loadedUrl = dataService.getLoadedUrl();
+  const isLive = !!loadedUrl;
+  const isStale = headerData?.meta?.isStale ?? !isLive;
+
+  const set = (id, text, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'debug-val' + (cls ? ' ' + cls : '');
+  };
+
+  // 日期
+  set('dbg-date', headerData?.meta?.date?.replace(' (⚠️ 顯示離線備份資料)', '') || '—');
+
+  // 離線 / Stale
+  set('dbg-stale', isStale ? 'true ⚠️' : 'false', isStale ? 'warn' : 'ok');
+
+  // mockData
+  set('dbg-mock', isLive ? 'false' : 'true', isLive ? 'ok' : 'warn');
+
+  // today.json 狀態
+  if (isLive) {
+    set('dbg-json-status', '載入成功 ✅', 'ok');
+  } else {
+    set('dbg-json-status', '載入失敗，使用 mockData ❌', 'err');
+  }
+
+  // today.json URL
+  const urlEl = document.getElementById('dbg-json-url');
+  if (urlEl) {
+    urlEl.textContent = loadedUrl || '（未載入）';
+    urlEl.className = 'debug-val debug-url' + (loadedUrl ? ' ok' : ' err');
+  }
+
+  // GitHub Actions Run#
+  const runNum = buildInfo?.workflowRunNumber;
+  set('dbg-run', runNum ? `#${runNum}` : '（本地 / 無資料）', runNum ? 'ok' : 'warn');
+
+  // Commit Hash
+  const commit = buildInfo?.commitHash;
+  set('dbg-commit', commit || '（本地 / 無資料）', commit ? 'ok' : 'warn');
+
+  // 生成時間
+  const generatedAt = buildInfo?.generatedAt;
+  if (generatedAt) {
+    try {
+      const d = new Date(generatedAt);
+      const formatted = d.toLocaleString('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+      set('dbg-generated', formatted, 'ok');
+    } catch {
+      set('dbg-generated', generatedAt, 'ok');
+    }
+  } else {
+    set('dbg-generated', '（本地 / 無資料）', 'warn');
+  }
+}
+

@@ -155,6 +155,39 @@
     </div>
   </div>
 
+  <!-- Debug Widget (右上角可折疊 Debug 面板) -->
+  <div id="debug-widget" class="debug-widget" aria-label="Debug Panel">
+    <button id="debug-toggle" class="debug-toggle" title="展開/收合 Debug 面板">🛠 Debug</button>
+    <div id="debug-panel" class="debug-panel" hidden>
+      <div class="debug-title">🔍 目前資料來源</div>
+      <div class="debug-grid">
+        <span class="debug-label">日期</span>
+        <span id="dbg-date" class="debug-val">—</span>
+
+        <span class="debug-label">是否離線資料</span>
+        <span id="dbg-stale" class="debug-val">—</span>
+
+        <span class="debug-label">是否 mockData</span>
+        <span id="dbg-mock" class="debug-val">—</span>
+
+        <span class="debug-label">today.json 載入</span>
+        <span id="dbg-json-status" class="debug-val">—</span>
+
+        <span class="debug-label">today.json URL</span>
+        <span id="dbg-json-url" class="debug-val debug-url">—</span>
+
+        <span class="debug-label">GitHub Actions</span>
+        <span id="dbg-run" class="debug-val">—</span>
+
+        <span class="debug-label">Commit</span>
+        <span id="dbg-commit" class="debug-val">—</span>
+
+        <span class="debug-label">生成時間</span>
+        <span id="dbg-generated" class="debug-val">—</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">

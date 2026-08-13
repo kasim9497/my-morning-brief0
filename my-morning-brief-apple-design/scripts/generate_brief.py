@@ -346,6 +346,15 @@ def main():
     gemini_key = os.environ.get("GEMINI_API_KEY")
     cwa_key = os.environ.get("CWA_API_KEY")
 
+    # Build metadata: injected by GitHub Actions environment variables.
+    # These are empty strings when run locally (not in CI).
+    build_info = {
+        "generatedAt": now_tw.isoformat(),
+        "githubRunId": os.environ.get("GITHUB_RUN_ID", ""),
+        "commitHash": os.environ.get("GITHUB_SHA", "")[:7] if os.environ.get("GITHUB_SHA") else "",
+        "workflowRunNumber": os.environ.get("GITHUB_RUN_NUMBER", "")
+    }
+
     weather = fetch_weather(cwa_key)
     exchange_rate = fetch_exchange_rate()
     driving_quiz = load_quiz_questions()
@@ -363,6 +372,11 @@ def main():
             "greeting": f"早安，{USER_PROFILE['name']}！這是為您整理的今日個人化 AI 數位晨報。",
             "generatedAt": now_tw.isoformat()
         },
+        # buildInfo: only populated when running inside GitHub Actions.
+        # Repository's data/today.json will NOT have these values (it is a static
+        # placeholder). The live values only exist in the artifact deployed to
+        # GitHub Pages via upload-pages-artifact → deploy-pages (Strategy A).
+        "buildInfo": build_info,
         "weather": weather,
         "horoscope": {
             "sign": f"{USER_PROFILE['zodiac']} ♍",
@@ -391,6 +405,7 @@ def main():
     with open(out_file, 'w', encoding='utf-8') as f:
         json.dump(brief_data, f, ensure_ascii=False, indent=2)
     print(f"SUCCESS: Generated `today.json` successfully at {out_file}!")
+    print(f"BUILD INFO: Run #{build_info['workflowRunNumber']} | Commit {build_info['commitHash']} | {build_info['generatedAt']}")
 
 if __name__ == "__main__":
     main()
