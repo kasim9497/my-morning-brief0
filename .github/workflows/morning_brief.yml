@@ -117,13 +117,6 @@ jobs:
           print(f"✅ ALL VALIDATIONS PASSED: today.json is valid, fresh ({date_in_file}), and contains all required sections!")
           PY
 
-      - name: Send Telegram Notification
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          cd my-morning-brief-apple-design && python scripts/notify_telegram.py
-
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
 
@@ -135,3 +128,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # BUGFIX: Telegram notification now runs AFTER the page is actually live,
+      # using the real deployed URL (steps.deployment.outputs.page_url) instead
+      # of a hardcoded "your-username" placeholder that was never a real link.
+      - name: Send Telegram Notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          cd my-morning-brief-apple-design && python scripts/notify_telegram.py
