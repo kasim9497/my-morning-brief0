@@ -1,0 +1,255 @@
+{
+  "user": {
+    "name": "Jinhao",
+    "zodiac": "處女座",
+    "city": "新北市",
+    "district": "蘆洲區",
+    "licenseType": "普通重型機車",
+    "currencyPair": "CNY/TWD"
+  },
+  "briefMeta": {
+    "date": "2026 / 08 / 13 Wednesday",
+    "time": "09:38 AM",
+    "greeting": "早安，Jinhao！這是為您整理的今日個人化 AI 數位晨報。",
+    "generatedAt": "2026-08-13T09:38:00.000000+08:00"
+  },
+  "buildInfo": {
+    "generatedAt": "",
+    "githubRunId": "",
+    "commitHash": "",
+    "workflowRunNumber": ""
+  },
+  "weather": {
+    "location": "新北市蘆洲區",
+    "condition": "即時天氣暫無法取得",
+    "tempCurrent": "N/A",
+    "tempMin": "N/A",
+    "tempMax": "N/A",
+    "rainChance": "N/A",
+    "feelsLike": "N/A",
+    "humidity": "N/A",
+    "uvIndex": "N/A",
+    "rawWx": "未知",
+    "isFallback": true,
+    "aiTip": "天氣狀態：即時天氣暫無法取得，出門請注意天候變化。"
+  },
+  "horoscope": {
+    "sign": "處女座 ♍",
+    "ratingStars": "★★★★☆",
+    "score": 4.5,
+    "details": {
+      "overall": "思緒清晰，適合處理積壓已久的細節事項。",
+      "love": "溝通順暢，適合與夥伴進行深層交流。",
+      "work": "工作效率提升，建議先攻克最重要的單一任務。",
+      "wealth": "財務穩定，適合進行月度財務整理。",
+      "health": "精神充沛，但需注意用眼過度與肩頸放鬆。"
+    },
+    "luckyColor": "寶藍色 🟦",
+    "luckyNumber": "7",
+    "aiSummary": "今天適合整理混亂已久的事務。工作上建議專注完成最重要的一件事，穩紮穩打效果最好。"
+  },
+  "exchangeRate": {
+    "pair": "CNY → TWD",
+    "current": 4.78,
+    "yesterday": null,
+    "change": null,
+    "changePercent": null,
+    "isUp": true,
+    "last7Days": null,
+    "updateTime": "今天 09:11",
+    "isFallback": false
+  },
+  "drivingQuiz": [
+    {
+      "id": "q_1",
+      "type": "single_choice",
+      "question": "下列何種情況不得超車？",
+      "options": [
+        {
+          "key": "A",
+          "text": "前車減速慢行"
+        },
+        {
+          "key": "B",
+          "text": "交岔路口、轉彎處或鐵路平交道"
+        },
+        {
+          "key": "C",
+          "text": "道路寬暢平坦無障礙"
+        },
+        {
+          "key": "D",
+          "text": "前方無對向來車"
+        }
+      ],
+      "answer": "B",
+      "category": "路權與超車規定",
+      "explanation": "依據《道路交通安全規則》第101條，在鐵路平交道、交岔路口、轉彎處、陡坡、狹橋或設有禁止超車標誌標線之處所，一律不得超車。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_2",
+      "type": "single_choice",
+      "question": "行經未設號誌之交岔路口，支線道車與幹線道車同時到達時，何者應讓路？",
+      "options": [
+        {
+          "key": "A",
+          "text": "幹線道車應讓支線道車"
+        },
+        {
+          "key": "B",
+          "text": "支線道車應讓幹線道車優先通行"
+        },
+        {
+          "key": "C",
+          "text": "車速較快者擁有優先通行權"
+        },
+        {
+          "key": "D",
+          "text": "機車自動擁有優先通行權"
+        }
+      ],
+      "answer": "B",
+      "category": "交岔路口路權",
+      "explanation": "依《道路交通安全規則》第102條，支線道車輛應讓幹線道車輛優先通行；未劃分幹支線者，少線道車應讓多線道車。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_3",
+      "type": "single_choice",
+      "question": "機車行經設有兩段式左轉標誌之交岔路口，應如何左轉？",
+      "options": [
+        {
+          "key": "A",
+          "text": "直接由內側車道左轉"
+        },
+        {
+          "key": "B",
+          "text": "先駛入右側待轉區，等待橫向燈號變綠燈後再直行"
+        },
+        {
+          "key": "C",
+          "text": "視後方無來車即可直接轉彎"
+        },
+        {
+          "key": "D",
+          "text": "鳴喇叭後加速左轉"
+        }
+      ],
+      "answer": "B",
+      "category": "路權與轉彎規範",
+      "explanation": "劃有兩段式左轉標誌或三車道以上道路，機車左轉應先直行進入右前方的機車待轉區停等，待橫向路口綠燈亮起後始得直行通過。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_4",
+      "type": "single_choice",
+      "question": "駕駛人酒精濃度超過規定標準騎乘機車，除處以罰鍰外，將面臨何種處罰？",
+      "options": [
+        {
+          "key": "A",
+          "text": "僅扣留車輛三日"
+        },
+        {
+          "key": "B",
+          "text": "當場移置保管車輛並吊扣駕駛執照"
+        },
+        {
+          "key": "C",
+          "text": "僅記違規點數一點"
+        },
+        {
+          "key": "D",
+          "text": "無其他行政處罰"
+        }
+      ],
+      "answer": "B",
+      "category": "道路交通法規與罰則",
+      "explanation": "依《道路交通管理處罰條例》第35條，酒駕者當場移置保管該機車，並吊扣駕照1至2年；若附載未滿12歲兒童或致人受傷，處罰將大幅加重。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    },
+    {
+      "id": "q_5",
+      "type": "single_choice",
+      "question": "駕駛機車行經劃有雙黃實線（雙向禁止跨越線）之路段，下列何者正確？",
+      "options": [
+        {
+          "key": "A",
+          "text": "視路況及車流可隨時迴轉"
+        },
+        {
+          "key": "B",
+          "text": "嚴禁跨越、超車或迴轉"
+        },
+        {
+          "key": "C",
+          "text": "僅限超越慢速車時可暫時跨越"
+        },
+        {
+          "key": "D",
+          "text": "夜間無車時可視情況跨越"
+        }
+      ],
+      "answer": "B",
+      "category": "道路標線與標誌",
+      "explanation": "雙黃實線表示「雙向禁止跨越線」，用以分隔對向車道，雙向車輛均嚴禁跨越線條超車、迴轉或駛入對向車道。",
+      "source": "中華民國交通部公路局 - 機車筆試題庫",
+      "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+      "updated_at": "2026-06-02"
+    }
+  ],
+  "aiNews": [
+    {
+      "id": "n1",
+      "source": "OpenAI / Official",
+      "title": "Testing ads in ChatGPT",
+      "link": "https://openai.com/index/testing-ads-in-chatgpt",
+      "summary": "OpenAI begins testing ads in ChatGPT to support free access, with clear labeling, answer independenc...",
+      "whyImportant": "即時科技趨勢動態。",
+      "myImpact": "值得關注其技術落地與產品化應用。"
+    },
+    {
+      "id": "n2",
+      "source": "OpenAI / Official",
+      "title": "Daybreak models are now available on AWS",
+      "link": "https://openai.com/index/daybreak-models-are-now-available-on-aws",
+      "summary": "OpenAI and AWS are making Daybreak cybersecurity capabilities available through Amazon Bedrock to su...",
+      "whyImportant": "即時科技趨勢動態。",
+      "myImpact": "值得關注其技術落地與產品化應用。"
+    },
+    {
+      "id": "n3",
+      "source": "Google AI Blog",
+      "title": "AMIE, our research medical AI system, demonstrates real-time clinical video consultation capabilities in a first-of-its-kind study.",
+      "link": "https://blog.google/innovation-and-ai/models-and-research/google-research/amie-video-consultations/",
+      "summary": "<img src=\"https://storage.googleapis.com/gweb-uniblog-publish-prod/images/AIME_SIZZLE_THUMBNAIL.Aug1...",
+      "whyImportant": "即時科技趨勢動態。",
+      "myImpact": "值得關注其技術落地與產品化應用。"
+    }
+  ],
+  "dailyAdvice": {
+    "top3": [
+      {
+        "icon": "🌧️",
+        "text": "天氣狀態：即時天氣暫無法取得，出門記得準備雨具。"
+      },
+      {
+        "icon": "🛵",
+        "text": "駕照筆試練習今日重點：加強交岔路口路權與雙黃線禁跨題型。"
+      },
+      {
+        "icon": "🤖",
+        "text": "今日 AI 產業有即時動態發布，可花 10 分鐘快速了解趨勢。"
+      }
+    ],
+    "primeGoal": "今日最重要的一件事：集中精力完成 AI PM 作品集首頁與核心功能展示。"
+  }
+}
