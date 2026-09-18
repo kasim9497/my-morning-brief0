@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>☀️ 個人 AI 數位晨報 | Morning Brief</title>
+  <title>Morning Brief | 個人 AI 數位晨報</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,20 +15,25 @@
   <header class="masthead">
     <div class="container masthead-inner">
       <div>
-        <h1 class="brand-title">☀️ Morning Brief</h1>
+        <h1 class="brand-title">
+          <svg aria-hidden="true" focusable="false" class="icon icon-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>
+          Morning Brief
+        </h1>
         <div class="sub-header">
           <span id="header-date">2026 / 07 / 31 Friday</span>
           <span>•</span>
           <span id="header-updated-time">更新時間：08:00 AM</span>
-          <span class="sub-header-pill" id="header-location-pill">📍 新北市蘆洲區</span>
+          <span class="sub-header-pill" id="header-location-pill">新北市蘆洲區</span>
         </div>
       </div>
       <div class="header-actions">
         <button class="btn-action" id="btn-refresh-brief">
-          🔄 重新整理晨報
+          <svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,4 3,9 8,9"/><polyline points="21,20 21,15 16,15"/><path d="M3.5 15a8.5 8.5 0 0 0 14.8 3.5M20.5 9A8.5 8.5 0 0 0 5.7 5.5"/></svg>
+          重新整理晨報
         </button>
         <button class="btn-action btn-primary" id="btn-open-settings">
-          ⚙️ 未來規劃 & 設定
+          <svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg>
+          未來規劃 & 設定
         </button>
       </div>
     </div>
@@ -47,60 +52,17 @@
         <h2 id="greeting-user">早安，Jinhao！</h2>
         <p id="greeting-desc">這是為您整理的今日個人化 AI 數位晨報。</p>
       </div>
-      <div style="font-size: 2.2rem;">🗞️</div>
     </section>
 
-    <!-- Dashboard Main Grid -->
+    <!-- Dashboard Main Grid — 依「今天最該先看的」排序：
+         AI 建議（一句話摘要）→ 任務清單（要做的事）→ 天氣/星座（每天要看一眼）
+         → 匯率/題庫（順手看看）→ 新聞（有空再讀） -->
     <div class="dashboard-grid">
 
-      <!-- 1. Weather Card -->
-      <article class="card">
+      <!-- 0. Daily AI Personal Advice Card — 今天的重點放最前面，當作 hero -->
+      <article class="card advice-card col-span-3">
         <div class="card-header">
-          <h3 class="card-title">🌤️ 今日天氣</h3>
-          <span class="card-badge">中央氣象署 API</span>
-        </div>
-        <div id="weather-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
-      <!-- 2. Horoscope Card -->
-      <article class="card">
-        <div class="card-header">
-          <h3 class="card-title">♍ 今日處女座運勢</h3>
-          <span class="card-badge">處女座 8/23 - 9/22</span>
-        </div>
-        <div id="horoscope-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
-      <!-- 3. Exchange Rate Card -->
-      <article class="card">
-        <div class="card-header">
-          <h3 class="card-title">💰 人民幣匯率</h3>
-          <span class="card-badge">CNY / TWD</span>
-        </div>
-        <div id="rate-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
-      <!-- 4. Scooter Driving Quiz Card -->
-      <article class="card quiz-card col-span-2">
-        <div class="card-header">
-          <h3 class="card-title">🛵 每日駕照筆試挑戰 (普通重型機車)</h3>
-          <span class="card-badge">公路局官方題庫 5 題</span>
-        </div>
-        <div id="quiz-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
-      <!-- 5. Daily AI Personal Advice Card -->
-      <article class="card advice-card col-span-1">
-        <div class="card-header">
-          <h3 class="card-title">🎯 今日 AI 個人建議</h3>
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>今日 AI 個人建議</h3>
           <span class="card-badge">AI Agent 智能彙整</span>
         </div>
         <div id="advice-widget-content">
@@ -108,13 +70,57 @@
         </div>
       </article>
 
-      <!-- 6. AI & Tech Today Focus Card -->
+      <!-- 1. Today's Task List Card -->
       <article class="card col-span-3">
         <div class="card-header">
-          <h3 class="card-title">🤖 今日 AI / 科技新聞焦點</h3>
-          <span class="card-badge">精選 3 則關鍵動態</span>
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8,12 11,15 16,9"/></svg>今日任務清單</h3>
+          <span class="card-badge">依固定作息表自動產生</span>
         </div>
-        <div id="news-widget-content">
+        <div id="tasklist-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 2. Weather Card — 資訊量較大，給 2 欄寬 -->
+      <article class="card col-span-2">
+        <div class="card-header">
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>今日天氣</h3>
+          <span class="card-badge">和風天氣 API</span>
+        </div>
+        <div id="weather-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 3. Horoscope Card -->
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 14.9,8.6 22,9.3 16.5,14 18.2,21 12,17.3 5.8,21 7.5,14 2,9.3 9.1,8.6"/></svg>今日處女座運勢</h3>
+          <span class="card-badge">處女座 8/23 - 9/22</span>
+        </div>
+        <div id="horoscope-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 4. Exchange Rate Card -->
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>人民幣匯率</h3>
+          <span class="card-badge">CNY / TWD</span>
+        </div>
+        <div id="rate-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 5. Scooter Driving Quiz Card — 自主練習用，優先度較低，放後面 -->
+      <article class="card quiz-card col-span-2">
+        <div class="card-header">
+          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><polyline points="8,12 11,15 16,9"/></svg>每日駕照筆試挑戰（普通重型機車）</h3>
+          <span class="card-badge">公路局官方題庫 5 題</span>
+        </div>
+        <div id="quiz-widget-content">
           <!-- Rendered dynamically -->
         </div>
       </article>
@@ -128,21 +134,21 @@
   <!-- ② 週曆 -->
   <section id="view-calendar" class="view">
     <main class="container">
-      <div class="view-placeholder">📅 週曆 / 月曆（待實作）</div>
+      <div class="view-placeholder">週曆 / 月曆（待實作）</div>
     </main>
   </section>
 
   <!-- ③ 倒數 -->
   <section id="view-countdown" class="view">
     <main class="container">
-      <div class="view-placeholder">⏳ 倒數（待實作）</div>
+      <div class="view-placeholder">倒數（待實作）</div>
     </main>
   </section>
 
   <!-- ④ 設定 -->
   <section id="view-settings" class="view">
     <main class="container">
-      <div class="view-placeholder">⚙️ 設定（待實作）</div>
+      <div class="view-placeholder">設定（待實作）</div>
     </main>
   </section>
 
@@ -152,19 +158,19 @@
   <!-- 底部 Tab Bar -->
   <nav class="tab-bar" role="tablist">
     <button class="tab-item active" data-view="today" role="tab">
-      <span class="tab-icon">📰</span>
+      <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg></span>
       <span class="tab-label">今日</span>
     </button>
     <button class="tab-item" data-view="calendar" role="tab">
-      <span class="tab-icon">📅</span>
+      <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span>
       <span class="tab-label">週曆</span>
     </button>
     <button class="tab-item" data-view="countdown" role="tab">
-      <span class="tab-icon">⏳</span>
+      <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="19" y2="3"/><line x1="5" y1="21" x2="19" y2="21"/><polygon points="7,3 17,3 12,12"/><polygon points="7,21 17,21 12,12"/></svg></span>
       <span class="tab-label">倒數</span>
     </button>
     <button class="tab-item" data-view="settings" role="tab">
-      <span class="tab-icon">⚙️</span>
+      <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg></span>
       <span class="tab-label">設定</span>
     </button>
   </nav>
@@ -174,29 +180,29 @@
     <div class="modal-content">
       <div class="sheet-handle"></div>
       <div class="modal-header">
-        <h3 class="modal-title">⚙️ 個人化設定與未來擴充藍圖 (Phase 2 - Phase 6)</h3>
+        <h3 class="modal-title">個人化設定與未來擴充藍圖（Phase 2 - Phase 6）</h3>
         <button class="close-btn" id="btn-close-modal">&times;</button>
       </div>
 
       <div class="roadmap-section">
-        <h4>📋 當前 MVP 配置</h4>
+        <h4>當前 MVP 配置</h4>
         <ul class="roadmap-list">
-          <li><strong>星座：</strong> 處女座 ♍</li>
+          <li><strong>星座：</strong> 處女座</li>
           <li><strong>觀察匯率：</strong> CNY / TWD</li>
-          <li><strong>目標地點：</strong> 台灣新北市蘆洲區</li>
-          <li><strong>駕照類型：</strong> 普通重型機車 (每日 5 題)</li>
+          <li><strong>目標地點：</strong> 南京市</li>
+          <li><strong>駕照類型：</strong> 普通重型機車（每日 5 題）</li>
           <li><strong>新聞關注領域：</strong> AI 產業、Google、OpenAI、Anthropic</li>
         </ul>
       </div>
 
       <div class="roadmap-section">
-        <h4>🚀 未來預計擴充模組 (Phase 2~Phase 6)</h4>
+        <h4>未來預計擴充模組（Phase 2～Phase 6）</h4>
         <ul class="roadmap-list">
-          <li>📅 <strong>Google Calendar 整合：</strong> 自動串接每日課表與重要日程。</li>
-          <li>📚 <strong>個人學習卡片：</strong> 每日 3 個英文單字 + 1 個 AI PM / UX 知識點。</li>
-          <li>💻 <strong>GitHub Trending & Product Hunt：</strong> 自動追蹤新開源專案與新工具。</li>
-          <li>🤖 <strong>Automated Daily Briefing (GitHub Actions)：</strong> 每日早上 08:00 自動定時跑腳本產出。</li>
-          <li>📩 <strong>多管道通知推送：</strong> 自動同步發送至 Email / Telegram / LINE Bot。</li>
+          <li><strong>倒數計時：</strong> 交換結束日與自訂倒數事件。</li>
+          <li><strong>作息設定：</strong> 運動日、蔬果日等固定作息可自訂調整。</li>
+          <li><strong>追劇／讀書進度：</strong> 輸入總量與目標日，自動算每日份量。</li>
+          <li><strong>Capacitor 封裝：</strong> 包成 iOS App，支援本機通知。</li>
+          <li><strong>OpenRouter 對話：</strong> 直接問今天進度、調整這週作息。</li>
         </ul>
       </div>
 
@@ -210,9 +216,9 @@
 
   <!-- Debug Widget (右上角可折疊 Debug 面板) -->
   <div id="debug-widget" class="debug-widget" aria-label="Debug Panel">
-    <button id="debug-toggle" class="debug-toggle" title="展開/收合 Debug 面板">🛠 Debug</button>
+    <button id="debug-toggle" class="debug-toggle" title="展開/收合 Debug 面板">Debug</button>
     <div id="debug-panel" class="debug-panel" hidden>
-      <div class="debug-title">🔍 目前資料來源</div>
+      <div class="debug-title">目前資料來源</div>
       <div class="debug-grid">
         <span class="debug-label">日期</span>
         <span id="dbg-date" class="debug-val">—</span>

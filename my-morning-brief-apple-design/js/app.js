@@ -4,6 +4,10 @@
 
 import { dataService } from './services/dataService.js';
 import { initTabs } from './tabs.js';
+import { renderTaskList } from './TaskListView.js';
+import { renderCalendarView } from './CalendarView.js';
+import { renderCountdownView } from './CountdownView.js';
+import { renderSettingsView } from './SettingsView.js';
 
 // Global Quiz State
 let quizState = {
@@ -19,6 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   setupInstantPressListeners();
   setupScrollShadow();
+  renderTaskList();
+  renderCalendarView();
+  renderCountdownView();
+  renderSettingsView();
+  setupCalendarTabRefresh();
   await loadAllBriefData();
   setupEventListeners();
 });
@@ -43,6 +52,14 @@ function setupInstantPressListeners() {
   };
   document.addEventListener('pointerup', clearPress);
   document.addEventListener('pointercancel', clearPress);
+}
+
+/**
+ * 每次切到「週曆」tab 時重新渲染，避免在「今日」頁打勾後週曆顯示的進度沒同步
+ */
+function setupCalendarTabRefresh() {
+  const btn = document.querySelector('.tab-item[data-view="calendar"]');
+  if (btn) btn.addEventListener('click', renderCalendarView);
 }
 
 /**
@@ -83,9 +100,6 @@ async function loadAllBriefData() {
     quizState.completed = false;
     renderDrivingQuiz();
 
-    const newsData = await dataService.getAiNews();
-    renderAiNews(newsData);
-
     const adviceData = await dataService.getDailyAdvice();
     renderDailyAdvice(adviceData);
 
@@ -120,14 +134,9 @@ function triggerCardStagger() {
   });
 }
 
-function sanitizeUrl(url) {
-  if (!url || typeof url !== 'string') return '#';
-  const trimmed = url.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
-  }
-  return '#';
-}
+// 小型行內 icon，取代散落各處的表情符號，統一用 currentColor 走版面配色
+const ICON_PIN = '<svg aria-hidden="true" focusable="false" class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>';
+const ICON_CLOUD_LG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:2.4rem;height:2.4rem;color:var(--apple-blue);"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -168,7 +177,7 @@ function renderHeader({ user, meta }) {
     const locText = (user.city && user.district) 
       ? `${user.city}${user.district}` 
       : (user.city || user.location || '新北市蘆洲區');
-    locPill.textContent = `📍 ${escapeHtml(locText)}`;
+    locPill.innerHTML = `${ICON_PIN}${escapeHtml(locText)}`;
   }
 }
 
@@ -188,15 +197,15 @@ function renderWeather(w) {
   const safeTip = escapeHtml(w.aiTip || '提醒您注意天氣變化。');
 
   container.innerHTML = `
-    <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem;">
-      📍 ${safeLoc} ${w.isFallback ? '<span style="color: var(--accent-red);">(資料暫無法更新)</span>' : ''}
+    <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
+      ${ICON_PIN}${safeLoc} ${w.isFallback ? '<span style="color: var(--accent-red);">(資料暫無法更新)</span>' : ''}
     </div>
     <div class="weather-main">
       <div>
         <div class="weather-temp">${safeTemp}</div>
         <div class="weather-condition">${safeCond}</div>
       </div>
-      <div style="font-size: 2.5rem;">🌤️</div>
+      ${ICON_CLOUD_LG}
     </div>
     
     <div class="weather-details">
@@ -219,7 +228,7 @@ function renderWeather(w) {
     </div>
 
     <div class="ai-tip-box">
-      <div class="ai-tip-title">💡 今日 AI 出門提醒</div>
+      <div class="ai-tip-title">今日 AI 出門提醒</div>
       <div>${safeTip}</div>
     </div>
   `;
@@ -242,7 +251,7 @@ function renderHoroscope(h) {
     </div>
 
     <div class="horoscope-summary">
-      <strong>✨ AI 今日運勢摘要：</strong><br/>
+      <strong>AI 今日運勢摘要：</strong><br/>
       ${escapeHtml(h.aiSummary)}
     </div>
 
@@ -377,7 +386,7 @@ function renderDrivingQuiz() {
     explanationHtml = `
       <div class="quiz-explanation">
         <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--accent-green)' : 'var(--accent-red)'};">
-          ${isCorrect ? '✅ 答對了！' : `❌ 答錯了！正確答案是 (${currentQ.answer})`}
+          ${isCorrect ? '✓ 答對了！' : `✗ 答錯了！正確答案是 (${currentQ.answer})`}
         </div>
         <div><strong>官方解析：</strong>${currentQ.explanation}</div>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
@@ -401,7 +410,7 @@ function renderDrivingQuiz() {
     <div class="quiz-progress">${dotsHtml}</div>
 
     <div class="quiz-question-box">
-      <span class="quiz-cat-tag">🏷️ ${currentQ.category}</span>
+      <span class="quiz-cat-tag">${currentQ.category}</span>
       <div class="quiz-q-title">Q${currIdx + 1}. ${currentQ.question}</div>
     </div>
 
@@ -415,7 +424,7 @@ function renderDrivingQuiz() {
       </button>
       ${isLast ? `
         <button class="btn-action btn-primary" id="btn-quiz-reset">
-          🔄 重新練習
+          重新練習
         </button>
       ` : `
         <button class="btn-action btn-primary" id="btn-quiz-next">
@@ -504,54 +513,23 @@ function handleQuizAnswer(qId, selectedKey, clickedBtn) {
   }
 }
 
-function renderAiNews(newsList) {
-  const container = document.getElementById('news-widget-content');
-  if (!Array.isArray(newsList) || newsList.length === 0) {
-    container.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted);">今日無即時新聞更新。</div>`;
-    return;
-  }
-  const itemsHtml = newsList.map(n => {
-    const safeLink = sanitizeUrl(n.link);
-    const safeTitle = escapeHtml(n.title);
-    const safeSource = escapeHtml(n.source);
-    const safeSummary = escapeHtml(n.summary);
-    const safeWhy = escapeHtml(n.whyImportant);
-    const safeImpact = escapeHtml(n.myImpact);
-
-    const titleHtml = safeLink !== '#' 
-      ? `<a href="${safeLink}" target="_blank" rel="noopener" class="news-title-link">${safeTitle} ↗</a>`
-      : safeTitle;
-    return `
-    <div class="news-item">
-      <div class="news-source-tag">📌 ${safeSource}</div>
-      <div class="news-title">${titleHtml}</div>
-      <div class="news-summary"><strong>一句話摘要：</strong>${safeSummary}</div>
-      <div class="news-why"><strong>💡 為什麼重要：</strong>${safeWhy}</div>
-      <div class="news-impact"><strong>🎯 對我的意義：</strong>${safeImpact}</div>
-    </div>
-  `}).join('');
-
-  container.innerHTML = `<div class="news-list">${itemsHtml}</div>`;
-}
-
 function renderDailyAdvice(advice) {
   const container = document.getElementById('advice-widget-content');
   
   const top3Html = advice.top3.map(item => `
     <li class="top3-item">
-      <span style="font-size: 1.1rem;">${item.icon}</span>
       <span>${item.text}</span>
     </li>
   `).join('');
 
   container.innerHTML = `
     <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.6rem;">
-      🎯 TODAY：今天最值得注意的 3 件事情
+      TODAY：今天最值得注意的 3 件事情
     </div>
     <ul class="top3-list">${top3Html}</ul>
 
     <div class="prime-goal-box">
-      <div class="prime-goal-title">⭐ 今日最重要的一件事</div>
+      <div class="prime-goal-title">今日最重要的一件事</div>
       <div class="prime-goal-content">${advice.primeGoal}</div>
     </div>
   `;
@@ -760,15 +738,16 @@ class AppleFluidModal {
 function setupEventListeners() {
   const refreshBtn = document.getElementById('btn-refresh-brief');
   if (refreshBtn) {
+    const refreshBtnDefaultHtml = refreshBtn.innerHTML;
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.disabled = true;
-      refreshBtn.textContent = '⏳ 載入最新數據...';
-      
+      refreshBtn.textContent = '載入最新數據…';
+
       await dataService.refreshAll();
       await loadAllBriefData();
 
       refreshBtn.disabled = false;
-      refreshBtn.textContent = '🔄 重新整理晨報';
+      refreshBtn.innerHTML = refreshBtnDefaultHtml;
     });
   }
 

@@ -11,6 +11,7 @@ Clean Single Repository Root Architecture:
 import os
 import re
 import json
+import gzip
 import random
 import html as html_module
 import urllib.request
@@ -19,29 +20,51 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-def fetch_weather(qweather_api_key=None):
+QWEATHER_LOCATION_ID = "101190101"  # 南京市
+
+def _qweather_request(api_host, path, api_key):
+    url = f"https://{api_host}{path}"
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'Mozilla/5.0',
+        'X-QW-Api-Key': api_key
+    })
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        raw = resp.read()
+        if resp.headers.get('Content-Encoding') == 'gzip':
+            raw = gzip.decompress(raw)
+        return json.loads(raw.decode('utf-8'))
+
+def fetch_weather(qweather_api_key=None, qweather_api_host=None):
     print("Fetching Weather Data from QWeather API (Nanjing)...")
-    if qweather_api_key:
+    if qweather_api_key and qweather_api_host:
         try:
-            # 南京 Location ID: 101190101
-            url = f"https://devapi.qweather.com/v7/weather/now?location=101190101&key={qweather_api_key}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                now = data.get('now', {})
-                return {
-                    "location": "南京市",
-                    "condition": f"{now.get('text', '多雲')} 🌤️",
-                    "tempCurrent": f"{now.get('temp', 'N/A')}°C",
-                    "tempMin": "N/A",   # 即時天氣沒 min/max，要另外打 3 日預報
-                    "tempMax": "N/A",
-                    "rainChance": "N/A",
-                    "feelsLike": f"{now.get('feelsLike', 'N/A')}°C",
-                    "humidity": f"{now.get('humidity', 'N/A')}%",
-                    "uvIndex": "N/A",
-                    "rawWx": now.get('text', '多雲'),
-                    "isFallback": False
-                }
+            now_data = _qweather_request(qweather_api_host, f"/v7/weather/now?location={QWEATHER_LOCATION_ID}", qweather_api_key)
+            now = now_data.get('now', {})
+
+            temp_min, temp_max, rain_chance, uv_index = "N/A", "N/A", "N/A", "N/A"
+            try:
+                forecast_data = _qweather_request(qweather_api_host, f"/v7/weather/3d?location={QWEATHER_LOCATION_ID}", qweather_api_key)
+                today_forecast = (forecast_data.get('daily') or [{}])[0]
+                temp_min = f"{today_forecast.get('tempMin', 'N/A')}°C"
+                temp_max = f"{today_forecast.get('tempMax', 'N/A')}°C"
+                rain_chance = f"{today_forecast.get('precip', 'N/A')}mm"
+                uv_index = today_forecast.get('uvIndex', 'N/A')
+            except Exception as e_forecast:
+                print(f"QWeather 3-day forecast fetch failed ({e_forecast}), leaving forecast fields as N/A.")
+
+            return {
+                "location": "南京市",
+                "condition": now.get('text', '多雲'),
+                "tempCurrent": f"{now.get('temp', 'N/A')}°C",
+                "tempMin": temp_min,
+                "tempMax": temp_max,
+                "rainChance": rain_chance,
+                "feelsLike": f"{now.get('feelsLike', 'N/A')}°C",
+                "humidity": f"{now.get('humidity', 'N/A')}%",
+                "uvIndex": uv_index,
+                "rawWx": now.get('text', '多雲'),
+                "isFallback": False
+            }
         except Exception as e:
             print(f"QWeather API fetch failed ({e}), using fallback.")
     return {
@@ -78,89 +101,6 @@ def sanitize_url(url_str):
     if parsed.scheme in ('http', 'https'):
         return url_str
     return "#"
-
-def parse_cwa_element(time_list):
-    if not time_list:
-        return ""
-    first = time_list[0]
-    if "parameter" in first and isinstance(first["parameter"], dict):
-        return first["parameter"].get("parameterName", "")
-    if "elementValue" in first and isinstance(first["elementValue"], list) and first["elementValue"]:
-        return first["elementValue"][0].get("value", "")
-    return ""
-
-def fetch_weather(cwa_api_key=None):
-    print("Fetching Weather Data from CWA API...")
-    if cwa_api_key:
-        try:
-            url = f"https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-071?Authorization={cwa_api_key}&LocationName=%E8%98%8D%E6%B4%B2%E5%8D%80"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    data = json.loads(resp.read().decode('utf-8'))
-                    records = data.get('records', {})
-                    locations = records.get('locations', [{}])[0].get('location', [])
-                    if locations:
-                        elements = {e.get('elementName'): e.get('time', []) for e in locations[0].get('weatherElement', [])}
-                        min_t = parse_cwa_element(elements.get('MinT', []))
-                        max_t = parse_cwa_element(elements.get('MaxT', []))
-                        pop = parse_cwa_element(elements.get('PoP12h', []))
-                        wx = parse_cwa_element(elements.get('Wx', []))
-                        
-                        return {
-                            "location": "新北市蘆洲區",
-                            "condition": f"{wx} 🌤️" if wx else "多雲 🌤️",
-                            "tempCurrent": f"{min_t}°C" if min_t else "N/A",
-                            "tempMin": f"{min_t}°C" if min_t else "N/A",
-                            "tempMax": f"{max_t}°C" if max_t else "N/A",
-                            "rainChance": f"{pop}%" if pop else "N/A",
-                            "feelsLike": f"{min_t}°C" if min_t else "N/A",
-                            "humidity": "N/A",  # Real API F-D0047 PoP/MinT doesn't provide relative humidity directly
-                            "uvIndex": "N/A",   # No direct UV in basic forecast
-                            "rawWx": wx or "多雲",
-                            "isFallback": False
-                        }
-            except Exception as e1:
-                print(f"Township F-D0047-071 failed ({e1}), trying General Forecast F-C0032-001...")
-                url2 = f"https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization={cwa_api_key}&locationName=%E6%96%B0%E5%8C%97%E5%B8%82"
-                req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req2, timeout=10) as resp2:
-                    data2 = json.loads(resp2.read().decode('utf-8'))
-                    loc2 = data2.get('records', {}).get('location', [{}])[0]
-                    elements2 = {e.get('elementName'): e.get('time', []) for e in loc2.get('weatherElement', [])}
-                    min_t = parse_cwa_element(elements2.get('MinT', []))
-                    max_t = parse_cwa_element(elements2.get('MaxT', []))
-                    pop = parse_cwa_element(elements2.get('PoP', []))
-                    wx = parse_cwa_element(elements2.get('Wx', []))
-                    return {
-                        "location": "新北市",
-                        "condition": f"{wx} 🌤️" if wx else "多雲 🌤️",
-                        "tempCurrent": f"{min_t}°C" if min_t else "N/A",
-                        "tempMin": f"{min_t}°C" if min_t else "N/A",
-                        "tempMax": f"{max_t}°C" if max_t else "N/A",
-                        "rainChance": f"{pop}%" if pop else "N/A",
-                        "feelsLike": "N/A",
-                        "humidity": "N/A",
-                        "uvIndex": "N/A",
-                        "rawWx": wx or "多雲",
-                        "isFallback": False
-                    }
-        except Exception as e:
-            print(f"CWA API fetch failed ({e}), using clear fallback status.")
-
-    return {
-        "location": "新北市蘆洲區",
-        "condition": "即時天氣暫無法取得",
-        "tempCurrent": "N/A",
-        "tempMin": "N/A",
-        "tempMax": "N/A",
-        "rainChance": "N/A",
-        "feelsLike": "N/A",
-        "humidity": "N/A",
-        "uvIndex": "N/A",
-        "rawWx": "未知",
-        "isFallback": True
-    }
 
 def fetch_exchange_rate():
     print("Fetching Currency Exchange Rate from ExchangeRate-API...")
@@ -391,7 +331,8 @@ def main():
     date_str = now_tw.strftime("%Y / %m / %d %A")
 
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    cwa_key = os.environ.get("CWA_API_KEY")
+    qweather_key = os.environ.get("QWEATHER_API_KEY")
+    qweather_host = os.environ.get("QWEATHER_API_HOST")
 
     # Build metadata: injected by GitHub Actions environment variables.
     # These are empty strings when run locally (not in CI).
@@ -402,7 +343,7 @@ def main():
         "workflowRunNumber": os.environ.get("GITHUB_RUN_NUMBER", "")
     }
 
-    weather = fetch_weather(cwa_key)
+    weather = fetch_weather(qweather_key, qweather_host)
     exchange_rate = fetch_exchange_rate()
     driving_quiz = load_quiz_questions()
     rss_news = fetch_rss_news()
