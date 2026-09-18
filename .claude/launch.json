@@ -4,8 +4,8 @@
     {
       "name": "morning-brief-dev",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "--directory", "my-morning-brief-apple-design", "8262"],
-      "port": 8262
+      "runtimeArgs": ["-m", "http.server", "--directory", "my-morning-brief-apple-design", "8304"],
+      "port": 8304
     }
   ]
 }

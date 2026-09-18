@@ -316,6 +316,9 @@ body {
 
 @media (min-width: 768px) {
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  /* 平板寬度只有 2 欄，col-span-2/3 都當作「這排全寬」，
+     不然卡片會被硬塞進半欄，文字擠成一團 */
+  .col-span-2, .col-span-3 { grid-column: span 2; }
 }
 
 @media (min-width: 1024px) {
