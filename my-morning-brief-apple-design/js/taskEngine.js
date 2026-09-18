@@ -37,7 +37,7 @@ const DEFAULT_ROUTINE_CONFIG = {
   exercise_run_strength: [2], // 週二
   exercise_strength: [4], // 週四
   veggie_day: [2], // 週二
-  post_short: [3], // 週三
+  post_short: [], // 預設不開，週回顧已經涵蓋 PO 文需求；想加回來可以在「設定」頁自己開
   post_weekly_review: [0], // 週日
   laundry_shopping: [0], // 週日
 };
