@@ -23,6 +23,11 @@
 - **手機寬度週曆/月曆橫向溢出 bug（2026-09-20）**：`.cal-week-grid`／`.cal-month-grid`／`.cal-month-weekdays` 都用 `grid-template-columns: repeat(7, 1fr)`，但純 `1fr` 欄位預設最小寬度是內容的 min-content，不是 0，手機窄螢幕 7 欄擠不下內容就會整排橫向溢出卡片邊界。已經全部改成 `repeat(7, minmax(0, 1fr))`。以後寫任何固定欄數的 grid，尤其是要在手機上顯示的，欄位定義都用 `minmax(0, 1fr)`，不要單寫 `1fr`
 - **平板寬度版面 bug（2026-09-19）**：`.col-span-2`／`.col-span-3` 原本只在 `min-width:1024px`（3 欄版面）有定義，768–1023px 那個 2 欄斷點完全沒對應規則，導致 hero 卡片、任務清單、天氣、題庫卡都被硬塞進半欄，「今天 3 件事」橫排擠成一團。已經在 768px 斷點也補上「col-span-2/3 都當全寬」的規則
 - **卡片材質改回不透明（2026-09-19，參考 Apple 官方 Liquid Glass 設計規則）**：`.card`（`dashboard-grid` 裡那些卡片）原本套了跟 masthead 一樣的玻璃霧化材質（`backdrop-filter: blur`），但 Apple 的規則是玻璃感只給「導覽層」（masthead／tab bar／sheet）用，「內容層」（這些卡片其實是逐格重複的清單）不該用玻璃。已經把 `.card` 改回不透明底色（`--bg-card-solid`），玻璃感保留在 masthead/tab-bar/modal 就好。以後新增卡片式內容，預設用不透明，不要再疊玻璃
+- **卡片標題不再有 icon（2026-09-20）**：使用者覺得每個標題前面的符號多餘，`index.html`／`CalendarView.js`／`CountdownView.js`／`SettingsView.js` 的 `<h3 class="card-title">` 全部改回純文字，不要再加 icon。masthead 的太陽 icon 跟 tab bar 的 icon 沒有動（那些算導覽/品牌，不算「標題」）
+- **「今日」頁再排一次（2026-09-20）**：任務清單移到最上面（原本 AI 建議 hero 卡才是第一個），接著新增一張「倒數」摘要卡（唯讀，只顯示，新增/刪除還是要去「倒數」頁），然後才是 AI 建議、天氣/星座、匯率/題庫
+- **拿掉「今日最重要的一件事」（2026-09-20）**：這個黑色 banner 的內容其實從沒變過（Gemini prompt 裡有沒有正確生成都一樣），使用者判斷沒意義直接要求刪除。前端 `renderDailyAdvice()` 跟後端 `dailyAdvice.primeGoal`（prompt schema + offline fallback + main()）都拿掉了，`dailyAdvice` 現在只剩 `top3`
+- **匯率歷史走勢改成真的資料（2026-09-20）**：ExchangeRate-API 免費版沒有歷史資料，`generate_brief.py` 現在自己維護 `data/exchange_rate_history.json`，每次執行存一筆當天匯率，滾動保留最近 7 筆，`yesterday`/`change`/`changePercent`/`last7Days` 全部從這份自己存的歷史算出來（不是編的假資料，前幾天資料不夠時會比較短，累積滿 7 天才有完整一週）。**這是目前唯一需要 workflow 寫回 repo 的資料**：permissions 加了 `contents: write`，多一個 commit 步驟，訊息帶 `[skip ci]` 避免跟新加的 push 觸發器form 成無限迴圈
+- **星座 prompt 加了一條「可以提但不能編」的規則（2026-09-20）**：如果 Gemini 確定知道當下有廣為人知的天象事件（例如水星逆行），可以順帶提一句，但不確定日期就不要提，避免編造聽起來合理但其實是幻覺的天象資訊
 
 ## 待辦／已知問題
 
@@ -32,6 +37,10 @@
 - ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
 - **意外抓到的舊 bug**：修星座的時候完整跑一次 pipeline 測試，發現 `strip_html()` 這個函式定義在 commit 108ab15 之後、9300ac6 之前的某次手動上傳（`Add files via upload`／`Delete...directory` 那種 commit）裡被誤刪了，但呼叫的地方還在，導致 `fetch_rss_news()` 每次都靜默丟 `NameError`、新聞永遠抓不到（有 try/except 包住不會讓整個 pipeline 掛掉，但長期都在用空清單）。已經照 108ab15 原始版本一字不改地補回來
 - `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
+- **Gemini API 404，還沒修（2026-09-20 發現）**：Actions 日誌顯示 `Gemini API call failed (HTTP Error 404: Not Found)`，代表 `GEMINI_API_KEY` 這個 secret 可能也沒設定成功（目前所有星座/建議內容都在用離線 fallback，不是真的 Gemini 生成）。還沒動 `synthesize_with_gemini()` 裡的 `gemini-2.5-flash-lite` 這個 model 名稱去猜測修正，因為沒有使用者的真實 key 沒辦法驗證改了對不對——不要瞎猜 model 名稱，先請使用者確認 secret 是否存在，或願意的話給一組 key 讓我直接測
+- **每日語錄功能，還沒開始（2026-09-20 提出）**：使用者想加一個「每天一句語錄」的東西，但語錄類型還沒想好（勵志/名人名言/自己寫的/哪個領域都不確定）。下次接觸這塊時先問清楚語錄類型，不要自己決定
+- **App 改名，還沒決定（2026-09-20 提出）**："Morning Brief" 這個名字使用者想換掉，或至少要更像在跟他打招呼，還沒給具體名字，下次要問
+- **追劇/讀書進度自動分配，完全還沒開始**：對應 roadmap 第 6 步（OpenRouter），使用者在 2026-09-20 提醒過「還有遺漏很多東西」，這塊是目前最大的一塊完全空白，企劃書（個人排程AI助理_企劃書.md）裡有完整的 daily_quota/carry_over 演算法設計，之後要做這塊時先去讀那份文件
 
 ## 接下來要做的（照這個順序）
 
