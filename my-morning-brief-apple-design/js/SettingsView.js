@@ -67,7 +67,7 @@ export function renderSettingsView() {
     <main class="container">
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg>作息設定</h3>
+          <h3 class="card-title">作息設定</h3>
           <span class="card-badge">點星期幾切換開關</span>
         </div>
         <div class="routine-config-list">${rowsHtml}</div>
@@ -75,7 +75,7 @@ export function renderSettingsView() {
 
       <div class="card" style="margin-top: 1.25rem;">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="12,6 12,12 16,14"/><circle cx="12" cy="12" r="9"/></svg>固定作息時間參考</h3>
+          <h3 class="card-title">固定作息時間參考</h3>
           <span class="card-badge">目前不開放調整</span>
         </div>
         <div class="fixed-schedule-list">${fixedHtml}</div>

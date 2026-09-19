@@ -29,6 +29,31 @@ function formatTargetDate(dateStr) {
   return `${y} / ${String(m).padStart(2, '0')} / ${String(d).padStart(2, '0')}`;
 }
 
+/**
+ * 給「今日」頁用的精簡版——只顯示，不能新增/刪除（那些操作留在「倒數」頁）
+ */
+export function renderCountdownSummaryInto(container) {
+  if (!container) return;
+  const items = getCountdowns();
+
+  const itemsHtml = items
+    .map((c) => {
+      const { text, cls } = daysLeftLabel(c.daysLeft);
+      return `
+        <div class="countdown-item ${cls}">
+          <div class="countdown-days">${Math.abs(c.daysLeft)}</div>
+          <div class="countdown-info">
+            <div class="countdown-label">${escapeHtml(c.label)}</div>
+            <div class="countdown-meta">${text} · 目標日 ${formatTargetDate(c.targetDate)}</div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  container.innerHTML = itemsHtml || '<div class="countdown-empty">還沒有任何倒數，去「倒數」頁新增一個吧</div>';
+}
+
 export function renderCountdownView() {
   const container = document.getElementById('view-countdown');
   if (!container) return;
@@ -55,7 +80,7 @@ export function renderCountdownView() {
     <main class="container">
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="19" y2="3"/><line x1="5" y1="21" x2="19" y2="21"/><polygon points="7,3 17,3 12,12"/><polygon points="7,21 17,21 12,12"/></svg>倒數</h3>
+          <h3 class="card-title">倒數</h3>
           <span class="card-badge">${items.length} 個倒數</span>
         </div>
         <div class="countdown-list">

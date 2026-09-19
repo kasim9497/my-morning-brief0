@@ -6,7 +6,7 @@ import { dataService } from './services/dataService.js';
 import { initTabs } from './tabs.js';
 import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
-import { renderCountdownView } from './CountdownView.js';
+import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
 
 // Global Quiz State
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTaskList();
   renderCalendarView();
   renderCountdownView();
+  renderCountdownSummaryInto(document.getElementById('today-countdown-widget-content'));
   renderSettingsView();
   setupCalendarTabRefresh();
   await loadAllBriefData();
@@ -527,11 +528,6 @@ function renderDailyAdvice(advice) {
       TODAY：今天最值得注意的 3 件事情
     </div>
     <ul class="top3-list">${top3Html}</ul>
-
-    <div class="prime-goal-box">
-      <div class="prime-goal-title">今日最重要的一件事</div>
-      <div class="prime-goal-content">${advice.primeGoal}</div>
-    </div>
   `;
 }
 

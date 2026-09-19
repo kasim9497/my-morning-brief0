@@ -149,6 +149,22 @@ def sanitize_url(url_str):
         return url_str
     return "#"
 
+EXCHANGE_HISTORY_FILE = "data/exchange_rate_history.json"
+
+def load_exchange_history():
+    if os.path.exists(EXCHANGE_HISTORY_FILE):
+        try:
+            with open(EXCHANGE_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Failed to read exchange rate history ({e}), starting fresh.")
+    return {}
+
+def save_exchange_history(history):
+    os.makedirs(os.path.dirname(EXCHANGE_HISTORY_FILE), exist_ok=True)
+    with open(EXCHANGE_HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
 def fetch_exchange_rate():
     print("Fetching Currency Exchange Rate from ExchangeRate-API...")
     now_tw = datetime.now(TZ_TAIWAN)
@@ -159,17 +175,34 @@ def fetch_exchange_rate():
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             twd_rate = round(data['rates']['TWD'], 2)
-            
-            # Since ExchangeRate-API free tier only provides latest rate without 7-day history,
-            # set history fields to None / empty to avoid creating fake history data.
+
+            # ExchangeRate-API 免費版只給最新匯率，沒有歷史資料可以查。
+            # 改成自己每天存一筆，`data/exchange_rate_history.json` 由 Actions
+            # 每次執行後 commit 回 repo，累積出真實的 7 天走勢（不是編的假資料，
+            # 頭幾天會比較短，滿 7 天之後才會是完整一週）。
+            today_key = now_tw.strftime("%Y-%m-%d")
+            history = load_exchange_history()
+            history[today_key] = twd_rate
+            trimmed = dict(sorted(history.items())[-7:])
+            save_exchange_history(trimmed)
+
+            sorted_dates = sorted(trimmed.keys())
+            last7_days = [trimmed[d] for d in sorted_dates] if len(sorted_dates) > 1 else None
+
+            yesterday_rate, change, change_percent = None, None, None
+            if len(sorted_dates) >= 2:
+                yesterday_rate = trimmed[sorted_dates[-2]]
+                change = round(twd_rate - yesterday_rate, 2)
+                change_percent = f"{'+' if change >= 0 else ''}{round(change / yesterday_rate * 100, 2)}%"
+
             return {
                 "pair": "CNY → TWD",
                 "current": twd_rate,
-                "yesterday": None,
-                "change": None,
-                "changePercent": None,
-                "isUp": True,
-                "last7Days": None,
+                "yesterday": yesterday_rate,
+                "change": change,
+                "changePercent": change_percent,
+                "isUp": change is None or change >= 0,
+                "last7Days": last7_days,
                 "updateTime": update_time_str,
                 "isFallback": False
             }
@@ -261,6 +294,7 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
 1. 嚴格基於提供之【候選新聞項目】做摘要，絕對不得自行編造未在 RSS 中出現的虛構事件或假新聞！
 2. 輸出之 aiNews List 數量必須與傳入之候選新聞數量相對應。
 3. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
+4. 如果你確實知道今天日期附近有正在發生、廣為人知的天象事件（例如水星逆行區間），可以順帶提一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，就不要提，不要編造一個聽起來合理但其實不確定的天象事件。
 
 【真實命盤重點】:
 {BIRTH_CHART_SUMMARY}
@@ -294,11 +328,10 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
   ],
   "dailyAdvice": {{
     "top3": [
-      {{"icon": "🌧️", "text": "天氣/攜帶物品提醒"}},
-      {{"icon": "🛵", "text": "駕照練習方向提醒"}},
-      {{"icon": "🤖", "text": "科技新知閱讀建議"}}
-    ],
-    "primeGoal": "今日最重要的一件事 (直接切中要點，不說心靈雞湯)"
+      {{"text": "天氣/攜帶物品提醒"}},
+      {{"text": "駕照練習方向提醒"}},
+      {{"text": "科技新知閱讀建議"}}
+    ]
   }}
 }}
 """
@@ -390,11 +423,10 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
         "aiNews": news_list,
         "dailyAdvice": {
             "top3": [
-                {"icon": "🌧️", "text": f"天氣狀態：{weather.get('condition', '多雲')}，出門記得準備雨具。"},
-                {"icon": "🛵", "text": "駕照筆試練習今日重點：加強交岔路口路權與雙黃線禁跨題型。"},
-                {"icon": "🤖", "text": "今日 AI 產業有即時動態發布，可花 10 分鐘快速了解趨勢。"}
-            ],
-            "primeGoal": "今日最重要的一件事：集中精力完成 AI PM 作品集首頁與核心功能展示。"
+                {"text": f"天氣狀態：{weather.get('condition', '多雲')}，出門記得準備雨具。"},
+                {"text": "駕照筆試練習今日重點：加強交岔路口路權與雙黃線禁跨題型。"},
+                {"text": "今日 AI 產業有即時動態發布，可花 10 分鐘快速了解趨勢。"}
+            ]
         }
     }
 

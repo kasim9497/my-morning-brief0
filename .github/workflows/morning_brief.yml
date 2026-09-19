@@ -24,9 +24,12 @@ on:
 #       GitHub Pages 上的 today.json 是由每次 Actions 執行後即時產生的。
 # ============================================================
 
-# Permissions required for modern GitHub Pages Actions Artifact Deployment
+# Permissions required for modern GitHub Pages Actions Artifact Deployment.
+# contents: write is needed so the workflow can commit data/exchange_rate_history.json
+# back to the repo each run (that's the only file it writes back — today.json itself
+# still follows Strategy A above and is never committed).
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -119,6 +122,21 @@ jobs:
           print(f"✅ BUILD INFO: Actions Run #{run_number} | Commit {commit}")
           print(f"✅ ALL VALIDATIONS PASSED: today.json is valid, fresh ({date_in_file}), and contains all required sections!")
           PY
+
+      # 匯率歷史是目前唯一需要「回寫 repo」的資料（跟 Strategy A 的 today.json 不一樣），
+      # 用 [skip ci] 避免這個 commit 又觸發一次 workflow（我們新加的 push 觸發器）造成無限迴圈。
+      - name: Commit updated exchange rate history
+        run: |
+          cd my-morning-brief-apple-design
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/exchange_rate_history.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update exchange rate history [skip ci]"
+            git push || echo "Push failed (likely racing another run) — today's rate will just be picked up on the next run instead."
+          else
+            echo "No exchange rate history change to commit."
+          fi
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

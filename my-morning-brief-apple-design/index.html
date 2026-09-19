@@ -55,25 +55,14 @@
     </section>
 
     <!-- Dashboard Main Grid — 依「今天最該先看的」排序：
-         AI 建議（一句話摘要）→ 任務清單（要做的事）→ 天氣/星座（每天要看一眼）
-         → 匯率/題庫（順手看看）→ 新聞（有空再讀） -->
+         任務清單（要做的事）→ 倒數（一眼看到還剩幾天）→ AI 建議 → 天氣/星座（每天要看一眼）
+         → 匯率/題庫（順手看看） -->
     <div class="dashboard-grid">
 
-      <!-- 0. Daily AI Personal Advice Card — 今天的重點放最前面，當作 hero -->
-      <article class="card advice-card col-span-3">
-        <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>今日 AI 個人建議</h3>
-          <span class="card-badge">AI Agent 智能彙整</span>
-        </div>
-        <div id="advice-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
-      <!-- 1. Today's Task List Card -->
+      <!-- 0. Today's Task List Card -->
       <article class="card col-span-3">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8,12 11,15 16,9"/></svg>今日任務清單</h3>
+          <h3 class="card-title">今日任務清單</h3>
           <span class="card-badge">依固定作息表自動產生</span>
         </div>
         <div id="tasklist-widget-content">
@@ -81,10 +70,32 @@
         </div>
       </article>
 
+      <!-- 0.5. Countdown Summary Card — 只顯示，新增/刪除倒數還是要去「倒數」頁 -->
+      <article class="card col-span-3">
+        <div class="card-header">
+          <h3 class="card-title">倒數</h3>
+          <span class="card-badge">管理請到「倒數」頁</span>
+        </div>
+        <div id="today-countdown-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <!-- 1. Daily AI Personal Advice Card -->
+      <article class="card advice-card col-span-3">
+        <div class="card-header">
+          <h3 class="card-title">今日 AI 個人建議</h3>
+          <span class="card-badge">AI Agent 智能彙整</span>
+        </div>
+        <div id="advice-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
       <!-- 2. Weather Card — 資訊量較大，給 2 欄寬 -->
       <article class="card col-span-2">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>今日天氣</h3>
+          <h3 class="card-title">今日天氣</h3>
           <span class="card-badge">和風天氣 API</span>
         </div>
         <div id="weather-widget-content">
@@ -95,7 +106,7 @@
       <!-- 3. Horoscope Card -->
       <article class="card">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 14.9,8.6 22,9.3 16.5,14 18.2,21 12,17.3 5.8,21 7.5,14 2,9.3 9.1,8.6"/></svg>今日處女座運勢</h3>
+          <h3 class="card-title">今日處女座運勢</h3>
           <span class="card-badge">處女座 8/23 - 9/22</span>
         </div>
         <div id="horoscope-widget-content">
@@ -106,7 +117,7 @@
       <!-- 4. Exchange Rate Card -->
       <article class="card">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>人民幣匯率</h3>
+          <h3 class="card-title">人民幣匯率</h3>
           <span class="card-badge">CNY / TWD</span>
         </div>
         <div id="rate-widget-content">
@@ -117,7 +128,7 @@
       <!-- 5. Scooter Driving Quiz Card — 自主練習用，優先度較低，放後面 -->
       <article class="card quiz-card col-span-2">
         <div class="card-header">
-          <h3 class="card-title"><svg aria-hidden="true" focusable="false" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><polyline points="8,12 11,15 16,9"/></svg>每日駕照筆試挑戰（普通重型機車）</h3>
+          <h3 class="card-title">每日駕照筆試挑戰（普通重型機車）</h3>
           <span class="card-badge">公路局官方題庫 5 題</span>
         </div>
         <div id="quiz-widget-content">
