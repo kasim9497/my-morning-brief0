@@ -984,7 +984,9 @@ body {
 
 .cal-week-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr) 不是 1fr：純 1fr 欄位最小寬度預設是內容的 min-content，
+     窄螢幕（手機）7 欄擠不下就會整排橫向溢出，要明講最小寬度可以是 0 */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -1041,7 +1043,7 @@ body {
 
 .cal-month-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-bottom: 0.4rem;
 }
 
@@ -1054,7 +1056,7 @@ body {
 
 .cal-month-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.35rem;
 }
 
