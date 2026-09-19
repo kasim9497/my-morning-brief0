@@ -20,6 +20,25 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
+def strip_html(raw: str) -> str:
+    """Remove all HTML tags and decode HTML entities from a string.
+    Does NOT require BeautifulSoup — uses stdlib re + html.unescape only.
+    Handles both direct HTML and HTML-entity-encoded HTML (double-encoded).
+    """
+    if not raw or not isinstance(raw, str):
+        return ""
+    # Step 1: Unescape entities first (&lt;img&gt; → <img>)
+    text = html_module.unescape(raw)
+    # Step 2: Remove <script>...</script> and <style>...</style> blocks
+    text = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # Step 3: Remove all remaining HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Step 4: Unescape any remaining entities (e.g. &amp; &nbsp;)
+    text = html_module.unescape(text)
+    # Step 5: Collapse whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
 QWEATHER_LOCATION_ID = "101190112"  # 南京市栖霞區（涵蓋仙林大學城，比市中心資料更準）
 
 def _qweather_request(api_host, path, api_key):
@@ -89,6 +108,34 @@ USER_PROFILE = {
     "licenseType": "普通重型機車",
     "currencyPair": "CNY/TWD"
 }
+
+# 使用者真實命盤重點（融合西洋占星、八字、紫微斗數三套系統整理出的穩定個性特質，
+# 不是每日星象演算——免費工具做不到真正的每日行運計算，這份摘要是拿來讓 Gemini
+# 寫出「有憑有據」的解讀，取代原本純套處女座罐頭文字的做法）
+BIRTH_CHART_SUMMARY = """
+出生：2005年9月7日，男性
+西洋占星：太陽處女座在第二宮（務實、重視實際能力，自我價值感建立在具體產出上）；
+上升巨蟹（外在溫和、顧家、給人安全感）；月亮/金星/木星三合在天秤座（人緣佳、重和諧、
+審美好，但容易迴避衝突）；太陽刑冥王星、對沖天王星（內心有不安於現狀的衝動，穩定期
+容易突然想打破常規）；上升對沖凱龍在第七宮（親密關係是需要花力氣練習的課題，容易自我
+懷疑，但也有潛力成為很懂得安慰他人的人）
+八字：日主甲木，四柱幾乎缺水（印星弱，較少依賴他人支持，習慣自己扛）；日支坐傷官
+（表達欲強、有創造力，但對權威/常規容易反骨）；目前走壬午大運（2025-2034，開始補到
+印星/貴人運，比之前更容易遇到願意提拔的人，適合主動找導師）
+紫微斗數：命宮空宮坐申（性格隨環境而變、適應力強，不是天生性格很固定的人）；官祿宮
+太陽坐（很在意工作有沒有被看見、渴望具體成就與認可）；身宮福德宮天同加地空地空（內心
+追求心靈上的輕鬆自在，容易看淡物質）
+三個系統一致指向：這是一個「渴望被認可、成就導向、但骨子裡有不安於現狀衝動」的人，
+人際圈溫和討喜，內心比外表更常有自我懷疑。
+""".strip()
+
+def rating_to_stars(rating):
+    """把 1-5 的數字評分轉成星星字串，取代原本寫死的 ★★★★☆"""
+    try:
+        filled = max(0, min(5, round(float(rating))))
+    except (TypeError, ValueError):
+        filled = 4
+    return "★" * filled + "☆" * (5 - filled)
 
 TZ_TAIWAN = timezone(timedelta(hours=8))
 
@@ -213,6 +260,10 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
 【重要準則】：
 1. 嚴格基於提供之【候選新聞項目】做摘要，絕對不得自行編造未在 RSS 中出現的虛構事件或假新聞！
 2. 輸出之 aiNews List 數量必須與傳入之候選新聞數量相對應。
+3. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
+
+【真實命盤重點】:
+{BIRTH_CHART_SUMMARY}
 
 【已知事實資料】:
 - 今日地點：{weather['location']}，天氣狀況：{weather['condition']}，溫度：{weather['tempMin']}~{weather['tempMax']}，降雨機率：{weather['rainChance']}
@@ -222,7 +273,17 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
 【請輸出嚴格的 JSON 格式】:
 {{
   "weatherTip": "針對溫差與降雨的一句話實用出門提醒",
-  "horoscopeSummary": "針對處女座今日星象的2句簡短指引 (勿過度迷信，偏向時間整理與工作專注)",
+  "horoscopeSummary": "根據上方真實命盤重點寫 2-3 句今天的解讀，可以結合今天日期/星期幾發揮，但論點要能對應到命盤裡的具體特質",
+  "horoscopeDetails": {{
+    "overall": "根據命盤整體特質寫的一句話，跟今天有點關聯",
+    "love": "根據命盤裡感情相關特質（例如上升對沖凱龍、月金木三合等）寫的一句話",
+    "work": "根據命盤裡事業/成就相關特質（例如官祿宮太陽、太陽第二宮等）寫的一句話",
+    "wealth": "根據命盤裡財務相關特質寫的一句話，資料薄弱就寫得保守一點，不要硬掰",
+    "health": "根據命盤裡身心相關特質（例如不安於現狀的衝動、自我懷疑傾向）寫的一句話"
+  }},
+  "horoscopeLuckyColor": "一個顏色 + 一個表情符號，例如 寶藍色 🟦",
+  "horoscopeLuckyNumber": "一個 1-99 的數字字串",
+  "horoscopeRating": "今天的整體運勢評分，1.0-5.0 之間可以有小數的數字",
   "aiNews": [
     {{
       "id": "n1",
@@ -313,7 +374,19 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
     weather_rain_str = weather.get('rainChance', 'N/A')
     return {
         "weatherTip": f"天氣狀態：{weather.get('condition', '多雲')}，出門請注意天候變化。",
-        "horoscopeSummary": "今天適合整理混亂已久的事務。工作上建議專注完成最重要的一件事，穩紮穩打效果最好。",
+        # Gemini 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
+        # 只是沒辦法每天換說法
+        "horoscopeSummary": "你的命盤裡不安於現狀的衝動跟渴望被認可的成就感，是長期主題，不是今天限定。與其等心情對了才動手，不如挑一件具體小事先做完，落地的產出比想清楚更能安你的心。",
+        "horoscopeDetails": {
+            "overall": "命宮空宮、性格隨環境調整，今天狀態會跟著周遭步調走，不用強求跟昨天一樣。",
+            "love": "親密關係是這輩子要花力氣練習的課題，今天如果有摩擦，先別急著下定論。",
+            "work": "官祿宮太陽坐鎮，成就感是你的核心動力，挑一件能被看見的事先做完。",
+            "wealth": "命盤裡財務相關的依據較薄弱，維持穩定記帳習慣即可，不用過度解讀。",
+            "health": "內心比外表更容易自我懷疑，留一點時間讓自己喘口氣，別一直往前衝。"
+        },
+        "horoscopeLuckyColor": "寶藍色 🟦",
+        "horoscopeLuckyNumber": "7",
+        "horoscopeRating": 4.0,
         "aiNews": news_list,
         "dailyAdvice": {
             "top3": [
@@ -368,17 +441,13 @@ def main():
         "weather": weather,
         "horoscope": {
             "sign": f"{USER_PROFILE['zodiac']} ♍",
-            "ratingStars": "★★★★☆",
-            "score": 4.5,
-            "details": {
-                "overall": "思緒清晰，適合處理積壓已久的細節事項。",
-                "love": "溝通順暢，適合與夥伴進行深層交流。",
-                "work": "工作效率提升，建議先攻克最重要的單一任務。",
-                "wealth": "財務穩定，適合進行月度財務整理。",
-                "health": "精神充沛，但需注意用眼過度與肩頸放鬆。"
-            },
-            "luckyColor": "寶藍色 🟦",
-            "luckyNumber": "7",
+            "ratingStars": rating_to_stars(ai_synthesis.get("horoscopeRating", 4.0)),
+            "score": ai_synthesis.get("horoscopeRating", 4.0),
+            "details": ai_synthesis.get("horoscopeDetails", {
+                "overall": "", "love": "", "work": "", "wealth": "", "health": ""
+            }),
+            "luckyColor": ai_synthesis.get("horoscopeLuckyColor", "寶藍色 🟦"),
+            "luckyNumber": ai_synthesis.get("horoscopeLuckyNumber", "7"),
             "aiSummary": ai_synthesis.get("horoscopeSummary", "")
         },
         "exchangeRate": exchange_rate,
