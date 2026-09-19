@@ -82,10 +82,10 @@ def fetch_weather(qweather_api_key=None, qweather_api_host=None):
     }
 
 USER_PROFILE = {
-    "name": "Jinhao",
+    "name": "Kasim",
     "zodiac": "處女座",
-    "city": "新北市",
-    "district": "蘆洲區",
+    "city": "南京市",
+    "district": "栖霞區",
     "licenseType": "普通重型機車",
     "currencyPair": "CNY/TWD"
 }
@@ -208,7 +208,7 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
         "contents": [{
             "parts": [{
                 "text": f"""
-你是一位專業的個人 AI 助理。請根據以下事實資料，為使用者 (Jinhao，處女座，正在準備機車筆試與規劃 AI PM 職涯) 生成每日晨報摘要。
+你是一位專業的個人 AI 助理。請根據以下事實資料，為使用者 (Kasim，處女座，目前在南京交換，正在準備機車筆試與規劃 AI PM 職涯) 生成每日晨報摘要。
 
 【重要準則】：
 1. 嚴格基於提供之【候選新聞項目】做摘要，絕對不得自行編造未在 RSS 中出現的虛構事件或假新聞！

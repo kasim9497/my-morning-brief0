@@ -49,7 +49,7 @@ def main():
 ☀️ *您的今日 AI 數位晨報已準備完成！*
 📅 日期：{meta.get('date', '')}
 
-🌤 *天氣預報 (蘆洲區)*：{weather.get('condition', '')} ({weather.get('tempMin')} ~ {weather.get('tempMax')})
+🌤 *天氣預報 ({weather.get('location', '南京市栖霞區')})*：{weather.get('condition', '')} ({weather.get('tempMin')} ~ {weather.get('tempMax')})
 💰 *人民幣匯率*：1 CNY ≈ {rate.get('current')} TWD
 🎯 *今日核心目標*：
 _{advice.get('primeGoal', '')}_

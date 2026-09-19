@@ -5,10 +5,10 @@
 
 export const mockData = {
   user: {
-    name: "Jinhao",
+    name: "Kasim",
     zodiac: "處女座",
-    city: "新北市",
-    district: "蘆洲區",
+    city: "南京市",
+    district: "栖霞區",
     licenseType: "普通重型機車",
     currencyPair: "CNY/TWD"
   },
@@ -16,11 +16,11 @@ export const mockData = {
   briefMeta: {
     date: "2026 / 07 / 31 Friday",
     time: "08:00 AM",
-    greeting: "早安，Jinhao！這是為您整理的今日個人化 AI 數位晨報。"
+    greeting: "早安，Kasim！這是為您整理的今日個人化 AI 數位晨報。"
   },
 
   weather: {
-    location: "新北市蘆洲區",
+    location: "南京市栖霞區",
     condition: "多雲轉午後雷陣雨 🌤️",
     tempCurrent: "31°C",
     tempMin: "28°C",

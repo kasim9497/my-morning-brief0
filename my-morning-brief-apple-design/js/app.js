@@ -176,7 +176,7 @@ function renderHeader({ user, meta }) {
   if (locPill) {
     const locText = (user.city && user.district) 
       ? `${user.city}${user.district}` 
-      : (user.city || user.location || '新北市蘆洲區');
+      : (user.city || user.location || '南京市栖霞區');
     locPill.innerHTML = `${ICON_PIN}${escapeHtml(locText)}`;
   }
 }
@@ -186,7 +186,7 @@ function renderHeader({ user, meta }) {
  */
 function renderWeather(w) {
   const container = document.getElementById('weather-widget-content');
-  const safeLoc = escapeHtml(w.location || '新北市蘆洲區');
+  const safeLoc = escapeHtml(w.location || '南京市栖霞區');
   const safeCond = escapeHtml(w.condition || '多雲');
   const safeTemp = escapeHtml(w.tempCurrent || 'N/A');
   const safeMin = escapeHtml(w.tempMin || 'N/A');
