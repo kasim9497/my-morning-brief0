@@ -5,6 +5,8 @@ on:
     # 23:30 UTC = 07:30 AM Taiwan Time (Runs daily to update pages by ~08:00 AM)
     - cron: '30 23 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+  push:
+    branches: [main] # 一 push 到 main 就自動重新產生 + 部署，不用等排程或手動點
 
 # ============================================================
 # 部署策略：Strategy A（直接部署，不回寫 Repository）
