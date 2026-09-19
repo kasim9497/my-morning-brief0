@@ -28,7 +28,8 @@
 
 - **QWeather GitHub Secrets 還沒設定（2026-09-20 確認）**：Host、認證方式、地點都已經改好且本機測試成功（`101190112` 栖霞區，涵蓋仙林），但 GitHub repo 的 Secrets 頁還沒加 `QWEATHER_API_KEY`／`QWEATHER_API_HOST`，這是線上天氣一直是 N/A 的唯一原因（不是程式碼問題）。使用者還在學怎麼加，之後如果又聽到「天氣還是 N/A」先確認這步做了沒，不要又去查程式碼
 - ~~個人化資料還沒換~~ 已完成（2026-09-20）：`USER_PROFILE` 改成 `name: "Kasim"`、`city: "南京市"`、`district: "栖霞區"`，同步改掉 `mockData.js`、`index.html` 靜態文字、`app.js` fallback 字串、Gemini prompt、`notify_telegram.py`（這支原本寫死「蘆洲區」，現在改成讀 `weather.location`，以後地點再變不會又忘記改）
-- **星座運勢是假的**：使用者認為目前的星座卡片只是套用生肖的罐頭文字，已經給過一次真實命盤資料（西洋占星＋八字＋紫微斗數，生日 2005-09-07），但那份完整資料沒有存在專案裡，要重做這塊時要再跟使用者要一次
+- ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
+- **意外抓到的舊 bug**：修星座的時候完整跑一次 pipeline 測試，發現 `strip_html()` 這個函式定義在 commit 108ab15 之後、9300ac6 之前的某次手動上傳（`Add files via upload`／`Delete...directory` 那種 commit）裡被誤刪了，但呼叫的地方還在，導致 `fetch_rss_news()` 每次都靜默丟 `NameError`、新聞永遠抓不到（有 try/except 包住不會讓整個 pipeline 掛掉，但長期都在用空清單）。已經照 108ab15 原始版本一字不改地補回來
 - `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
 
 ## 接下來要做的（照這個順序）
