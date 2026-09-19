@@ -25,8 +25,8 @@
 
 ## 待辦／已知問題
 
-- **QWeather GitHub Secrets 待確認**：Host（`jj44ucf442.re.qweatherapi.com`）跟認證方式（`X-QW-Api-Key` header）都已經改好且本機測試成功，但還沒確認使用者是否已經把 `QWEATHER_API_KEY`／`QWEATHER_API_HOST` 加進 GitHub repo 的 Secrets，動 `.github/workflows/morning_brief.yml` 或懷疑 Actions 天氣沒更新時先確認這件事
-- **個人化資料還沒換**：`USER_PROFILE`（`name: "Jinhao"`、`zodiac: "處女座"` 等）跟 Gemini prompt 裡寫死的敘述都還是舊測試資料，不是使用者本人的。改動這塊前先跟使用者確認要填什麼，不要自己編
+- **QWeather GitHub Secrets 還沒設定（2026-09-20 確認）**：Host、認證方式、地點都已經改好且本機測試成功（`101190112` 栖霞區，涵蓋仙林），但 GitHub repo 的 Secrets 頁還沒加 `QWEATHER_API_KEY`／`QWEATHER_API_HOST`，這是線上天氣一直是 N/A 的唯一原因（不是程式碼問題）。使用者還在學怎麼加，之後如果又聽到「天氣還是 N/A」先確認這步做了沒，不要又去查程式碼
+- ~~個人化資料還沒換~~ 已完成（2026-09-20）：`USER_PROFILE` 改成 `name: "Kasim"`、`city: "南京市"`、`district: "栖霞區"`，同步改掉 `mockData.js`、`index.html` 靜態文字、`app.js` fallback 字串、Gemini prompt、`notify_telegram.py`（這支原本寫死「蘆洲區」，現在改成讀 `weather.location`，以後地點再變不會又忘記改）
 - **星座運勢是假的**：使用者認為目前的星座卡片只是套用生肖的罐頭文字，已經給過一次真實命盤資料（西洋占星＋八字＋紫微斗數，生日 2005-09-07），但那份完整資料沒有存在專案裡，要重做這塊時要再跟使用者要一次
 - `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
 
