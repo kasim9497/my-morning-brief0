@@ -26,6 +26,7 @@
 
 ## 待辦／已知問題
 
+- **`.github/workflows/morning_brief.yml` 現在 push 到 main 就會自動跑（2026-09-20）**：原本只有排程（07:30）跟手動觸發，改完程式碼要等到隔天或自己去點才會真的上線。現在多加了 `on: push: branches: [main]`，以後每次 push 都會自動重新產生 + 部署，不用再手動點 Run workflow
 - **QWeather GitHub Secrets 還沒設定（2026-09-20 確認）**：Host、認證方式、地點都已經改好且本機測試成功（`101190112` 栖霞區，涵蓋仙林），但 GitHub repo 的 Secrets 頁還沒加 `QWEATHER_API_KEY`／`QWEATHER_API_HOST`，這是線上天氣一直是 N/A 的唯一原因（不是程式碼問題）。使用者還在學怎麼加，之後如果又聽到「天氣還是 N/A」先確認這步做了沒，不要又去查程式碼
 - ~~個人化資料還沒換~~ 已完成（2026-09-20）：`USER_PROFILE` 改成 `name: "Kasim"`、`city: "南京市"`、`district: "栖霞區"`，同步改掉 `mockData.js`、`index.html` 靜態文字、`app.js` fallback 字串、Gemini prompt、`notify_telegram.py`（這支原本寫死「蘆洲區」，現在改成讀 `weather.location`，以後地點再變不會又忘記改）
 - ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
