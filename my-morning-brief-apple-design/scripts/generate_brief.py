@@ -20,7 +20,7 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-QWEATHER_LOCATION_ID = "101190101"  # 南京市
+QWEATHER_LOCATION_ID = "101190112"  # 南京市栖霞區（涵蓋仙林大學城，比市中心資料更準）
 
 def _qweather_request(api_host, path, api_key):
     url = f"https://{api_host}{path}"
@@ -53,7 +53,7 @@ def fetch_weather(qweather_api_key=None, qweather_api_host=None):
                 print(f"QWeather 3-day forecast fetch failed ({e_forecast}), leaving forecast fields as N/A.")
 
             return {
-                "location": "南京市",
+                "location": "南京市栖霞區",
                 "condition": now.get('text', '多雲'),
                 "tempCurrent": f"{now.get('temp', 'N/A')}°C",
                 "tempMin": temp_min,
@@ -68,7 +68,7 @@ def fetch_weather(qweather_api_key=None, qweather_api_host=None):
         except Exception as e:
             print(f"QWeather API fetch failed ({e}), using fallback.")
     return {
-        "location": "南京市",
+        "location": "南京市栖霞區",
         "condition": "即時天氣暫無法取得",
         "tempCurrent": "N/A",
         "tempMin": "N/A",
