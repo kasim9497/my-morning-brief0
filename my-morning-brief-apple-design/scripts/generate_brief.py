@@ -283,7 +283,7 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
         print("GEMINI_API_KEY not provided. Using offline smart synthesis template.")
         return generate_offline_synthesis(weather, exchange_rate, rss_items)
 
-    print("Calling Gemini 2.5 Flash-Lite API for AI Synthesis...")
+    print("Calling Gemini 2.5 Flash API for AI Synthesis...")
     prompt_payload = {
         "contents": [{
             "parts": [{
@@ -344,7 +344,9 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
     }
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_api_key}"
+        # gemini-2.5-flash-lite (原本用的) 官方公告 2026-10-16 起在 Gemini Developer API 停用，
+        # 而且 2026-09 就已經開始回傳 404，改用官方文件範例用的 gemini-2.5-flash
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
         data_bytes = json.dumps(prompt_payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
         with urllib.request.urlopen(req, timeout=15) as resp:
