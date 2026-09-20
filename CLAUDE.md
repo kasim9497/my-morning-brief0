@@ -31,13 +31,14 @@
 
 ## 待辦／已知問題
 
-- **`.github/workflows/morning_brief.yml` 現在 push 到 main 就會自動跑（2026-09-20）**：原本只有排程（07:30）跟手動觸發，改完程式碼要等到隔天或自己去點才會真的上線。現在多加了 `on: push: branches: [main]`，以後每次 push 都會自動重新產生 + 部署，不用再手動點 Run workflow
+- **`.github/workflows/morning_brief.yml` 現在 push 到 main 就會自動跑（2026-09-20）**：原本只有排程（07:30）跟手動觸發，改完程式碼要等到隔天或自己去點才會真的上線。現在多加了 `on: push: branches: [main]`，以後每次 push 都會自動重新產生 + 部署，不用再手動點 Run workflow。**連帶影響**：因為 workflow 現在會自己 commit 回 repo（匯率歷史那個 `[skip ci]` commit），本機的 `origin/main` 隨時可能比本機 `main` 新，**每次要 push 之前先 `git fetch && git pull --rebase origin main`**，不然會被 reject（non-fast-forward），2026-09-20 已經中過一次
 - **QWeather GitHub Secrets 還沒設定（2026-09-20 確認）**：Host、認證方式、地點都已經改好且本機測試成功（`101190112` 栖霞區，涵蓋仙林），但 GitHub repo 的 Secrets 頁還沒加 `QWEATHER_API_KEY`／`QWEATHER_API_HOST`，這是線上天氣一直是 N/A 的唯一原因（不是程式碼問題）。使用者還在學怎麼加，之後如果又聽到「天氣還是 N/A」先確認這步做了沒，不要又去查程式碼
 - ~~個人化資料還沒換~~ 已完成（2026-09-20）：`USER_PROFILE` 改成 `name: "Kasim"`、`city: "南京市"`、`district: "栖霞區"`，同步改掉 `mockData.js`、`index.html` 靜態文字、`app.js` fallback 字串、Gemini prompt、`notify_telegram.py`（這支原本寫死「蘆洲區」，現在改成讀 `weather.location`，以後地點再變不會又忘記改）
 - ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
 - **意外抓到的舊 bug**：修星座的時候完整跑一次 pipeline 測試，發現 `strip_html()` 這個函式定義在 commit 108ab15 之後、9300ac6 之前的某次手動上傳（`Add files via upload`／`Delete...directory` 那種 commit）裡被誤刪了，但呼叫的地方還在，導致 `fetch_rss_news()` 每次都靜默丟 `NameError`、新聞永遠抓不到（有 try/except 包住不會讓整個 pipeline 掛掉，但長期都在用空清單）。已經照 108ab15 原始版本一字不改地補回來
 - `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
-- **Gemini API 404，還沒修（2026-09-20 發現）**：Actions 日誌顯示 `Gemini API call failed (HTTP Error 404: Not Found)`，代表 `GEMINI_API_KEY` 這個 secret 可能也沒設定成功（目前所有星座/建議內容都在用離線 fallback，不是真的 Gemini 生成）。還沒動 `synthesize_with_gemini()` 裡的 `gemini-2.5-flash-lite` 這個 model 名稱去猜測修正，因為沒有使用者的真實 key 沒辦法驗證改了對不對——不要瞎猜 model 名稱，先請使用者確認 secret 是否存在，或願意的話給一組 key 讓我直接測
+- **Gemini API 404 已修（2026-09-20）**：查證後（不是用 GitHub Actions 日誌猜，是直接查 Google 官方文件）確認 `gemini-2.5-flash-lite` 這個 model 在 Gemini Developer API 已經公告 2026-10-16 停用，官方文件範例改用 `gemini-2.5-flash`（無 -lite），`synthesize_with_gemini()` 已經改用新的 model 名稱。**但還沒有真實 key 驗證過這個修正實際有沒有解決 404**，`GEMINI_API_KEY` 這個 secret 本身存在與否也還沒確認——下次看到 Actions 日誌記得確認這次改動是否真的解決問題，不是憑空假設修好了
+- **QWeather 還是卡住，兩晚了同樣的症狀（2026-09-20 二度確認）**：使用者兩次貼的 Actions 日誌都一樣：完全沒有出現 `QWeather API fetch failed` 這行，代表程式根本沒進到呼叫 API 那步（`if qweather_api_key and qweather_api_host:` 判斷為 False），純粹是 secret 沒讀到值，不是 API 本身出錯。單看日誌沒辦法再進一步，下次要請使用者直接去 Settings → Secrets and variables → Actions **那個列表頁**（不是日誌），確認清單裡實際有哪些 secret 名稱，最好用截圖，光講「有加」不夠
 - **每日語錄功能，還沒開始（2026-09-20 提出）**：使用者想加一個「每天一句語錄」的東西，但語錄類型還沒想好（勵志/名人名言/自己寫的/哪個領域都不確定）。下次接觸這塊時先問清楚語錄類型，不要自己決定
 - **App 改名，還沒決定（2026-09-20 提出）**："Morning Brief" 這個名字使用者想換掉，或至少要更像在跟他打招呼，還沒給具體名字，下次要問
 - **追劇/讀書進度自動分配，完全還沒開始**：對應 roadmap 第 6 步（OpenRouter），使用者在 2026-09-20 提醒過「還有遺漏很多東西」，這塊是目前最大的一塊完全空白，企劃書（個人排程AI助理_企劃書.md）裡有完整的 daily_quota/carry_over 演算法設計，之後要做這塊時先去讀那份文件
