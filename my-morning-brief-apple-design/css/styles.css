@@ -476,6 +476,23 @@ body {
   letter-spacing: 0.01em;
 }
 
+.transit-alert-box {
+  background: rgba(255, 149, 0, 0.08);
+  border: 1px solid rgba(255, 149, 0, 0.2);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  color: #9a4d00;
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+}
+
+.transit-alert-title {
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  color: #d97706;
+}
+
 .horoscope-summary {
   font-size: 0.875rem;
   letter-spacing: 0.003em;
@@ -536,6 +553,16 @@ body {
   background: var(--bg-subtle);
   border-radius: var(--radius-md);
   padding: 0.85rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.sparkline-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .sparkline-title {
@@ -544,7 +571,39 @@ body {
   color: var(--text-muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
+}
+
+.sparkline-toggle-hint {
+  font-size: 0.7rem;
+  color: var(--apple-blue);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rate-history-list {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rate-history-list[hidden] {
+  display: none;
+}
+
+.rate-history-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  padding: 0.25rem 0;
+}
+
+.rate-history-row.is-today {
+  font-weight: 700;
+  color: var(--apple-blue);
 }
 
 .sparkline-bars {
@@ -1375,6 +1434,124 @@ body {
 .fixed-schedule-value {
   color: var(--text-main);
   text-align: right;
+}
+
+/* MEDIA TRACKER（追劇／讀書進度） */
+
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.media-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.media-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.media-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.media-type-badge {
+  flex-shrink: 0;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+}
+
+.media-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-progress-track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.media-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--apple-blue);
+  transition: width 0.3s ease;
+}
+
+.media-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.media-quota {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.media-quota.is-behind {
+  color: var(--apple-orange);
+}
+
+.media-quota.is-done {
+  color: var(--apple-green);
+}
+
+.media-warning {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--apple-orange);
+  background: var(--apple-orange-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem;
+}
+
+.media-log-form,
+.media-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.media-log-input {
+  flex: 1 1 140px;
+}
+
+.media-add-form .countdown-input {
+  flex: 1 1 140px;
+}
+
+.media-add-form .btn-action,
+.media-log-form .btn-action {
+  flex-shrink: 0;
 }
 
 .prime-goal-box::before {

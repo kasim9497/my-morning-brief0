@@ -6,7 +6,7 @@
 
 - `my-morning-brief-apple-design/` 是前端主目錄，純 ES module（`index.html` 用 `<script type="module">`），**開發時必須用本機伺服器（VS Code Live Server 或 `python -m http.server`）打開，不能直接雙擊 index.html**
 - 已經加了底部 4 個 tab（今日／週曆／倒數／設定），邏輯在 `js/tabs.js`，今日以外的三個目前是空的 placeholder
-- `scripts/generate_brief.py`：GitHub Actions 每天定時執行，抓天氣／匯率／新聞／機車筆試題庫，經 Gemini 合成後輸出 `data/today.json`，前端讀這個檔案渲染
+- `scripts/generate_brief.py`：GitHub Actions 每天定時執行，抓天氣／匯率／新聞／機車筆試題庫，經 OpenRouter（`deepseek/deepseek-chat-v3.1`）合成後輸出 `data/today.json`，前端讀這個檔案渲染
 - 天氣資料來源已從台灣 CWA 換成南京的和風天氣（QWeather），`fetch_weather()` 用 `QWEATHER_API_KEY` + `QWEATHER_API_HOST`（本機驗證通過，2026-09-18；GitHub Secrets 已設定，見下方「已解決」）
 - `strip_html()` 之前有雙重 HTML 編碼漏字的 bug（Blogger 類 RSS 來源），已修正，改動時不要移除或簡化這個函式
 - `.github/workflows/morning_brief.yml`：Deploy to GitHub Pages 要在 Send Telegram Notification 之前執行，通知要用部署後的真實網址（`steps.deployment.outputs.page_url`），不要走舊的寫死網址
@@ -27,7 +27,11 @@
 - **「今日」頁再排一次（2026-09-20）**：任務清單移到最上面（原本 AI 建議 hero 卡才是第一個），接著新增一張「倒數」摘要卡（唯讀，只顯示，新增/刪除還是要去「倒數」頁），然後才是 AI 建議、天氣/星座、匯率/題庫
 - **拿掉「今日最重要的一件事」（2026-09-20）**：這個黑色 banner 的內容其實從沒變過（Gemini prompt 裡有沒有正確生成都一樣），使用者判斷沒意義直接要求刪除。前端 `renderDailyAdvice()` 跟後端 `dailyAdvice.primeGoal`（prompt schema + offline fallback + main()）都拿掉了，`dailyAdvice` 現在只剩 `top3`
 - **匯率歷史走勢改成真的資料（2026-09-20）**：ExchangeRate-API 免費版沒有歷史資料，`generate_brief.py` 現在自己維護 `data/exchange_rate_history.json`，每次執行存一筆當天匯率，滾動保留最近 7 筆，`yesterday`/`change`/`changePercent`/`last7Days` 全部從這份自己存的歷史算出來（不是編的假資料，前幾天資料不夠時會比較短，累積滿 7 天才有完整一週）。**這是目前唯一需要 workflow 寫回 repo 的資料**：permissions 加了 `contents: write`，多一個 commit 步驟，訊息帶 `[skip ci]` 避免跟新加的 push 觸發器form 成無限迴圈
-- **星座 prompt 加了一條「可以提但不能編」的規則（2026-09-20）**：如果 Gemini 確定知道當下有廣為人知的天象事件（例如水星逆行），可以順帶提一句，但不確定日期就不要提，避免編造聽起來合理但其實是幻覺的天象資訊
+- **星座 prompt 加了一條「可以提但不能編」的規則（2026-09-20）**：如果 AI 確定知道當下有廣為人知的天象事件（例如水星逆行），可以順帶提一句，但不確定日期就不要提，避免編造聽起來合理但其實是幻覺的天象資訊
+- **天象提醒獨立成一個欄位（2026-09-22）**：使用者要求運勢要「有根據」、如果有土星逆行或其他重大天象要主動提醒，不要只是埋在長文字裡。新增 `horoscopeTransitAlert` 欄位（prompt schema／offline fallback／`main()` 都有處理，對應到 `horoscope.transitAlert`），規則比照水星逆行那條擴大到「水星逆行、土星逆行、其他行星逆行、日食／月食等」，一樣是「確定知道才填，不確定就填 null」。前端 `app.js` 的 `renderHoroscope()` 只有 `transitAlert` 有值時才畫一個獨立的橘色提醒區塊（`.transit-alert-box`），沒有事件就完全不顯示，不會跟平常的運勢摘要混在一起
+- **匯率卡片加上「點開看每日明細」（2026-09-22）**：使用者要求人民幣匯率可以點下去看歷史每一天的數字（原本近 7 日走勢只有 bar 的 hover title，手機沒有 hover 等於看不到）。後端 `fetch_exchange_rate()` 新增 `last7DaysDetailed`（`[{date, rate}]`，帶真實日期，跟原本純數字的 `last7Days` 並存不衝突），前端 `app.js` 的 `renderExchangeRate()` 把整個 `.sparkline-container` 變成可點擊區塊，點一下展開/收合 `.rate-history-list`（今天／昨天／其餘日期顯示 M/D，都是真實日期不是假資料）。**踩過一個 CSS 陷阱**：`.rate-history-list` 預設有 `display: flex`，跟瀏覽器內建的 `[hidden] { display: none }` 規則同優先度打平手，author stylesheet 後載入蓋掉瀏覽器預設，導致 `hidden` 屬性完全沒用、清單永遠顯示。修法是額外補一條 `.rate-history-list[hidden] { display: none; }`。**以後任何元素要用 `hidden` 屬性做顯示切換，如果那個 class 本身有設 `display: flex/grid/block` 等非 none 值，一定要額外補 `[hidden]` 覆寫規則，不能只靠瀏覽器預設**
+- **新增「追劇／讀書進度」功能，塞進「設定」頁（2026-09-22）**：對應 roadmap 第 6 步的自動分配部分，使用者要求可以填劇名/書名、填總集數/頁數，系統算出每日建議份量，還要做成 list。已用 AskUserQuestion 確認放置位置——**不開新的第 5 個 tab，塞進「設定」頁最下面**，維持 4 個 tab。新增 `js/mediaTracker.js`（純 localStorage，key: `morningBrief.mediaTracker.v1`，架構照抄 `countdown.js` 的模式，不需要後端——`個人排程AI助理_企劃書.md`原本以為「延後」按鈕需要後端寫入，但其實跟 taskEngine/countdown 一樣純前端 localStorage 就能做，不用額外後端）。核心演算法照企劃書 5.1/5.2 節：`todayQuota = ceil(剩餘量 ÷ 剩餘天數)`，落後的量會自動併入「剩餘量」不用另外存 carry_over 欄位；如果目前需要的份量超過最初平均值的 1.5 倍，顯示橘色「進度有點落後，要不要延後目標日？」提示 + 「延後 3 天」按鈕，不會默默要求使用者硬看更多（使用者自己決定要不要延）。`SettingsView.js` 加了新增表單（劇名/書名、類型：劇/書/電影、總集數/頁數、目標日）跟每筆項目的進度條、記錄今天進度輸入框、刪除鈕。已在瀏覽器實測過新增/記錄進度/落後警示/延後/刪除，行為都正確
+- **OpenRouter 呼叫偶爾會吐出格式壞掉的 JSON（2026-09-22 發現）**：實測時遇過一次 `json.loads()` 對 `content` 解析失敗（`Expecting ',' delimiter`），重跑同樣的 prompt 又正常了——研判是 OpenRouter 把請求路由到不同底層 provider（例如 SambaNova vs 其他）時，就算開了 `response_format: json_object`，穩定度還是不是 100%。已經在 `synthesize_with_openrouter()` 加上重試一次的邏輯（`for attempt in range(2)`），兩次都失敗才真的 fall back 到離線樣板，不要看到有重試邏輯就以為是多餘的，這是實測踩過雷才加的
 
 ## 待辦／已知問題
 
@@ -41,7 +45,7 @@
 - **每日語錄功能，還沒開始（2026-09-20 提出）**：使用者想加一個「每天一句語錄」的東西，但語錄類型還沒想好（勵志/名人名言/自己寫的/哪個領域都不確定）。下次接觸這塊時先問清楚語錄類型，不要自己決定
 - **App 改名，還沒決定（2026-09-20 提出）**："Morning Brief" 這個名字使用者想換掉，或至少要更像在跟他打招呼，還沒給具體名字，下次要問
 - **AI 聊天框，還沒開始（2026-09-21 提出）**：使用者想在 App 裡加一個 AI 聊天框，已用 AskUserQuestion 確認範圍——**使用者要的是能實際操作的聊天框**（例如叫它延後某個任務、改作息設定），不是只能問答的客服機器人。實作上要能呼叫 `taskEngine.js`／`SettingsView.js` 現有的操作函式（`postponeTask` 之類、`setTaskWeekdaySchedule`/`setTaskIntervalSchedule`），等於要做成 function-calling 或至少是把使用者意圖解析成對應函式呼叫，還沒設計、還沒動工。依賴 AI 後端已經解決（見上方 OpenRouter），可以開始設計
-- **追劇/讀書進度自動分配，完全還沒開始**：對應 roadmap 第 6 步，使用者在 2026-09-20 提醒過「還有遺漏很多東西」，這塊是目前最大的一塊完全空白，企劃書（個人排程AI助理_企劃書.md）裡有完整的 daily_quota/carry_over 演算法設計，之後要做這塊時先去讀那份文件。**AI 後端（OpenRouter）已經接好可以用了**，這塊不再被 AI 串接卡住，純粹是還沒排到
+- ~~追劇/讀書進度自動分配，完全還沒開始~~ 已完成（2026-09-22，見上方「新增『追劇／讀書進度』功能」）
 
 ## 接下來要做的（照這個順序）
 
@@ -51,7 +55,7 @@
 4. ~~`SettingsView.js`~~ 已完成：可調整「運動、蔬果日、PO文、洗衣採買」這幾項出現在星期幾（`taskEngine.js` 新增 `getRoutineConfig()`/`setTaskWeekdays()`/`getConfigurableTaskIds()`，設定存在跟任務資料同一個 localStorage key 底下的 `routineConfig` 欄位）。保健食品/追劇是每天固定不開放關閉；居家用品檢查/旅遊規劃/睡眠時間/手機宵禁目前只做成唯讀參考，還沒有實際的提醒/通知機制（那是第 7 步的事）
    - **每 N 天排程模式已加上（2026-09-21）**：原本每個任務只能設「星期幾」，現在每個任務可以自己獨立選「星期幾」或「每 N 天一次」（使用者確認的設計）。`taskEngine.js` 的 `DEFAULT_ROUTINE_CONFIG` 改成結構化物件 `{mode: 'weekday', days: [...]}` 或 `{mode: 'interval', everyNDays: N, anchorDate: 'YYYY-MM-DD'}`，`normalizeRoutineConfig()` 會把舊格式（純陣列）自動遷移成新格式，`isTaskActiveOnDate()` 依 mode 分流判斷（interval 模式算 `(今天 - anchorDate 天數) % everyNDays === 0`）。`setTaskWeekdays` 改名成 `setTaskWeekdaySchedule`，新增 `setTaskIntervalSchedule`。`SettingsView.js` 每個任務列多了「星期幾／每 N 天」的模式切換鈕。已用瀏覽器直接測過 interval 模式算出來的啟用日期是對的
 5. Capacitor 包裝 + Codemagic 雲端構建（下一步）（沒有 Mac，走免費 Apple ID + AltStore，或視情況付費 $99/年，這個之後再決定）
-6. ~~OpenRouter 接進日報~~ 已完成（2026-09-21，見上方「Gemini 已徹底放棄，改用 OpenRouter」）；追劇/讀書進度自動分配還沒做（輸入總集數/頁數 + 目標完成日，自動算每日份量，落後太多要提示而不是默默加量）
+6. ~~OpenRouter 接進日報~~ 已完成（2026-09-21，見上方「Gemini 已徹底放棄，改用 OpenRouter」）；~~追劇/讀書進度自動分配~~ 已完成（2026-09-22，見上方「新增『追劇／讀書進度』功能」，`js/mediaTracker.js` + `SettingsView.js`）
 
 ## 使用者的確定排程（跟任務清單/提醒功能設計有關）
 

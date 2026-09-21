@@ -188,6 +188,8 @@ def fetch_exchange_rate():
 
             sorted_dates = sorted(trimmed.keys())
             last7_days = [trimmed[d] for d in sorted_dates] if len(sorted_dates) > 1 else None
+            # 帶日期的版本，給前端「點開看每天匯率」用（純 last7Days 只有數字沒有日期）
+            last7_days_detailed = [{"date": d, "rate": trimmed[d]} for d in sorted_dates] if len(sorted_dates) > 1 else None
 
             yesterday_rate, change, change_percent = None, None, None
             if len(sorted_dates) >= 2:
@@ -203,6 +205,7 @@ def fetch_exchange_rate():
                 "changePercent": change_percent,
                 "isUp": change is None or change >= 0,
                 "last7Days": last7_days,
+                "last7DaysDetailed": last7_days_detailed,
                 "updateTime": update_time_str,
                 "isFallback": False
             }
@@ -216,6 +219,7 @@ def fetch_exchange_rate():
             "changePercent": None,
             "isUp": True,
             "last7Days": None,
+            "last7DaysDetailed": None,
             "updateTime": update_time_str,
             "isFallback": True
         }
@@ -291,7 +295,7 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
 1. 嚴格基於提供之【候選新聞項目】做摘要，絕對不得自行編造未在 RSS 中出現的虛構事件或假新聞！
 2. 輸出之 aiNews List 數量必須與傳入之候選新聞數量相對應。
 3. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
-4. 如果你確實知道今天日期附近有正在發生、廣為人知的天象事件（例如水星逆行區間），可以順帶提一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，就不要提，不要編造一個聽起來合理但其實不確定的天象事件。
+4. 如果你確實知道今天日期附近有正在發生、廣為人知的重大天象事件（例如水星逆行、土星逆行、其他行星逆行區間、日食／月食等），要在 horoscopeTransitAlert 欄位提醒一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，horoscopeTransitAlert 就填 null，絕對不要編造一個聽起來合理但其實不確定的天象事件。這個欄位是獨立的提醒區塊，不要跟 horoscopeSummary 的內容重複。
 
 【真實命盤重點】:
 {BIRTH_CHART_SUMMARY}
@@ -315,6 +319,7 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
   "horoscopeLuckyColor": "一個顏色 + 一個表情符號，例如 寶藍色 🟦",
   "horoscopeLuckyNumber": "一個 1-99 的數字字串",
   "horoscopeRating": "今天的整體運勢評分，1.0-5.0 之間可以有小數的數字",
+  "horoscopeTransitAlert": "只有在確定知道今天附近有廣為人知的重大天象事件時才填字串提醒；不確定或沒有就填 null",
   "aiNews": [
     {{
       "id": "n1",
@@ -339,26 +344,36 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
         "response_format": {"type": "json_object"}
     }
 
-    try:
-        # 2026-09-21：Gemini 免費層在這個 IP／帳號上被 FAILED_PRECONDITION 擋掉
-        # （Google 自己的地區白名單限制，跟帳號付款地無關），改用 OpenRouter。
-        # deepseek/deepseek-chat-v3.1 是付費模型但單次呼叫成本 < $0.0001，
-        # 已用真實 key 測試過中文 JSON 輸出正常，不要換回免費模型
-        # （:free 後綴那些常常被共用池 429 擋掉，穩定性不夠）
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        data_bytes = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data_bytes, headers={
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {openrouter_api_key}'
-        })
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode('utf-8'))
-            content_text = result['choices'][0]['message']['content']
-            parsed_json = json.loads(content_text)
-            return process_ai_news_output(parsed_json, rss_items)
-    except Exception as e:
-        print(f"OpenRouter API call failed ({e}). Falling back to smart template synthesis.")
-        return generate_offline_synthesis(weather, exchange_rate, rss_items)
+    # 2026-09-21：Gemini 免費層在這個 IP／帳號上被 FAILED_PRECONDITION 擋掉
+    # （Google 自己的地區白名單限制，跟帳號付款地無關），改用 OpenRouter。
+    # deepseek/deepseek-chat-v3.1 是付費模型但單次呼叫成本 < $0.0001，
+    # 已用真實 key 測試過中文 JSON 輸出正常，不要換回免費模型
+    # （:free 後綴那些常常被共用池 429 擋掉，穩定性不夠）
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    data_bytes = json.dumps(payload).encode('utf-8')
+
+    last_error = None
+    # 2026-09-22：實測發現 deepseek 偶爾（不是每次）就算開了 response_format
+    # json_object 還是會吐出格式壞掉的 JSON（不同次呼叫會被 OpenRouter 路由到
+    # 不同的底層 provider，穩定度不一）。重試一次再放棄，不要一次失敗就整天
+    # 都是離線 fallback 文字
+    for attempt in range(2):
+        try:
+            req = urllib.request.Request(url, data=data_bytes, headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {openrouter_api_key}'
+            })
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode('utf-8'))
+                content_text = result['choices'][0]['message']['content']
+                parsed_json = json.loads(content_text)
+                return process_ai_news_output(parsed_json, rss_items)
+        except Exception as e:
+            last_error = e
+            print(f"OpenRouter API call failed on attempt {attempt + 1} ({e}).")
+
+    print(f"OpenRouter API call failed after retry ({last_error}). Falling back to smart template synthesis.")
+    return generate_offline_synthesis(weather, exchange_rate, rss_items)
 
 def process_ai_news_output(parsed_json, rss_items):
     """Enforce strict preservation of original RSS title, source, and link."""
@@ -424,6 +439,8 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
         "horoscopeLuckyColor": "寶藍色 🟦",
         "horoscopeLuckyNumber": "7",
         "horoscopeRating": 4.0,
+        # 離線 fallback 不確定當下真的有沒有天象事件，寧可不提也不要編
+        "horoscopeTransitAlert": None,
         "aiNews": news_list,
         "dailyAdvice": {
             "top3": [
@@ -484,7 +501,8 @@ def main():
             }),
             "luckyColor": ai_synthesis.get("horoscopeLuckyColor", "寶藍色 🟦"),
             "luckyNumber": ai_synthesis.get("horoscopeLuckyNumber", "7"),
-            "aiSummary": ai_synthesis.get("horoscopeSummary", "")
+            "aiSummary": ai_synthesis.get("horoscopeSummary", ""),
+            "transitAlert": ai_synthesis.get("horoscopeTransitAlert") or None
         },
         "exchangeRate": exchange_rate,
         "drivingQuiz": driving_quiz,

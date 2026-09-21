@@ -45,7 +45,8 @@ export const mockData = {
     },
     luckyColor: "寶藍色 🟦",
     luckyNumber: "7",
-    aiSummary: "今天適合整理混亂已久的事務。工作上建議先專注完成最重要的一件事，不需要試圖一次處理所有細節，穩紮穩打效果最好。"
+    aiSummary: "今天適合整理混亂已久的事務。工作上建議先專注完成最重要的一件事，不需要試圖一次處理所有細節，穩紮穩打效果最好。",
+    transitAlert: null
   },
 
   exchangeRate: {
@@ -56,6 +57,15 @@ export const mockData = {
     changePercent: "+0.49%",
     isUp: true,
     last7Days: [4.08, 4.09, 4.07, 4.10, 4.09, 4.10, 4.12],
+    last7DaysDetailed: [
+      { date: "2026-09-15", rate: 4.08 },
+      { date: "2026-09-16", rate: 4.09 },
+      { date: "2026-09-17", rate: 4.07 },
+      { date: "2026-09-18", rate: 4.10 },
+      { date: "2026-09-19", rate: 4.09 },
+      { date: "2026-09-20", rate: 4.10 },
+      { date: "2026-09-21", rate: 4.12 }
+    ],
     updateTime: "今天 07:50 AM"
   },
 

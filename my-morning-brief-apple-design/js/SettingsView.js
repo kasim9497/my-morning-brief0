@@ -12,6 +12,18 @@ import {
   getTodayStr,
 } from './taskEngine.js';
 
+import {
+  getTypeInfo,
+  getMediaItems,
+  addMediaItem,
+  removeMediaItem,
+  logProgress,
+  postponeTarget,
+} from './mediaTracker.js';
+
+const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
+const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const FIXED_SCHEDULE = [
@@ -55,6 +67,51 @@ function renderIntervalMode(defId, config) {
   `;
 }
 
+function renderMediaItem(item) {
+  const { label, unit } = getTypeInfo(item.type);
+  const p = item.progress;
+  const pct = item.totalUnits > 0 ? Math.min(100, Math.round((item.completedUnits / item.totalUnits) * 100)) : 0;
+
+  let actionHtml = '';
+  if (p.isDone) {
+    actionHtml = `<div class="media-quota is-done">已完成，恭喜！</div>`;
+  } else {
+    actionHtml = `
+      <div class="media-quota ${p.isFallingBehind ? 'is-behind' : ''}">
+        今天建議${label === '書' ? '讀' : '看'} ${p.todayQuota} ${unit}${p.isOverdue ? '（已逾期）' : ''}
+      </div>
+      ${p.isFallingBehind ? `
+        <div class="media-warning">
+          進度有點落後，要不要延後目標日？
+          <button type="button" class="btn-action" data-action="postpone-media" data-id="${item.id}">延後 3 天</button>
+        </div>
+      ` : ''}
+      <form class="media-log-form" data-action="log-media" data-id="${item.id}">
+        <input type="number" class="countdown-input media-log-input" min="1" max="${p.remainingUnits}" placeholder="今天${label === '書' ? '讀' : '看'}了幾${unit}">
+        <button type="submit" class="btn-action btn-primary">記錄</button>
+      </form>
+    `;
+  }
+
+  return `
+    <div class="media-item">
+      <div class="media-item-top">
+        <div class="media-item-title-row">
+          <span class="media-type-badge">${label}</span>
+          <span class="media-title">${escapeHtml(item.title)}</span>
+        </div>
+        <button type="button" class="countdown-delete" data-action="delete-media" data-id="${item.id}" aria-label="刪除這筆追蹤">${ICON_TRASH}</button>
+      </div>
+      <div class="media-progress-track"><div class="media-progress-fill" style="width:${pct}%;"></div></div>
+      <div class="media-meta">
+        <span>${item.completedUnits} / ${item.totalUnits} ${unit}</span>
+        <span>目標 ${escapeHtml(item.targetDate)}</span>
+      </div>
+      ${actionHtml}
+    </div>
+  `;
+}
+
 export function renderSettingsView() {
   const container = document.getElementById('view-settings');
   if (!container) return;
@@ -93,6 +150,9 @@ export function renderSettingsView() {
     `
   ).join('');
 
+  const mediaItems = getMediaItems();
+  const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書，在下面新增一個吧</div>';
+
   container.innerHTML = `
     <main class="container">
       <div class="card">
@@ -109,6 +169,31 @@ export function renderSettingsView() {
           <span class="card-badge">目前不開放調整</span>
         </div>
         <div class="fixed-schedule-list">${fixedHtml}</div>
+      </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
+        <div class="card-header">
+          <h3 class="card-title">追劇／讀書進度</h3>
+          <span class="card-badge">${mediaItems.length} 項</span>
+        </div>
+        <div class="media-list">${mediaListHtml}</div>
+      </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
+        <div class="card-header">
+          <h3 class="card-title">新增追劇／讀書</h3>
+        </div>
+        <form class="media-add-form" id="media-add-form">
+          <input type="text" class="countdown-input" id="media-title-input" placeholder="劇名／書名" maxlength="40" required>
+          <select class="countdown-input media-type-select" id="media-type-input">
+            <option value="drama">劇</option>
+            <option value="book">書</option>
+            <option value="movie">電影</option>
+          </select>
+          <input type="number" class="countdown-input" id="media-units-input" placeholder="總集數／頁數" min="1" required>
+          <input type="date" class="countdown-input" id="media-target-input" required>
+          <button type="submit" class="btn-action btn-primary">${ICON_PLUS}新增</button>
+        </form>
       </div>
     </main>
   `;
@@ -145,4 +230,40 @@ export function renderSettingsView() {
       renderSettingsView();
     });
   });
+
+  container.querySelectorAll('[data-action="delete-media"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      removeMediaItem(btn.dataset.id);
+      renderSettingsView();
+    });
+  });
+
+  container.querySelectorAll('[data-action="postpone-media"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      postponeTarget(btn.dataset.id, 3);
+      renderSettingsView();
+    });
+  });
+
+  container.querySelectorAll('[data-action="log-media"]').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = form.querySelector('.media-log-input');
+      logProgress(form.dataset.id, input.value);
+      renderSettingsView();
+    });
+  });
+
+  const mediaAddForm = document.getElementById('media-add-form');
+  if (mediaAddForm) {
+    mediaAddForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('media-title-input');
+      const typeInput = document.getElementById('media-type-input');
+      const unitsInput = document.getElementById('media-units-input');
+      const targetInput = document.getElementById('media-target-input');
+      addMediaItem(titleInput.value, typeInput.value, unitsInput.value, targetInput.value);
+      renderSettingsView();
+    });
+  }
 }

@@ -240,6 +240,15 @@ function renderWeather(w) {
  */
 function renderHoroscope(h) {
   const container = document.getElementById('horoscope-widget-content');
+  const transitAlertHtml = h.transitAlert
+    ? `
+      <div class="transit-alert-box">
+        <div class="transit-alert-title">天象提醒</div>
+        <div>${escapeHtml(h.transitAlert)}</div>
+      </div>
+    `
+    : '';
+
   container.innerHTML = `
     <div class="horoscope-header">
       <div style="font-size: 1.1rem; font-weight: 700;">${escapeHtml(h.sign)}</div>
@@ -250,6 +259,8 @@ function renderHoroscope(h) {
       <span class="tag-lucky">幸運色：${escapeHtml(h.luckyColor)}</span>
       <span class="tag-lucky">幸運數字：${escapeHtml(h.luckyNumber)}</span>
     </div>
+
+    ${transitAlertHtml}
 
     <div class="horoscope-summary">
       <strong>AI 今日運勢摘要：</strong><br/>
@@ -286,6 +297,8 @@ function renderExchangeRate(r) {
     : '即時異動：暫無歷史對照';
 
   let sparklineHtml = '';
+  const detailed = Array.isArray(r.last7DaysDetailed) ? r.last7DaysDetailed : null;
+
   if (Array.isArray(r.last7Days) && r.last7Days.length > 0) {
     const maxVal = Math.max(...r.last7Days);
     const minVal = Math.min(...r.last7Days);
@@ -293,13 +306,34 @@ function renderExchangeRate(r) {
     const barsHtml = r.last7Days.map((val, idx) => {
       const heightPercent = Math.max(20, Math.round(((val - minVal) / range) * 80 + 20));
       const isActive = idx === r.last7Days.length - 1 ? 'active' : '';
-      return `<div class="bar ${isActive}" style="height: ${heightPercent}%;" title="Day ${idx+1}: ${val}"></div>`;
+      const dateLabel = detailed && detailed[idx] ? formatShortDate(detailed[idx].date) : `Day ${idx + 1}`;
+      return `<div class="bar ${isActive}" style="height: ${heightPercent}%;" title="${dateLabel}: ${val}"></div>`;
     }).join('');
 
+    const historyListHtml = detailed
+      ? detailed
+          .slice()
+          .reverse()
+          .map((entry, idxFromEnd) => {
+            const tag = idxFromEnd === 0 ? '今天' : idxFromEnd === 1 ? '昨天' : formatShortDate(entry.date);
+            return `
+              <div class="rate-history-row ${idxFromEnd === 0 ? 'is-today' : ''}">
+                <span>${tag}</span>
+                <span>${Number(entry.rate).toFixed(2)}</span>
+              </div>
+            `;
+          })
+          .join('')
+      : '';
+
     sparklineHtml = `
-      <div class="sparkline-container">
-        <div class="sparkline-title">近 7 日匯率走勢 (CNY / TWD)</div>
+      <div class="sparkline-container" data-action="toggle-rate-history" role="button" tabindex="0" aria-expanded="false">
+        <div class="sparkline-title-row">
+          <span class="sparkline-title">近 7 日匯率走勢 (CNY / TWD)</span>
+          <span class="sparkline-toggle-hint">點一下看每日明細</span>
+        </div>
         <div class="sparkline-bars">${barsHtml}</div>
+        ${historyListHtml ? `<div class="rate-history-list" hidden>${historyListHtml}</div>` : ''}
       </div>
     `;
   } else {
@@ -335,6 +369,32 @@ function renderExchangeRate(r) {
     bar.addEventListener('pointerenter', () => bar.classList.add('bar-hover'));
     bar.addEventListener('pointerleave', () => bar.classList.remove('bar-hover'));
   });
+
+  const historyToggle = container.querySelector('[data-action="toggle-rate-history"]');
+  const historyList = container.querySelector('.rate-history-list');
+  if (historyToggle && historyList) {
+    const toggle = () => {
+      const isHidden = historyList.hasAttribute('hidden');
+      if (isHidden) {
+        historyList.removeAttribute('hidden');
+      } else {
+        historyList.setAttribute('hidden', '');
+      }
+      historyToggle.setAttribute('aria-expanded', String(isHidden));
+    };
+    historyToggle.addEventListener('click', toggle);
+    historyToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  }
+}
+
+function formatShortDate(dateStr) {
+  const [, m, d] = dateStr.split('-');
+  return `${Number(m)}/${Number(d)}`;
 }
 
 /**
