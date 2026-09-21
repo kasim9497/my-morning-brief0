@@ -344,11 +344,16 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
     }
 
     try:
-        # gemini-2.5-flash-lite (原本用的) 官方公告 2026-10-16 起在 Gemini Developer API 停用，
-        # 而且 2026-09 就已經開始回傳 404，改用官方文件範例用的 gemini-2.5-flash
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
+        # 2026-09-21 直接拿真實 key 測試確認：gemini-2.5-flash-lite／gemini-2.5-flash
+        # 都已經對新用戶的 key 回 404「no longer available」，Google 自己的錯誤訊息
+        # 指定改用 gemini-3.6-flash。認證方式也改成官方目前建議的 X-goog-api-key
+        # header（新格式 key 用 ?key= 網址參數偶爾會出問題），不要再改回 ?key=
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
         data_bytes = json.dumps(prompt_payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+        req = urllib.request.Request(url, data=data_bytes, headers={
+            'Content-Type': 'application/json',
+            'X-goog-api-key': gemini_api_key
+        })
         with urllib.request.urlopen(req, timeout=15) as resp:
             result = json.loads(resp.read().decode('utf-8'))
             candidate_text = result['candidates'][0]['content']['parts'][0]['text']
