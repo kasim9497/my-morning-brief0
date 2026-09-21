@@ -5,7 +5,7 @@
 ## 現況（已經做完的部分）
 
 - `my-morning-brief-apple-design/` 是前端主目錄，純 ES module（`index.html` 用 `<script type="module">`），**開發時必須用本機伺服器（VS Code Live Server 或 `python -m http.server`）打開，不能直接雙擊 index.html**
-- 已經加了底部 4 個 tab（今日／週曆／倒數／設定），邏輯在 `js/tabs.js`，今日以外的三個目前是空的 placeholder
+- 底部有 5 個 tab（今日／週曆／倒數／睡眠／設定），邏輯在 `js/tabs.js`
 - `scripts/generate_brief.py`：GitHub Actions 每天定時執行，抓天氣／匯率／新聞／機車筆試題庫，經 OpenRouter（`deepseek/deepseek-chat-v3.1`）合成後輸出 `data/today.json`，前端讀這個檔案渲染
 - 天氣資料來源已從台灣 CWA 換成南京的和風天氣（QWeather），`fetch_weather()` 用 `QWEATHER_API_KEY` + `QWEATHER_API_HOST`（本機驗證通過，2026-09-18；GitHub Secrets 已設定，見下方「已解決」）
 - `strip_html()` 之前有雙重 HTML 編碼漏字的 bug（Blogger 類 RSS 來源），已修正，改動時不要移除或簡化這個函式
@@ -26,6 +26,7 @@
 - **卡片標題不再有 icon（2026-09-20）**：使用者覺得每個標題前面的符號多餘，`index.html`／`CalendarView.js`／`CountdownView.js`／`SettingsView.js` 的 `<h3 class="card-title">` 全部改回純文字，不要再加 icon。masthead 的太陽 icon 跟 tab bar 的 icon 沒有動（那些算導覽/品牌，不算「標題」）
 - **「今日」頁再排一次（2026-09-20）**：任務清單移到最上面（原本 AI 建議 hero 卡才是第一個），接著新增一張「倒數」摘要卡（唯讀，只顯示，新增/刪除還是要去「倒數」頁），然後才是 AI 建議、天氣/星座、匯率/題庫
 - **拿掉「今日最重要的一件事」（2026-09-20）**：這個黑色 banner 的內容其實從沒變過（Gemini prompt 裡有沒有正確生成都一樣），使用者判斷沒意義直接要求刪除。前端 `renderDailyAdvice()` 跟後端 `dailyAdvice.primeGoal`（prompt schema + offline fallback + main()）都拿掉了，`dailyAdvice` 現在只剩 `top3`
+- **「今日 AI 個人建議」整張卡片也拿掉了（2026-09-22）**：使用者直接要求刪除，跟上面 primeGoal 是不同的卡片（這張顯示的是 `dailyAdvice.top3`）。`index.html` 的 `advice-card`／`#advice-widget-content` 區塊、`app.js` 的 `renderDailyAdvice()` 函式與呼叫都刪了，CSS 的 `.advice-card`／`.top3-list`／`.top3-item` 也一併清掉。**後端 `generate_brief.py` 的 `dailyAdvice.top3` 沒有拿掉**（`dataService.getDailyAdvice()` 也還在），只是前端不再渲染，純粹是死資料不影響功能，之後如果要徹底斷開再一起處理
 - **匯率歷史走勢改成真的資料（2026-09-20）**：ExchangeRate-API 免費版沒有歷史資料，`generate_brief.py` 現在自己維護 `data/exchange_rate_history.json`，每次執行存一筆當天匯率，滾動保留最近 7 筆，`yesterday`/`change`/`changePercent`/`last7Days` 全部從這份自己存的歷史算出來（不是編的假資料，前幾天資料不夠時會比較短，累積滿 7 天才有完整一週）。**這是目前唯一需要 workflow 寫回 repo 的資料**：permissions 加了 `contents: write`，多一個 commit 步驟，訊息帶 `[skip ci]` 避免跟新加的 push 觸發器form 成無限迴圈
 - **星座 prompt 加了一條「可以提但不能編」的規則（2026-09-20）**：如果 AI 確定知道當下有廣為人知的天象事件（例如水星逆行），可以順帶提一句，但不確定日期就不要提，避免編造聽起來合理但其實是幻覺的天象資訊
 - **天象提醒獨立成一個欄位（2026-09-22）**：使用者要求運勢要「有根據」、如果有土星逆行或其他重大天象要主動提醒，不要只是埋在長文字裡。新增 `horoscopeTransitAlert` 欄位（prompt schema／offline fallback／`main()` 都有處理，對應到 `horoscope.transitAlert`），規則比照水星逆行那條擴大到「水星逆行、土星逆行、其他行星逆行、日食／月食等」，一樣是「確定知道才填，不確定就填 null」。前端 `app.js` 的 `renderHoroscope()` 只有 `transitAlert` 有值時才畫一個獨立的橘色提醒區塊（`.transit-alert-box`），沒有事件就完全不顯示，不會跟平常的運勢摘要混在一起
@@ -50,7 +51,8 @@
   - **已用模擬後端的方式在瀏覽器完整測試過整條鏈路**：暫時 patch `CHAT_WORKER_URL` + mock `fetch` 回傳一個假的 `{reply, action: postpone_task}`，確認送出訊息後對話框正確顯示、且 `taskEngine.js` 的 localStorage 真的被改到（今天的任務狀態變成 `postponed`，明天多出一筆延後過去的任務），整條鏈路（前端狀態 → mock worker 回覆 → 前端執行 action → 真的寫 localStorage）沒問題，只是還沒接真正部署的 Worker
   - **`CHAT_WORKER_URL` 目前是空字串**（`js/chatBox.js` 最上面），沒設定時聊天框會回覆「這個功能還沒接上後端」的提示文字，不會壞掉或報錯。**下一步是使用者要自己申請 Cloudflare 帳號、用 wrangler 部署**（步驟寫在 `cloudflare-worker/README.md`，模式跟當初申請 OpenRouter key 一樣），部署完把網址貼進 `CHAT_WORKER_URL` 就會真的動起來
 - ~~追劇/讀書進度自動分配，完全還沒開始~~ 已完成（2026-09-22，見上方「新增『追劇／讀書進度』功能」）
-- ~~90 分鐘睡眠週期功能，還沒開始~~ 已完成（2026-09-22）：使用者要求兩個子功能都要——(1) 睡眠計算機：`js/sleepCalculator.js` 的 `suggestBedtimes(wakeTime)`／`suggestWakeTimes(bedTime)`，純數學運算（不用 AI），每個週期 90 分鐘、入睡緩衝固定 15 分鐘，起床模式算 6/5/4 個週期的建議上床時間，上床模式算 4/5/6 個週期的建議起床時間；(2) 就寢提醒：`js/sleepReminder.js`，純前端 `setTimeout` + 瀏覽器 `Notification` API，資料存 localStorage（key: `morningBrief.sleepReminder.v1`）。**使用者自己已經知道並接受的限制**：只在分頁還開著的時候才會跳通知，PWA 純前端沒辦法背景推播，這塊要等之後真的包成 Capacitor app 才可能做到背景通知。UI 都塞在「設定」頁的「睡眠計算機」卡片（在「固定作息時間參考」卡片下面），已在瀏覽器實測過起床/上床兩種模式的計算結果都對，通知權限允許/拒絕的分支也都測過
+- ~~90 分鐘睡眠週期功能，還沒開始~~ 已完成（2026-09-22，2026-09-22 二度改版）：(1) 睡眠計算機：`js/sleepCalculator.js` 的 `suggestBedtimes(wakeTime)`／`suggestWakeTimes(bedTime)`，純數學運算（不用 AI），每個週期 90 分鐘、入睡緩衝固定 15 分鐘，起床模式算 6/5/4 個週期的建議上床時間，上床模式算 4/5/6 個週期的建議起床時間；(2) 就寢提醒：`js/sleepReminder.js`，純前端 `setTimeout` + 瀏覽器 `Notification` API，資料存 localStorage（key: `morningBrief.sleepReminder.v1`）。**使用者自己已經知道並接受的限制**：只在分頁還開著的時候才會跳通知，PWA 純前端沒辦法背景推播，這塊要等之後真的包成 Capacitor app 才可能做到背景通知
+  - **二度改版（2026-09-22）**：使用者回饋兩點——(a) 不要塞在「設定」頁，底部 tab bar 新增獨立的「睡眠」分類（第 5 個 tab，`js/tabs.js`／`index.html`／`js/SleepView.js`，`SettingsView.js` 裡原本的睡眠卡片整段搬過去）；(b) 計算結果要更「人性化」：原本只是純顯示的列表，改成`js/SleepView.js` 的 `.sleep-result-row` 是可點的按鈕，點哪個週期數就直接選取那一列（`is-selected` 高亮），而且「我想幾點起床」模式算出來的是建議上床時間，點選會直接套用成「就寢提醒」的時間（呼叫 `setSleepReminderConfig`），不用手動再打一次時間。「我現在要睡了」模式算的是建議起床時間，這裡沒有起床提醒功能，點選只做選取高亮，不觸發提醒設定變更
 
 ## 接下來要做的（照這個順序）
 

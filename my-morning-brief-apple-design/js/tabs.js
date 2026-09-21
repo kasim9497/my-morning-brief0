@@ -4,7 +4,7 @@
  * 不處理各 view 內部渲染（各自負責，之後再加）
  */
 
-const TABS = ['today', 'calendar', 'countdown', 'settings'];
+const TABS = ['today', 'calendar', 'countdown', 'sleep', 'settings'];
 let currentTab = 'today';
 
 export function initTabs() {

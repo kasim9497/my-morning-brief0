@@ -840,37 +840,6 @@ body {
   color: #0040a8;
 }
 
-/* ADVICE WIDGET */
-
-.advice-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(242, 242, 247, 0.9) 100%);
-}
-
-.top3-list { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.1rem; }
-
-.top3-item {
-  display: flex;
-  gap: 0.65rem;
-  font-size: 0.875rem;
-  letter-spacing: 0.002em;
-  align-items: flex-start;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.7rem 0.85rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-
-/* advice-card 現在是全寬 hero 卡片，寬螢幕時 top3 改成並排，不要垂直堆到很空 */
-@media (min-width: 768px) {
-  .advice-card .top3-list {
-    flex-direction: row;
-  }
-  .advice-card .top3-item {
-    flex: 1 1 0;
-  }
-}
-
 .prime-goal-box {
   background: #1c1c1e;
   color: #ffffff;
@@ -1585,18 +1554,41 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.sleep-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .sleep-result-row {
+  appearance: none;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: var(--font-system);
   font-size: 0.85rem;
   color: var(--text-main);
-  padding: 0.4rem 0;
-  border-bottom: 1px solid var(--border-subtle);
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.85rem;
+  min-height: 44px;
+  cursor: pointer;
+  transition: var(--spring-press), border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.sleep-result-row:last-child {
-  border-bottom: none;
+.sleep-result-row:active {
+  transform: scale(0.98);
+}
+
+.sleep-result-row.is-selected {
+  border-color: var(--apple-blue);
+  background: rgba(0, 122, 255, 0.06);
+}
+
+.sleep-result-cycles {
+  font-weight: 600;
 }
 
 .sleep-result-time {

@@ -21,12 +21,6 @@ import {
   postponeTarget,
 } from './mediaTracker.js';
 
-import { suggestBedtimes, suggestWakeTimes } from './sleepCalculator.js';
-import {
-  getSleepReminderConfig,
-  setSleepReminderConfig,
-  requestNotificationPermission,
-} from './sleepReminder.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -70,60 +64,6 @@ function renderIntervalMode(defId, config) {
       <input type="number" class="interval-input" min="1" max="30" value="${n}" data-action="interval-n" data-def="${defId}">
       <span>天一次</span>
       <span class="interval-anchor">（從 ${escapeHtml(anchor)} 開始算）</span>
-    </div>
-  `;
-}
-
-let sleepCalcMode = 'wake'; // 'wake' = 輸入想起床的時間；'bed' = 輸入要上床的時間
-let sleepCalcInputTime = '';
-let sleepCalcResults = null;
-
-function renderSleepResultsHtml() {
-  if (!sleepCalcResults) return '';
-  const label = sleepCalcMode === 'wake' ? '建議上床時間' : '建議起床時間';
-  const rows = sleepCalcResults
-    .map(
-      (r) => `
-        <div class="sleep-result-row">
-          <span>${r.cycles} 個週期・${r.hours} 小時</span>
-          <span class="sleep-result-time">${r.time}</span>
-        </div>
-      `
-    )
-    .join('');
-  return `
-    <div class="sleep-results">
-      <div class="sleep-results-title">${label}（已含 15 分鐘平均入睡時間）</div>
-      ${rows}
-    </div>
-  `;
-}
-
-function renderSleepCard() {
-  const reminderConfig = getSleepReminderConfig();
-  return `
-    <div class="card" style="margin-top: 1.25rem;">
-      <div class="card-header">
-        <h3 class="card-title">睡眠計算機</h3>
-        <span class="card-badge">90 分鐘週期</span>
-      </div>
-      <div class="routine-mode-switch">
-        <button type="button" class="mode-btn ${sleepCalcMode === 'wake' ? 'is-active' : ''}" data-action="sleep-mode" data-mode="wake">我想幾點起床</button>
-        <button type="button" class="mode-btn ${sleepCalcMode === 'bed' ? 'is-active' : ''}" data-action="sleep-mode" data-mode="bed">我現在要睡了</button>
-      </div>
-      <div class="sleep-calc-input-row">
-        <input type="time" class="countdown-input" id="sleep-calc-time" value="${escapeHtml(sleepCalcInputTime)}">
-        <button type="button" class="btn-action btn-primary" id="sleep-calc-btn">計算</button>
-      </div>
-      ${renderSleepResultsHtml()}
-
-      <div class="sleep-reminder-box">
-        <label class="sleep-reminder-label">
-          <input type="checkbox" id="sleep-reminder-toggle" ${reminderConfig.enabled ? 'checked' : ''}>
-          <span>到了就寢時間跳瀏覽器通知提醒我（僅限這個分頁開著時，PWA 純前端沒辦法背景推播）</span>
-        </label>
-        <input type="time" class="countdown-input" id="sleep-reminder-time" value="${escapeHtml(reminderConfig.bedTime)}">
-      </div>
     </div>
   `;
 }
@@ -232,8 +172,6 @@ export function renderSettingsView() {
         <div class="fixed-schedule-list">${fixedHtml}</div>
       </div>
 
-      ${renderSleepCard()}
-
       <div class="card" style="margin-top: 1.25rem;">
         <div class="card-header">
           <h3 class="card-title">追劇／讀書進度</h3>
@@ -330,46 +268,4 @@ export function renderSettingsView() {
     });
   }
 
-  container.querySelectorAll('[data-action="sleep-mode"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      sleepCalcMode = btn.dataset.mode;
-      sleepCalcResults = null;
-      renderSettingsView();
-    });
-  });
-
-  const sleepCalcBtn = document.getElementById('sleep-calc-btn');
-  if (sleepCalcBtn) {
-    sleepCalcBtn.addEventListener('click', () => {
-      const timeInput = document.getElementById('sleep-calc-time');
-      if (!timeInput.value) return;
-      sleepCalcInputTime = timeInput.value;
-      sleepCalcResults = sleepCalcMode === 'wake'
-        ? suggestBedtimes(sleepCalcInputTime)
-        : suggestWakeTimes(sleepCalcInputTime);
-      renderSettingsView();
-    });
-  }
-
-  const reminderToggle = document.getElementById('sleep-reminder-toggle');
-  const reminderTimeInput = document.getElementById('sleep-reminder-time');
-  if (reminderToggle && reminderTimeInput) {
-    reminderToggle.addEventListener('change', async () => {
-      if (reminderToggle.checked) {
-        const permission = await requestNotificationPermission();
-        if (permission !== 'granted') {
-          reminderToggle.checked = false;
-          window.alert('需要允許瀏覽器通知權限，提醒才能運作。');
-          return;
-        }
-      }
-      setSleepReminderConfig(reminderToggle.checked, reminderTimeInput.value);
-    });
-
-    reminderTimeInput.addEventListener('change', () => {
-      if (reminderToggle.checked) {
-        setSleepReminderConfig(true, reminderTimeInput.value);
-      }
-    });
-  }
 }

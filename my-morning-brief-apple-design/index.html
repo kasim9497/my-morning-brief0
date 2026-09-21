@@ -81,17 +81,6 @@
         </div>
       </article>
 
-      <!-- 1. Daily AI Personal Advice Card -->
-      <article class="card advice-card col-span-3">
-        <div class="card-header">
-          <h3 class="card-title">今日 AI 個人建議</h3>
-          <span class="card-badge">AI Agent 智能彙整</span>
-        </div>
-        <div id="advice-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
-
       <!-- 2. Weather Card — 資訊量較大，給 2 欄寬 -->
       <article class="card col-span-2">
         <div class="card-header">
@@ -156,7 +145,14 @@
     </main>
   </section>
 
-  <!-- ④ 設定 -->
+  <!-- ④ 睡眠 -->
+  <section id="view-sleep" class="view">
+    <main class="container">
+      <div class="view-placeholder">睡眠（待實作）</div>
+    </main>
+  </section>
+
+  <!-- ⑤ 設定 -->
   <section id="view-settings" class="view">
     <main class="container">
       <div class="view-placeholder">設定（待實作）</div>
@@ -164,7 +160,7 @@
   </section>
 
   </div>
-  <!-- ============ 4 個畫面容器 結束 ============ -->
+  <!-- ============ 5 個畫面容器 結束 ============ -->
 
   <!-- 底部 Tab Bar -->
   <nav class="tab-bar" role="tablist">
@@ -179,6 +175,10 @@
     <button class="tab-item" data-view="countdown" role="tab">
       <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="19" y2="3"/><line x1="5" y1="21" x2="19" y2="21"/><polygon points="7,3 17,3 12,12"/><polygon points="7,21 17,21 12,12"/></svg></span>
       <span class="tab-label">倒數</span>
+    </button>
+    <button class="tab-item" data-view="sleep" role="tab">
+      <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg></span>
+      <span class="tab-label">睡眠</span>
     </button>
     <button class="tab-item" data-view="settings" role="tab">
       <span class="tab-icon"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg></span>

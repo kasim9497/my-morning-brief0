@@ -8,6 +8,7 @@ import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
+import { renderSleepView } from './SleepView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCountdownView();
   renderCountdownSummaryInto(document.getElementById('today-countdown-widget-content'));
   renderSettingsView();
+  renderSleepView();
   scheduleReminderIfEnabled();
   setupCalendarTabRefresh();
   await loadAllBriefData();
@@ -103,9 +105,6 @@ async function loadAllBriefData() {
     quizState.score = 0;
     quizState.completed = false;
     renderDrivingQuiz();
-
-    const adviceData = await dataService.getDailyAdvice();
-    renderDailyAdvice(adviceData);
 
     // §16: Staggered card entrance after all content is rendered
     triggerCardStagger();
@@ -575,23 +574,6 @@ function handleQuizAnswer(qId, selectedKey, clickedBtn) {
   } else {
     renderDrivingQuiz();
   }
-}
-
-function renderDailyAdvice(advice) {
-  const container = document.getElementById('advice-widget-content');
-  
-  const top3Html = advice.top3.map(item => `
-    <li class="top3-item">
-      <span>${item.text}</span>
-    </li>
-  `).join('');
-
-  container.innerHTML = `
-    <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.6rem;">
-      TODAY：今天最值得注意的 3 件事情
-    </div>
-    <ul class="top3-list">${top3Html}</ul>
-  `;
 }
 
 /**
