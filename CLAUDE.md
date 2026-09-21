@@ -7,7 +7,7 @@
 - `my-morning-brief-apple-design/` 是前端主目錄，純 ES module（`index.html` 用 `<script type="module">`），**開發時必須用本機伺服器（VS Code Live Server 或 `python -m http.server`）打開，不能直接雙擊 index.html**
 - 已經加了底部 4 個 tab（今日／週曆／倒數／設定），邏輯在 `js/tabs.js`，今日以外的三個目前是空的 placeholder
 - `scripts/generate_brief.py`：GitHub Actions 每天定時執行，抓天氣／匯率／新聞／機車筆試題庫，經 Gemini 合成後輸出 `data/today.json`，前端讀這個檔案渲染
-- 天氣資料來源已從台灣 CWA 換成南京的和風天氣（QWeather），`fetch_weather()` 用 `QWEATHER_API_KEY` + `QWEATHER_API_HOST`（本機驗證通過，2026-09-18；GitHub Secrets 是否已設定要跟使用者確認）
+- 天氣資料來源已從台灣 CWA 換成南京的和風天氣（QWeather），`fetch_weather()` 用 `QWEATHER_API_KEY` + `QWEATHER_API_HOST`（本機驗證通過，2026-09-18；GitHub Secrets 已設定，見下方「已解決」）
 - `strip_html()` 之前有雙重 HTML 編碼漏字的 bug（Blogger 類 RSS 來源），已修正，改動時不要移除或簡化這個函式
 - `.github/workflows/morning_brief.yml`：Deploy to GitHub Pages 要在 Send Telegram Notification 之前執行，通知要用部署後的真實網址（`steps.deployment.outputs.page_url`），不要走舊的寫死網址
 - `js/taskEngine.js` + `js/TaskListView.js`：今日任務清單狀態機已完成，資料存 localStorage（key: `morningBrief.taskEngine.v1`），已接到「今日」頁最上方卡片，可以延 1/2/3 天／延下週／跳過這週。`TaskListView.js` 的 `renderTaskListInto(container, dateStr, label, onChange)` 是通用版，不限今天，`CalendarView.js` 也共用這個函式
@@ -37,11 +37,11 @@
 - ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
 - **意外抓到的舊 bug**：修星座的時候完整跑一次 pipeline 測試，發現 `strip_html()` 這個函式定義在 commit 108ab15 之後、9300ac6 之前的某次手動上傳（`Add files via upload`／`Delete...directory` 那種 commit）裡被誤刪了，但呼叫的地方還在，導致 `fetch_rss_news()` 每次都靜默丟 `NameError`、新聞永遠抓不到（有 try/except 包住不會讓整個 pipeline 掛掉，但長期都在用空清單）。已經照 108ab15 原始版本一字不改地補回來
 - `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
-- **Gemini API 404 已修（2026-09-20）**：查證後（不是用 GitHub Actions 日誌猜，是直接查 Google 官方文件）確認 `gemini-2.5-flash-lite` 這個 model 在 Gemini Developer API 已經公告 2026-10-16 停用，官方文件範例改用 `gemini-2.5-flash`（無 -lite），`synthesize_with_gemini()` 已經改用新的 model 名稱。**但還沒有真實 key 驗證過這個修正實際有沒有解決 404**，`GEMINI_API_KEY` 這個 secret 本身存在與否也還沒確認——下次看到 Actions 日誌記得確認這次改動是否真的解決問題，不是憑空假設修好了
-- **QWeather 還是卡住，兩晚了同樣的症狀（2026-09-20 二度確認）**：使用者兩次貼的 Actions 日誌都一樣：完全沒有出現 `QWeather API fetch failed` 這行，代表程式根本沒進到呼叫 API 那步（`if qweather_api_key and qweather_api_host:` 判斷為 False），純粹是 secret 沒讀到值，不是 API 本身出錯。單看日誌沒辦法再進一步，下次要請使用者直接去 Settings → Secrets and variables → Actions **那個列表頁**（不是日誌），確認清單裡實際有哪些 secret 名稱，最好用截圖，光講「有加」不夠
+- **Gemini 已徹底放棄，改用 OpenRouter（2026-09-21）**：Gemini Developer API 連續踩了 4 輪雷——`gemini-2.5-flash-lite` 404（2026-10-16 停用公告）→ 換 `gemini-2.5-flash` 還是 404（Google 錯誤訊息直接說「no longer available to new users, use gemini-3.6-flash instead」）→ 換 `gemini-3.6-flash` + `X-goog-api-key` header 認證一度是 401 → 最後穩定復現的是 `FAILED_PRECONDITION: User location is not supported`。**這個地區限制查證確認是免費層根據「呼叫當下伺服器 IP」做的地區白名單限制，跟 Google 帳號的付款地/帳單地址完全無關**（一開始誤判成帳號層級地區鎖，被使用者糾正過）。四輪修正都沒解決，判斷是 GitHub Actions runner 的 IP 剛好不在白名單內，於是放棄 Gemini。已改用 **OpenRouter**（`synthesize_with_gemini()` 重新命名為 `synthesize_with_openrouter()`），model 是 `deepseek/deepseek-chat-v3.1`（付費但單次呼叫成本 < US$0.0001，一天呼叫個位數次幾乎等於免費），呼叫 `https://openrouter.ai/api/v1/chat/completions`，`Authorization: Bearer <OPENROUTER_API_KEY>`，用 `response_format: {"type": "json_object"}` 強制輸出 JSON。**已用真實 key 實測過完整 pipeline**：運勢正確扣合 `BIRTH_CHART_SUMMARY` 命盤重點、結合當天星期幾發揮，新聞摘要正確對應 RSS 候選項目，繁體中文輸出正常，不是套版文字。曾經試過 OpenRouter 的免費模型（`:free` 後綴，例如 `qwen/qwen3.8-27b:free`、`z-ai/glm-5.2:free`）但共用池常常 429 rate limit，不夠穩定，改用付費模型是使用者確認的決定，不要為了省那幾分錢改回免費模型。**下一步**：GitHub Actions repo secrets 要新增 `OPENROUTER_API_KEY`（workflow 檔案已經改成讀這個變數，但 secret 本身還沒在 GitHub 上設定，下次看到 Actions 日誌記得確認是否真的成功，不是憑空假設）
 - **每日語錄功能，還沒開始（2026-09-20 提出）**：使用者想加一個「每天一句語錄」的東西，但語錄類型還沒想好（勵志/名人名言/自己寫的/哪個領域都不確定）。下次接觸這塊時先問清楚語錄類型，不要自己決定
 - **App 改名，還沒決定（2026-09-20 提出）**："Morning Brief" 這個名字使用者想換掉，或至少要更像在跟他打招呼，還沒給具體名字，下次要問
-- **追劇/讀書進度自動分配，完全還沒開始**：對應 roadmap 第 6 步（OpenRouter），使用者在 2026-09-20 提醒過「還有遺漏很多東西」，這塊是目前最大的一塊完全空白，企劃書（個人排程AI助理_企劃書.md）裡有完整的 daily_quota/carry_over 演算法設計，之後要做這塊時先去讀那份文件
+- **AI 聊天框，還沒開始（2026-09-21 提出）**：使用者想在 App 裡加一個 AI 聊天框，已用 AskUserQuestion 確認範圍——**使用者要的是能實際操作的聊天框**（例如叫它延後某個任務、改作息設定），不是只能問答的客服機器人。實作上要能呼叫 `taskEngine.js`／`SettingsView.js` 現有的操作函式（`postponeTask` 之類、`setTaskWeekdaySchedule`/`setTaskIntervalSchedule`），等於要做成 function-calling 或至少是把使用者意圖解析成對應函式呼叫，還沒設計、還沒動工。依賴 AI 後端已經解決（見上方 OpenRouter），可以開始設計
+- **追劇/讀書進度自動分配，完全還沒開始**：對應 roadmap 第 6 步，使用者在 2026-09-20 提醒過「還有遺漏很多東西」，這塊是目前最大的一塊完全空白，企劃書（個人排程AI助理_企劃書.md）裡有完整的 daily_quota/carry_over 演算法設計，之後要做這塊時先去讀那份文件。**AI 後端（OpenRouter）已經接好可以用了**，這塊不再被 AI 串接卡住，純粹是還沒排到
 
 ## 接下來要做的（照這個順序）
 
@@ -49,8 +49,9 @@
 2. ~~`CalendarView.js`~~ 已完成（見上）
 3. ~~`countdown.js` + `CountdownView.js`~~ 已完成（見上）
 4. ~~`SettingsView.js`~~ 已完成：可調整「運動、蔬果日、PO文、洗衣採買」這幾項出現在星期幾（`taskEngine.js` 新增 `getRoutineConfig()`/`setTaskWeekdays()`/`getConfigurableTaskIds()`，設定存在跟任務資料同一個 localStorage key 底下的 `routineConfig` 欄位）。保健食品/追劇是每天固定不開放關閉；居家用品檢查/旅遊規劃/睡眠時間/手機宵禁目前只做成唯讀參考，還沒有實際的提醒/通知機制（那是第 7 步的事）
+   - **每 N 天排程模式已加上（2026-09-21）**：原本每個任務只能設「星期幾」，現在每個任務可以自己獨立選「星期幾」或「每 N 天一次」（使用者確認的設計）。`taskEngine.js` 的 `DEFAULT_ROUTINE_CONFIG` 改成結構化物件 `{mode: 'weekday', days: [...]}` 或 `{mode: 'interval', everyNDays: N, anchorDate: 'YYYY-MM-DD'}`，`normalizeRoutineConfig()` 會把舊格式（純陣列）自動遷移成新格式，`isTaskActiveOnDate()` 依 mode 分流判斷（interval 模式算 `(今天 - anchorDate 天數) % everyNDays === 0`）。`setTaskWeekdays` 改名成 `setTaskWeekdaySchedule`，新增 `setTaskIntervalSchedule`。`SettingsView.js` 每個任務列多了「星期幾／每 N 天」的模式切換鈕。已用瀏覽器直接測過 interval 模式算出來的啟用日期是對的
 5. Capacitor 包裝 + Codemagic 雲端構建（下一步）（沒有 Mac，走免費 Apple ID + AltStore，或視情況付費 $99/年，這個之後再決定）
-6. OpenRouter 接進日報 + 追劇/讀書進度自動分配（輸入總集數/頁數 + 目標完成日，自動算每日份量，落後太多要提示而不是默默加量）
+6. ~~OpenRouter 接進日報~~ 已完成（2026-09-21，見上方「Gemini 已徹底放棄，改用 OpenRouter」）；追劇/讀書進度自動分配還沒做（輸入總集數/頁數 + 目標完成日，自動算每日份量，落後太多要提示而不是默默加量）
 
 ## 使用者的確定排程（跟任務清單/提醒功能設計有關）
 

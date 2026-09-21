@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Personal AI Morning Brief - Daily Briefing Pipeline
-Phase 2 / Phase 3 Backend Data Collector & Gemini Synthesizer.
+Phase 2 / Phase 3 Backend Data Collector & OpenRouter (deepseek/deepseek-chat-v3.1) Synthesizer.
 
 Clean Single Repository Root Architecture:
 - Inputs: `data/questions.json`
@@ -110,7 +110,7 @@ USER_PROFILE = {
 }
 
 # 使用者真實命盤重點（融合西洋占星、八字、紫微斗數三套系統整理出的穩定個性特質，
-# 不是每日星象演算——免費工具做不到真正的每日行運計算，這份摘要是拿來讓 Gemini
+# 不是每日星象演算——免費工具做不到真正的每日行運計算，這份摘要是拿來讓 AI
 # 寫出「有憑有據」的解讀，取代原本純套處女座罐頭文字的做法）
 BIRTH_CHART_SUMMARY = """
 出生：2005年9月7日，男性
@@ -278,16 +278,13 @@ def fetch_rss_news():
 
     return candidate_items
 
-def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
-    if not gemini_api_key:
-        print("GEMINI_API_KEY not provided. Using offline smart synthesis template.")
+def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api_key):
+    if not openrouter_api_key:
+        print("OPENROUTER_API_KEY not provided. Using offline smart synthesis template.")
         return generate_offline_synthesis(weather, exchange_rate, rss_items)
 
-    print("Calling Gemini 2.5 Flash API for AI Synthesis...")
-    prompt_payload = {
-        "contents": [{
-            "parts": [{
-                "text": f"""
+    print("Calling OpenRouter (deepseek/deepseek-chat-v3.1) for AI Synthesis...")
+    prompt_text = f"""
 你是一位專業的個人 AI 助理。請根據以下事實資料，為使用者 (Kasim，處女座，目前在南京交換，正在準備機車筆試與規劃 AI PM 職涯) 生成每日晨報摘要。
 
 【重要準則】：
@@ -335,50 +332,50 @@ def synthesize_with_gemini(weather, exchange_rate, rss_items, gemini_api_key):
   }}
 }}
 """
-            }]
-        }],
-        "generationConfig": {
-            "temperature": 0.2,
-            "responseMimeType": "application/json"
-        }
+    payload = {
+        "model": "deepseek/deepseek-chat-v3.1",
+        "messages": [{"role": "user", "content": prompt_text}],
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"}
     }
 
     try:
-        # 2026-09-21 直接拿真實 key 測試確認：gemini-2.5-flash-lite／gemini-2.5-flash
-        # 都已經對新用戶的 key 回 404「no longer available」，Google 自己的錯誤訊息
-        # 指定改用 gemini-3.6-flash。認證方式也改成官方目前建議的 X-goog-api-key
-        # header（新格式 key 用 ?key= 網址參數偶爾會出問題），不要再改回 ?key=
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
-        data_bytes = json.dumps(prompt_payload).encode('utf-8')
+        # 2026-09-21：Gemini 免費層在這個 IP／帳號上被 FAILED_PRECONDITION 擋掉
+        # （Google 自己的地區白名單限制，跟帳號付款地無關），改用 OpenRouter。
+        # deepseek/deepseek-chat-v3.1 是付費模型但單次呼叫成本 < $0.0001，
+        # 已用真實 key 測試過中文 JSON 輸出正常，不要換回免費模型
+        # （:free 後綴那些常常被共用池 429 擋掉，穩定性不夠）
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers={
             'Content-Type': 'application/json',
-            'X-goog-api-key': gemini_api_key
+            'Authorization': f'Bearer {openrouter_api_key}'
         })
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode('utf-8'))
-            candidate_text = result['candidates'][0]['content']['parts'][0]['text']
-            parsed_json = json.loads(candidate_text)
-            return process_gemini_news_output(parsed_json, rss_items)
+            content_text = result['choices'][0]['message']['content']
+            parsed_json = json.loads(content_text)
+            return process_ai_news_output(parsed_json, rss_items)
     except Exception as e:
-        print(f"Gemini API call failed ({e}). Falling back to smart template synthesis.")
+        print(f"OpenRouter API call failed ({e}). Falling back to smart template synthesis.")
         return generate_offline_synthesis(weather, exchange_rate, rss_items)
 
-def process_gemini_news_output(parsed_json, rss_items):
+def process_ai_news_output(parsed_json, rss_items):
     """Enforce strict preservation of original RSS title, source, and link."""
     ai_news = parsed_json.get("aiNews", [])
     processed_news = []
     
     for idx, rss_item in enumerate(rss_items[:len(ai_news)] if ai_news else rss_items[:3]):
-        gemini_item = ai_news[idx] if idx < len(ai_news) else {}
+        ai_item = ai_news[idx] if idx < len(ai_news) else {}
         processed_news.append({
             "id": f"n{idx+1}",
             "source": rss_item.get("source", "Tech News"),
             "title": rss_item.get("title", ""),
             "link": sanitize_url(rss_item.get("link", "#")),
-            # Prefer Gemini summary; fallback to full RSS snippet (no truncation)
-            "summary": gemini_item.get("summary") or rss_item.get("snippet", ""),
-            "whyImportant": gemini_item.get("whyImportant", "重點產業與技術動態趨勢。"),
-            "myImpact": gemini_item.get("myImpact", "值得關注其商業落地與產品化應用價值。")
+            # Prefer AI-generated summary; fallback to full RSS snippet (no truncation)
+            "summary": ai_item.get("summary") or rss_item.get("snippet", ""),
+            "whyImportant": ai_item.get("whyImportant", "重點產業與技術動態趨勢。"),
+            "myImpact": ai_item.get("myImpact", "值得關注其商業落地與產品化應用價值。")
         })
     
     parsed_json["aiNews"] = processed_news
@@ -414,7 +411,7 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
     weather_rain_str = weather.get('rainChance', 'N/A')
     return {
         "weatherTip": f"天氣狀態：{weather.get('condition', '多雲')}，出門請注意天候變化。",
-        # Gemini 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
+        # OpenRouter 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
         # 只是沒辦法每天換說法
         "horoscopeSummary": "你的命盤裡不安於現狀的衝動跟渴望被認可的成就感，是長期主題，不是今天限定。與其等心情對了才動手，不如挑一件具體小事先做完，落地的產出比想清楚更能安你的心。",
         "horoscopeDetails": {
@@ -442,7 +439,7 @@ def main():
     now_tw = datetime.now(TZ_TAIWAN)
     date_str = now_tw.strftime("%Y / %m / %d %A")
 
-    gemini_key = os.environ.get("GEMINI_API_KEY")
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
     qweather_key = os.environ.get("QWEATHER_API_KEY")
     qweather_host = os.environ.get("QWEATHER_API_HOST")
 
@@ -460,7 +457,7 @@ def main():
     driving_quiz = load_quiz_questions()
     rss_news = fetch_rss_news()
 
-    ai_synthesis = synthesize_with_gemini(weather, exchange_rate, rss_news, gemini_key)
+    ai_synthesis = synthesize_with_openrouter(weather, exchange_rate, rss_news, openrouter_key)
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 
