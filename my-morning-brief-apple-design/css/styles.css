@@ -1271,6 +1271,56 @@ body {
   flex-wrap: wrap;
 }
 
+.routine-mode-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.mode-btn {
+  appearance: none;
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-system);
+  padding: 0.3rem 0.7rem;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.mode-btn.is-active {
+  background: var(--apple-blue);
+  color: #ffffff;
+}
+
+.interval-config {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  flex-wrap: wrap;
+}
+
+.interval-input {
+  width: 56px;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: #ffffff;
+  font-family: var(--font-system);
+  font-size: 0.9rem;
+  text-align: center;
+  min-height: 36px;
+}
+
+.interval-anchor {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+
 .weekday-toggle {
   appearance: none;
   width: 38px;

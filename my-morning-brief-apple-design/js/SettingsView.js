@@ -1,9 +1,16 @@
 /**
- * 設定畫面：調整哪些任務出現在星期幾
+ * 設定畫面：調整哪些任務出現在星期幾，或改成每 N 天一次
  * 資料邏輯在 taskEngine.js，這裡只負責畫面跟事件綁定
  */
 
-import { TASK_DEFS, getConfigurableTaskIds, getRoutineConfig, setTaskWeekdays } from './taskEngine.js';
+import {
+  TASK_DEFS,
+  getConfigurableTaskIds,
+  getRoutineConfig,
+  setTaskWeekdaySchedule,
+  setTaskIntervalSchedule,
+  getTodayStr,
+} from './taskEngine.js';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -26,6 +33,28 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function renderWeekdayMode(defId, config) {
+  const activeDays = config.days || [];
+  const dayButtonsHtml = WEEKDAY_LABELS.map((label, weekday) => {
+    const isActive = activeDays.includes(weekday);
+    return `<button type="button" class="weekday-toggle ${isActive ? 'is-active' : ''}" data-action="toggle-day" data-def="${defId}" data-weekday="${weekday}">${label}</button>`;
+  }).join('');
+  return `<div class="weekday-toggle-group">${dayButtonsHtml}</div>`;
+}
+
+function renderIntervalMode(defId, config) {
+  const n = config.everyNDays || 2;
+  const anchor = config.anchorDate || getTodayStr();
+  return `
+    <div class="interval-config">
+      <span>每</span>
+      <input type="number" class="interval-input" min="1" max="30" value="${n}" data-action="interval-n" data-def="${defId}">
+      <span>天一次</span>
+      <span class="interval-anchor">（從 ${escapeHtml(anchor)} 開始算）</span>
+    </div>
+  `;
+}
+
 export function renderSettingsView() {
   const container = document.getElementById('view-settings');
   if (!container) return;
@@ -36,11 +65,8 @@ export function renderSettingsView() {
   const rowsHtml = taskIds
     .map((defId) => {
       const def = TASK_DEFS[defId] || { label: defId, icon: '•' };
-      const activeDays = config[defId] || [];
-      const dayButtonsHtml = WEEKDAY_LABELS.map((label, weekday) => {
-        const isActive = activeDays.includes(weekday);
-        return `<button type="button" class="weekday-toggle ${isActive ? 'is-active' : ''}" data-def="${defId}" data-weekday="${weekday}">${label}</button>`;
-      }).join('');
+      const taskConfig = config[defId] || { mode: 'weekday', days: [] };
+      const isInterval = taskConfig.mode === 'interval';
 
       return `
         <div class="routine-row">
@@ -48,7 +74,11 @@ export function renderSettingsView() {
             <span class="routine-row-icon">${def.icon}</span>
             <span>${escapeHtml(def.label)}</span>
           </div>
-          <div class="weekday-toggle-group">${dayButtonsHtml}</div>
+          <div class="routine-mode-switch">
+            <button type="button" class="mode-btn ${!isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="weekday">星期幾</button>
+            <button type="button" class="mode-btn ${isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="interval">每 N 天</button>
+          </div>
+          ${isInterval ? renderIntervalMode(defId, taskConfig) : renderWeekdayMode(defId, taskConfig)}
         </div>
       `;
     })
@@ -68,7 +98,7 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">作息設定</h3>
-          <span class="card-badge">點星期幾切換開關</span>
+          <span class="card-badge">星期幾 / 每 N 天，每項任務自己選</span>
         </div>
         <div class="routine-config-list">${rowsHtml}</div>
       </div>
@@ -83,15 +113,35 @@ export function renderSettingsView() {
     </main>
   `;
 
-  container.querySelectorAll('.weekday-toggle').forEach((btn) => {
+  container.querySelectorAll('[data-action="toggle-day"]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const defId = btn.dataset.def;
       const weekday = Number(btn.dataset.weekday);
-      const current = getRoutineConfig()[defId] || [];
+      const current = getRoutineConfig()[defId]?.days || [];
       const next = current.includes(weekday)
         ? current.filter((w) => w !== weekday)
         : [...current, weekday];
-      setTaskWeekdays(defId, next);
+      setTaskWeekdaySchedule(defId, next);
+      renderSettingsView();
+    });
+  });
+
+  container.querySelectorAll('[data-action="interval-n"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      setTaskIntervalSchedule(input.dataset.def, input.value);
+      renderSettingsView();
+    });
+  });
+
+  container.querySelectorAll('[data-action="set-mode"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const defId = btn.dataset.def;
+      const mode = btn.dataset.mode;
+      if (mode === 'interval') {
+        setTaskIntervalSchedule(defId, 2);
+      } else {
+        setTaskWeekdaySchedule(defId, []);
+      }
       renderSettingsView();
     });
   });

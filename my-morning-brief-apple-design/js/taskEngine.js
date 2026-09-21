@@ -33,14 +33,31 @@ const CONFIGURABLE_TASK_IDS = [
   'laundry_shopping',
 ];
 
+// 每個可調整任務的排程設定，有兩種 mode：
+//   { mode: 'weekday', days: [0-6] }             固定星期幾（原本唯一的模式）
+//   { mode: 'interval', everyNDays: N, anchorDate: 'YYYY-MM-DD' }  每 N 天一次，從 anchorDate 開始算
 const DEFAULT_ROUTINE_CONFIG = {
-  exercise_run_strength: [2], // 週二
-  exercise_strength: [4], // 週四
-  veggie_day: [2], // 週二
-  post_short: [], // 預設不開，週回顧已經涵蓋 PO 文需求；想加回來可以在「設定」頁自己開
-  post_weekly_review: [0], // 週日
-  laundry_shopping: [0], // 週日
+  exercise_run_strength: { mode: 'weekday', days: [2] }, // 週二
+  exercise_strength: { mode: 'weekday', days: [4] }, // 週四
+  veggie_day: { mode: 'weekday', days: [2] }, // 週二
+  post_short: { mode: 'weekday', days: [] }, // 預設不開，週回顧已經涵蓋 PO 文需求；想加回來可以在「設定」頁自己開
+  post_weekly_review: { mode: 'weekday', days: [0] }, // 週日
+  laundry_shopping: { mode: 'weekday', days: [0] }, // 週日
 };
+
+// 把舊版（純陣列 [0,2,4]）的存檔資料轉成新版 { mode: 'weekday', days } 物件，
+// 不然舊使用者瀏覽器裡的資料會在新版邏輯裡被當成沒有設定
+function normalizeRoutineConfig(rawConfig) {
+  const normalized = { ...DEFAULT_ROUTINE_CONFIG };
+  for (const [defId, value] of Object.entries(rawConfig || {})) {
+    if (Array.isArray(value)) {
+      normalized[defId] = { mode: 'weekday', days: value };
+    } else if (value && typeof value === 'object') {
+      normalized[defId] = value;
+    }
+  }
+  return normalized;
+}
 
 const POSTPONE_OPTIONS = [
   { value: 'plus1', label: '延到明天' },
@@ -97,6 +114,20 @@ function isFirstSundayOfMonth(dateStr) {
   return d.getDay() === 0 && d.getDate() <= 7;
 }
 
+function daysBetween(fromStr, toStr) {
+  return Math.round((parseDate(toStr) - parseDate(fromStr)) / (1000 * 60 * 60 * 24));
+}
+
+function isTaskActiveOnDate(config, dateStr, weekday) {
+  if (!config) return false;
+  if (config.mode === 'interval') {
+    if (!config.everyNDays || !config.anchorDate) return false;
+    const diff = daysBetween(config.anchorDate, dateStr);
+    return diff >= 0 && diff % config.everyNDays === 0;
+  }
+  return (config.days || []).includes(weekday);
+}
+
 // ── 儲存層 ──────────────────────────────────────────────────────────
 
 function loadStore() {
@@ -107,7 +138,7 @@ function loadStore() {
     return {
       days: parsed.days || {},
       skipWeekUntil: parsed.skipWeekUntil || {},
-      routineConfig: { ...DEFAULT_ROUTINE_CONFIG, ...(parsed.routineConfig || {}) },
+      routineConfig: normalizeRoutineConfig(parsed.routineConfig),
     };
   } catch (e) {
     console.warn('[taskEngine] localStorage 讀取失敗，使用空白狀態：', e);
@@ -131,7 +162,7 @@ function getTemplateIdsForDate(dateStr) {
   const weekday = parseDate(dateStr).getDay();
   const ids = [...ALWAYS_DAILY_TASK_IDS];
   for (const defId of CONFIGURABLE_TASK_IDS) {
-    if ((store.routineConfig[defId] || []).includes(weekday)) ids.push(defId);
+    if (isTaskActiveOnDate(store.routineConfig[defId], dateStr, weekday)) ids.push(defId);
   }
   if (isFirstSundayOfMonth(dateStr)) {
     ids.push('monthly_maintenance', 'monthly_trip_planning');
@@ -148,14 +179,22 @@ export function getConfigurableTaskIds() {
   return [...CONFIGURABLE_TASK_IDS];
 }
 
-/** 回傳目前每個可調整任務出現在哪些星期幾（0=週日...6=週六） */
+/** 回傳目前每個可調整任務的排程設定：{ mode: 'weekday', days } 或 { mode: 'interval', everyNDays, anchorDate } */
 export function getRoutineConfig() {
   return JSON.parse(JSON.stringify(store.routineConfig));
 }
 
-export function setTaskWeekdays(defId, weekdays) {
+export function setTaskWeekdaySchedule(defId, weekdays) {
   if (!CONFIGURABLE_TASK_IDS.includes(defId)) return;
-  store.routineConfig[defId] = [...new Set(weekdays)].sort((a, b) => a - b);
+  store.routineConfig[defId] = { mode: 'weekday', days: [...new Set(weekdays)].sort((a, b) => a - b) };
+  saveStore(store);
+}
+
+/** anchorDate 預設今天：從設定的當下開始算「每 N 天」，不回頭補算過去 */
+export function setTaskIntervalSchedule(defId, everyNDays, anchorDate = getTodayStr()) {
+  if (!CONFIGURABLE_TASK_IDS.includes(defId)) return;
+  const n = Math.max(1, Math.round(Number(everyNDays) || 1));
+  store.routineConfig[defId] = { mode: 'interval', everyNDays: n, anchorDate };
   saveStore(store);
 }
 
