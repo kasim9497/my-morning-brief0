@@ -225,6 +225,26 @@
     </div>
   </div>
 
+  <!-- AI 助理：全站浮動按鈕，不管在哪個分頁都點得到 -->
+  <button class="chat-fab" id="btn-open-chat" aria-label="開啟 AI 助理">
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3 1-5.2A8 8 0 1 1 21 12Z"/></svg>
+  </button>
+
+  <div class="modal-overlay" id="modal-chat">
+    <div class="modal-content chat-modal-content">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">AI 助理</h3>
+        <button class="close-btn" id="btn-close-chat">&times;</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <form class="chat-input-row" id="chat-input-form">
+        <input type="text" class="chat-input" id="chat-input" placeholder="跟 AI 助理說些什麼…" autocomplete="off">
+        <button type="submit" class="btn-action btn-primary chat-send-btn">送出</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Debug Widget (右上角可折疊 Debug 面板) -->
   <div id="debug-widget" class="debug-widget" aria-label="Debug Panel">
     <button id="debug-toggle" class="debug-toggle" title="展開/收合 Debug 面板">Debug</button>

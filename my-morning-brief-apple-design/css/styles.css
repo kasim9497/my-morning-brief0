@@ -1636,6 +1636,125 @@ body {
   max-width: 160px;
 }
 
+/* AI CHAT BOX */
+
+.chat-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--apple-blue);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.38);
+  z-index: 250;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.chat-fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.chat-fab:hover {
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.46);
+}
+
+.chat-fab:active {
+  transform: scale(0.92);
+}
+
+.chat-modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+  max-height: 640px;
+}
+
+.chat-messages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.25rem 0.1rem 0.75rem;
+}
+
+.chat-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 1rem 0;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-bubble-user {
+  align-self: flex-end;
+  background: var(--apple-blue);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-assistant {
+  align-self: flex-start;
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-loading {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-family: var(--font-system);
+  color: var(--text-main);
+  min-height: 44px;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--apple-blue);
+  background: #ffffff;
+}
+
+.chat-send-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
 .prime-goal-box::before {
   content: "";
   position: absolute;

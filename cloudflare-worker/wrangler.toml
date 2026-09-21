@@ -1,0 +1,3 @@
+name = "my-morning-brief-chat-proxy"
+main = "chat-proxy.js"
+compatibility_date = "2025-01-01"

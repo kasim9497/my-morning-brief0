@@ -9,6 +9,7 @@ import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
+import { initChatBox } from './ChatBoxView.js';
 
 // Global Quiz State
 let quizState = {
@@ -817,6 +818,16 @@ function setupEventListeners() {
   if (modalOverlay && modalContent) {
     window.fluidModalInstance = new AppleFluidModal(modalOverlay, modalContent, settingsBtn, closeModalBtn);
   }
+
+  const chatFab = document.getElementById('btn-open-chat');
+  const chatOverlay = document.getElementById('modal-chat');
+  const chatCloseBtn = document.getElementById('btn-close-chat');
+  const chatContent = chatOverlay ? chatOverlay.querySelector('.modal-content') : null;
+
+  if (chatOverlay && chatContent) {
+    new AppleFluidModal(chatOverlay, chatContent, chatFab, chatCloseBtn);
+  }
+  initChatBox();
 
   // Debug Widget toggle
   const debugToggle = document.getElementById('debug-toggle');
