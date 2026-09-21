@@ -8,6 +8,7 @@ import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
+import { scheduleReminderIfEnabled } from './sleepReminder.js';
 
 // Global Quiz State
 let quizState = {
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCountdownView();
   renderCountdownSummaryInto(document.getElementById('today-countdown-widget-content'));
   renderSettingsView();
+  scheduleReminderIfEnabled();
   setupCalendarTabRefresh();
   await loadAllBriefData();
   setupEventListeners();
