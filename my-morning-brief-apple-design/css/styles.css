@@ -1525,76 +1525,170 @@ body {
 
 /* SLEEP CALCULATOR */
 
-.sleep-calc-input-row {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.85rem;
-}
-
-.sleep-calc-input-row .countdown-input {
-  flex: 1 1 140px;
-}
-
-.sleep-calc-input-row .btn-action {
-  flex-shrink: 0;
-}
-
-.sleep-results {
-  margin-top: 0.9rem;
-  background: var(--bg-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.85rem;
-}
-
-.sleep-results-title {
-  font-size: 0.725rem;
+.sleep-mode-select-title {
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  margin-bottom: 0.5rem;
+  color: var(--text-main);
+  margin-bottom: 0.9rem;
 }
 
-.sleep-result-list {
+.sleep-mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .sleep-mode-cards { grid-template-columns: 1fr; }
+}
+
+.sleep-mode-card {
+  appearance: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sleep-result-row {
-  appearance: none;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-system);
-  font-size: 0.85rem;
-  color: var(--text-main);
-  background: #ffffff;
-  border: 1.5px solid var(--border-subtle);
+  align-items: flex-start;
+  gap: 0.3rem;
+  background: var(--bg-subtle);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-md);
-  padding: 0.6rem 0.85rem;
-  min-height: 44px;
+  padding: 1.1rem 1.1rem 1.3rem;
+  font-family: var(--font-system);
+  text-align: left;
   cursor: pointer;
+  min-height: 44px;
   transition: var(--spring-press), border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.sleep-result-row:active {
+.sleep-mode-card:hover {
+  border-color: var(--apple-blue);
+}
+
+.sleep-mode-card:active {
   transform: scale(0.98);
 }
 
-.sleep-result-row.is-selected {
+.sleep-mode-icon {
+  font-size: 1.8rem;
+}
+
+.sleep-mode-card h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.sleep-mode-card p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.sleep-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sleep-time-row:last-of-type {
+  border-bottom: none;
+}
+
+.sleep-time-row time {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.sleep-calc-input-row {
+  margin-top: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.sleep-calc-input-row .countdown-input {
+  width: 100%;
+}
+
+.sleep-calc-btn,
+.sleep-recalc-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.85rem;
+}
+
+.sleep-results-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.sleep-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.sleep-option {
+  position: relative;
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.9rem;
+  font-family: var(--font-system);
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+  transition: var(--spring-press), border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.sleep-option:active {
+  transform: scale(0.97);
+}
+
+.sleep-option time {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.sleep-option-day {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--apple-orange);
+}
+
+.sleep-option span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sleep-option.is-recommended {
+  border-color: var(--apple-blue);
+}
+
+.sleep-option.is-selected {
   border-color: var(--apple-blue);
   background: rgba(0, 122, 255, 0.06);
 }
 
-.sleep-result-cycles {
-  font-weight: 600;
-}
-
-.sleep-result-time {
+.sleep-option-badge {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  background: var(--apple-blue);
+  color: #ffffff;
+  font-size: 0.65rem;
   font-weight: 700;
-  color: var(--apple-blue);
-  font-size: 1rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
 }
 
 .sleep-reminder-box {
