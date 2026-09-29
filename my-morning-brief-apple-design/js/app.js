@@ -40,18 +40,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /**
  * §1: Respond on pointerdown — instant press feedback
- * Adds .is-pressing immediately on press, removes on release/leave
+ * Adds .is-pressing immediately on press, removes on release/leave.
+ * 涵蓋全站所有可點元件，不是只有 .btn-action/.option-btn——原生 :active
+ * 在部分行動瀏覽器不保證第一時間觸發，這裡用 JS 補一層保底，新增可點元件
+ * 記得把 class 加進這個 selector，不然按下去的回饋沒有保證
  */
+const PRESSABLE_SELECTOR = [
+  '.btn-action',
+  '.option-btn',
+  '.task-check',
+  '.weekday-toggle',
+  '.mode-btn',
+  '.cal-week-cell',
+  '.cal-month-cell',
+  '.sleep-mode-card',
+  '.sleep-option',
+  '.countdown-delete',
+  '.tab-item',
+  '.chat-fab',
+  '.close-btn',
+].join(', ');
+
 function setupInstantPressListeners() {
-  // Delegate on document so it works for dynamically rendered quiz buttons too
+  // Delegate on document so it works for dynamically rendered content too
   document.addEventListener('pointerdown', (e) => {
-    const btn = e.target.closest('.btn-action, .option-btn');
+    const btn = e.target.closest(PRESSABLE_SELECTOR);
     if (btn && !btn.disabled) {
       btn.classList.add('is-pressing');
     }
   });
   const clearPress = (e) => {
-    const btn = e.target.closest('.btn-action, .option-btn');
+    const btn = e.target.closest(PRESSABLE_SELECTOR);
     if (btn) btn.classList.remove('is-pressing');
     // Also clear any lingering ones (pointer captured elsewhere)
     document.querySelectorAll('.is-pressing').forEach(el => el.classList.remove('is-pressing'));
