@@ -254,6 +254,12 @@ export function skipTask(dateStr, instanceId) {
 export function postponeTask(dateStr, instanceId, option) {
   const entry = store.days[dateStr]?.[instanceId];
   if (!entry) return;
+  // 一定要擋已經不是 pending 的項目：UI 本身會把已延後/已跳過的任務停用，
+  // 這條路走不到，但現在 AI 聊天框的 action executor 也會呼叫這個函式，
+  // 沒有同樣的擋。如果對同一個 instance 重複呼叫，會用同一把
+  // `defId__from_dateStr` key 覆寫掉目標日那筆「已經被延過去」的任務，
+  // 把它的真實狀態（可能已經打勾完成或又被延到更後面）悄悄蓋掉
+  if (entry.status !== 'pending') return;
 
   if (option === 'skipWeek') {
     entry.status = 'skipped';

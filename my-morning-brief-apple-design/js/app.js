@@ -177,7 +177,7 @@ function renderHeader({ user, meta }) {
   const dateEl = document.getElementById('header-date');
   if (dateEl) {
     if (meta.isStale) {
-      dateEl.innerHTML = `<span style="color: var(--accent-red); font-weight: 700;">${escapeHtml(meta.date)}</span>`;
+      dateEl.innerHTML = `<span style="color: var(--apple-red); font-weight: 700;">${escapeHtml(meta.date)}</span>`;
     } else {
       dateEl.textContent = meta.date;
     }
@@ -220,7 +220,7 @@ function renderWeather(w) {
 
   container.innerHTML = `
     <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
-      ${ICON_PIN}${safeLoc} ${w.isFallback ? '<span style="color: var(--accent-red);">(資料暫無法更新)</span>' : ''}
+      ${ICON_PIN}${safeLoc} ${w.isFallback ? '<span style="color: var(--apple-red);">(資料暫無法更新)</span>' : ''}
     </div>
     <div class="weather-main">
       <div>
@@ -237,7 +237,7 @@ function renderWeather(w) {
       </div>
       <div class="weather-detail-item">
         <span class="weather-detail-label">降雨機率：</span>
-        <span class="weather-detail-val" style="color: var(--primary-color);">${safeRain}</span>
+        <span class="weather-detail-val" style="color: var(--apple-blue);">${safeRain}</span>
       </div>
       <div class="weather-detail-item">
         <span class="weather-detail-label">體感溫度：</span>
@@ -467,7 +467,7 @@ function renderDrivingQuiz() {
     const isCorrect = answeredOption === currentQ.answer;
     explanationHtml = `
       <div class="quiz-explanation">
-        <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--accent-green)' : 'var(--accent-red)'};">
+        <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green)' : 'var(--apple-red)'};">
           ${isCorrect ? '✓ 答對了！' : `✗ 答錯了！正確答案是 (${currentQ.answer})`}
         </div>
         <div><strong>官方解析：</strong>${currentQ.explanation}</div>

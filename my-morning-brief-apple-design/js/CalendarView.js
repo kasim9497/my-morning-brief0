@@ -14,6 +14,17 @@ const state = {
   selectedDate: getTodayStr(), // 目前展開任務詳情的那一天
 };
 
+// 月曆的「上個月／下個月」要用真的月份加減，不能用 addDays(±30)——
+// 月份長度不一（28~31 天），固定加減 30 天會在短月份跳過整個月，
+// 或在長月份（例如從 1 號出發）根本還停在同一個月，按了跟沒按一樣
+function addMonths(dateStr, n) {
+  const [y, m] = dateStr.split('-').map(Number);
+  const target = new Date(y, m - 1 + n, 1);
+  const ty = target.getFullYear();
+  const tm = String(target.getMonth() + 1).padStart(2, '0');
+  return `${ty}-${tm}-01`;
+}
+
 function getMonday(dateStr) {
   const wd = getWeekday(dateStr);
   const offset = wd === 0 ? -6 : 1 - wd;
@@ -179,9 +190,9 @@ export function renderCalendarView() {
         state.anchorDate = getTodayStr();
         state.selectedDate = getTodayStr();
       } else if (action === 'prev') {
-        state.anchorDate = addDays(state.anchorDate, state.mode === 'week' ? -7 : -30);
+        state.anchorDate = state.mode === 'week' ? addDays(state.anchorDate, -7) : addMonths(state.anchorDate, -1);
       } else if (action === 'next') {
-        state.anchorDate = addDays(state.anchorDate, state.mode === 'week' ? 7 : 30);
+        state.anchorDate = state.mode === 'week' ? addDays(state.anchorDate, 7) : addMonths(state.anchorDate, 1);
       }
       renderCalendarView();
     });
