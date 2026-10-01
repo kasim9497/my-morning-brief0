@@ -129,6 +129,36 @@ BIRTH_CHART_SUMMARY = """
 人際圈溫和討喜，內心比外表更常有自我懷疑。
 """.strip()
 
+# 每日語錄：主題是「職人精神／執行力」，使用者指定要名人語錄、工作向、
+# 日本職人風格為主（其他國家也可以）。這裡只收「確定查證過、廣為人知」的
+# 真實語錄，不要為了湊數編一句話假裝是名人說的——語錄這種東西一旦出處錯了
+# 很容易被發現，比沒有語錄還難看。以後要加新的語錄，一樣先查證再加，
+# 不確定出處或記不清楚原文的寧可不加
+WORK_QUOTES = [
+    {"text": "人生・工作的成果，等於思維方式乘以熱情，再乘以能力。", "author": "稻盛和夫"},
+    {"text": "成功是用百分之九十九的失敗堆疊出來的百分之一。", "author": "本田宗一郎"},
+    {"text": "只要持續到成功為止，那就一定會成功。", "author": "松下幸之助"},
+    {"text": "無論多辛苦，只要不忘記希望，路就一定會開。", "author": "松下幸之助"},
+    {"text": "Stay hungry, stay foolish.", "author": "Steve Jobs"},
+    {"text": "做喜歡的事，是把工作做到極致的唯一方法。", "author": "Steve Jobs"},
+    {"text": "天才是百分之一的靈感，加上百分之九十九的努力。", "author": "Thomas Edison"},
+    {"text": "我沒有失敗，只是發現了一萬種行不通的方法。", "author": "Thomas Edison"},
+    {"text": "不管你覺得自己行不行，你都是對的。", "author": "Henry Ford"},
+    {"text": "開始的方法，就是停止空談，動手去做。", "author": "Walt Disney"},
+    {"text": "人的一生，如負重致遠，不可急躁。", "author": "德川家康"},
+    {"text": "工欲善其事，必先利其器。", "author": "孔子"},
+    {"text": "鍥而不捨，金石可鏤。", "author": "荀子"},
+    {"text": "效率是把事情做對，效能是做對的事情。", "author": "Peter Drucker"},
+    {"text": "我不怕練過一萬種踢法的人，我怕的是把一種踢法練過一萬次的人。", "author": "李小龍"},
+    {"text": "七転び八起き——跌倒七次，就爬起八次。", "author": "日本諺語"},
+    {"text": "三人行，必有我師焉。", "author": "孔子"},
+]
+
+def get_daily_quote(now_tw):
+    """按年度第幾天固定輪替，同一天多次執行結果一樣，不用呼叫 AI（避免語錄被幻覺捏造）"""
+    idx = now_tw.timetuple().tm_yday % len(WORK_QUOTES)
+    return WORK_QUOTES[idx]
+
 def rating_to_stars(rating):
     """把 1-5 的數字評分轉成星星字串，取代原本寫死的 ★★★★☆"""
     try:
@@ -507,7 +537,8 @@ def main():
         "exchangeRate": exchange_rate,
         "drivingQuiz": driving_quiz,
         "aiNews": ai_synthesis.get("aiNews", []),
-        "dailyAdvice": ai_synthesis.get("dailyAdvice", {})
+        "dailyAdvice": ai_synthesis.get("dailyAdvice", {}),
+        "dailyQuote": get_daily_quote(now_tw)
     }
 
     # Ensure data directory exists

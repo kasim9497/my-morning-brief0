@@ -312,6 +312,35 @@ body {
   color: var(--text-muted);
 }
 
+/* DAILY QUOTE */
+
+.quote-banner {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border-glass);
+  border-left: 5px solid var(--apple-indigo);
+  padding: 0.9rem 1.35rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.quote-text {
+  font-size: 0.95rem;
+  font-style: italic;
+  letter-spacing: 0.003em;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.quote-author {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  text-align: right;
+}
+
 /* GRID */
 
 .dashboard-grid {

@@ -117,6 +117,9 @@ async function loadAllBriefData() {
     const rateData = await dataService.getExchangeRate();
     renderExchangeRate(rateData);
 
+    const quoteData = await dataService.getDailyQuote();
+    renderDailyQuote(quoteData);
+
     const quizData = await dataService.getDrivingQuiz();
     quizState.questions = quizData;
     quizState.currentIndex = 0;
@@ -253,6 +256,18 @@ function renderWeather(w) {
       <div class="ai-tip-title">今日 AI 出門提醒</div>
       <div>${safeTip}</div>
     </div>
+  `;
+}
+
+/**
+ * Render Daily Quote（職人精神/執行力主題，固定輪替，不是 AI 生成）
+ */
+function renderDailyQuote(q) {
+  const container = document.getElementById('quote-banner-content');
+  if (!container || !q) return;
+  container.innerHTML = `
+    <div class="quote-text">「${escapeHtml(q.text)}」</div>
+    <div class="quote-author">— ${escapeHtml(q.author)}</div>
   `;
 }
 

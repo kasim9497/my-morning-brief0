@@ -114,6 +114,11 @@ export const dataService = {
     return live ? live.dailyAdvice : mockData.dailyAdvice;
   },
 
+  async getDailyQuote() {
+    const live = await fetchLiveTodayJson();
+    return live ? live.dailyQuote : mockData.dailyQuote;
+  },
+
   /** 取得 buildInfo（供 Debug Widget 使用）*/
   async getBuildInfo() {
     const live = await fetchLiveTodayJson();
