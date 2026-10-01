@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Personal AI Morning Brief - Daily Briefing Pipeline
+晨序 (Chénxù) - Daily Briefing Pipeline
 Phase 2 / Phase 3 Backend Data Collector & OpenRouter (deepseek/deepseek-chat-v3.1) Synthesizer.
 
 Clean Single Repository Root Architecture:
@@ -482,7 +482,7 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
     }
 
 def main():
-    print("=== Starting Personal AI Morning Brief Generation Pipeline ===")
+    print("=== Starting 晨序 (Chénxù) Generation Pipeline ===")
     now_tw = datetime.now(TZ_TAIWAN)
     date_str = now_tw.strftime("%Y / %m / %d %A")
 

@@ -1,5 +1,5 @@
 /**
- * Personal AI Morning Brief - Application Logic & Component Rendering
+ * 晨序 (Chénxù) - Personal AI Life Scheduling System — Application Logic & Component Rendering
  */
 
 import { dataService } from './services/dataService.js';
@@ -22,7 +22,7 @@ let quizState = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log("Initializing Personal AI Morning Brief MVP...");
+  console.log("Initializing 晨序 (Personal AI Life Scheduling System)...");
   initTabs();
   setupInstantPressListeners();
   setupScrollShadow();

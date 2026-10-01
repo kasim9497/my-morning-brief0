@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Telegram Bot Daily Push Notification Script
-Sends a concise summary + link to the user's GitHub Pages Morning Brief.
+Sends a concise summary + link to the user's GitHub Pages 晨序 (Chénxù) deployment.
 """
 
 import os

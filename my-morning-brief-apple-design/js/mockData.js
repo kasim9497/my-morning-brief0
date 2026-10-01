@@ -1,5 +1,5 @@
 /**
- * Personal AI Morning Brief - Mock Data Store (Phase 1)
+ * 晨序 (Chénxù) - Mock Data Store (Phase 1)
  * Designed for easy migration to real APIs in Phase 2.
  */
 
