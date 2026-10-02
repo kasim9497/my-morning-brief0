@@ -845,6 +845,15 @@ function setupEventListeners() {
   }
   initChatBox();
 
+  window.addEventListener('chenxu:data-changed', () => {
+    renderTaskList();
+    renderCalendarView();
+    renderCountdownView();
+    renderCountdownSummaryInto(document.getElementById('today-countdown-widget-content'));
+    renderSettingsView();
+    renderSleepView();
+  });
+
   // Debug Widget toggle
   const debugToggle = document.getElementById('debug-toggle');
   const debugPanel = document.getElementById('debug-panel');

@@ -38,7 +38,7 @@ import {
 
 import { getSleepReminderConfig, setSleepReminderConfig } from './sleepReminder.js';
 
-const CHAT_WORKER_URL = ''; // TODO: 部署 Cloudflare Worker 後，把網址貼在這裡
+const CHAT_WORKER_URL = 'https://my-morning-brief-chat-proxy.loverinline520.workers.dev/';
 
 const VALID_POSTPONE_OPTIONS = ['plus1', 'plus2', 'plus3', 'nextWeek', 'skipWeek'];
 
@@ -172,16 +172,23 @@ export async function sendChatMessage(userText) {
         appState,
       }),
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    const reply = data.reply || '（沒有收到回覆）';
+    // Worker 出錯時（例如 key 沒設、OpenRouter 掛了）回的也是 { reply }，直接顯示那段說明
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok && !data?.reply) throw new Error(`HTTP ${resp.status}`);
+    const reply = data?.reply || '（沒有收到回覆）';
 
-    executeAction(data.action);
+    if (resp.ok && executeAction(data.action)) {
+      // 動作改的是 localStorage，畫面上的任務清單／週曆／倒數要跟著重畫
+      window.dispatchEvent(new CustomEvent('chenxu:data-changed'));
+    }
 
     conversationHistory.push({ role: 'assistant', content: reply });
     return reply;
   } catch (e) {
-    const errText = `連線失敗：${e.message}`;
+    // fetch 本身失敗（TypeError）多半是網路連不到 workers.dev：這個網域在中國大陸常被擋
+    const errText = e instanceof TypeError
+      ? '連不上 AI 後端。workers.dev 這個網域在中國大陸常被擋，開 VPN 再試一次。'
+      : `連線失敗：${e.message}`;
     conversationHistory.push({ role: 'assistant', content: errText });
     return errText;
   }
