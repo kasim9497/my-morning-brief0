@@ -183,7 +183,8 @@ export const mockData = {
   },
 
   dailyQuote: {
-    text: "人生・工作的成果，等於思維方式乘以熱情，再乘以能力。",
-    author: "稻盛和夫"
+    text: "工欲善其事，必先利其器。",
+    author: "孔子",
+    source: "《論語·衛靈公》"
   }
 };
