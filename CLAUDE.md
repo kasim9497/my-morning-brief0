@@ -50,7 +50,14 @@
   - **Windows 本機跑 `generate_brief.py` 會崩潰的 bug（2026-10-03 修掉）**：前一天改名時在 `print` 裡寫了「Chénxù」，Windows 主控台是 cp950，印不出「é」直接 `UnicodeEncodeError`。GitHub Actions 是 Linux 不受影響，但本機測試會掛。**`print` 的字串不要放 cp950 沒有的字元**（帶重音的拉丁字母、emoji 都不行；中文可以）
 
 - **資料備份：匯出／匯入（2026-10-05）**：所有使用者資料只存在瀏覽器 localStorage，清瀏覽器資料、換裝置、之後包成 Capacitor app 都會全沒，所以加了備份。`js/backup.js`：`exportBackup()` 把所有 `morningBrief.` 開頭的 key 打包成 `{app: 'chenxu', exportedAt, data}` 下載成 `chenxu-backup-日期.json`；`importBackup(file)` 驗證格式（不是 JSON、不是晨序備份檔、沒資料都會回錯誤訊息）→ `confirm` 確認 → **先清掉現有的 `morningBrief.` key 再寫入**（不然備份裡沒有的項目會殘留）→ 重新載入頁面（各模組載入時就把資料讀進記憶體，只改 localStorage 它們不知道）。UI 是設定頁最下面的「資料備份」卡片。**以後新增任何要保存的資料，localStorage key 一律用 `morningBrief.` 開頭，才會自動被備份涵蓋**。瀏覽器實測過：匯出 → 清空 → 匯入後 localStorage 逐 key 比對完全一致，殘留 key 會被清掉，兩種壞檔案會被擋
-- **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。目前 `.claude/launch.json` 用 5173
+- **可以「加到主畫面」+ 手機專屬修正（2026-10-05，照 `mobile-native` skill 做的）**：之前文件裡說是 PWA，其實沒有 manifest。這次補上：`manifest.webmanifest`（`display: standalone`、名稱「晨序」）、`icons/`（180/192/512 三張 PNG，橘色漸層底 + 白色太陽線條，用 PIL 產生）、`index.html` 的 `apple-mobile-web-app-capable`／`apple-touch-icon`／`theme-color`／`viewport-fit=cover`。**刻意沒做 service worker**：它只帶來離線快取，而這個專案已經被 JS 快取坑過很多次，不值得。同時修掉幾個只在手機上出現的問題（全在 `css/styles.css`）：
+  - **hover 會黏住**：觸控沒有 hover，瀏覽器會在點擊後把 `:hover` 樣式留在元素上（例如 `.card:hover` 的上浮）。12 條 `:hover` 規則全部包進 `@media (hover: hover) and (pointer: fine)`；`.bar:hover` 跟 JS 加的 `.bar-hover` 寫在同一條規則裡，沒動。**以後寫 `:hover` 一律包在這個 media query 裡**
+  - **底部 sheet 被網址列蓋住**：`.modal-overlay` 原本 `height: 100vh`，手機上那是網址列收起來的高度；加了 `100dvh`（保留 `100vh` 當舊瀏覽器後備），`.modal-content`／`.chat-modal-content` 的 `85vh`／`70vh` 同理
+  - **tab bar 在有 home indicator 的 iPhone 會被擠扁**：原本 `height: 60px` + `padding-bottom: env(safe-area-inset-bottom)`，border-box 下 padding 會吃掉圖示區；之前沒出事只是因為沒有 `viewport-fit=cover` 時 `env()` 永遠是 0。改成 `height: calc(60px + env(...))`
+  - **點輸入框頁面會放大**：iOS 對字級小於 16px 的 input/select 會放大頁面且不縮回來。`@media (pointer: coarse)` 下把 `.countdown-input`／`.chat-input`／`.interval-input`／`.task-postpone-select` 設成 16px（桌機維持原樣）。副作用：手機上任務列的「延後…」字比旁邊的「跳過」大
+  - 所有 `button`／`select` 加 `touch-action: manipulation`（免等雙擊縮放判定）與 `user-select: none`；`.chat-messages`／`.modal-content` 加 `overscroll-behavior: contain`
+  - **驗證範圍**：規則有載入、桌機 hover 仍有效、模擬手機寬度下字級與版面正常，這些測過。**sticky hover、輸入框放大、安全區、加到主畫面後的樣子都只有真機才看得出來，還沒在真的手機上確認**
+- **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題
 

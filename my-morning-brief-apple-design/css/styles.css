@@ -250,9 +250,11 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.btn-action:hover {
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .btn-action:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .btn-action.is-pressing,
@@ -269,9 +271,11 @@ body {
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.28);
 }
 
-.btn-primary:hover {
-  background: var(--apple-blue-hover);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.38);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: var(--apple-blue-hover);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.38);
+  }
 }
 
 .btn-primary.is-pressing,
@@ -386,9 +390,11 @@ body {
   animation: cardEnter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-hover);
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+  }
 }
 
 .card-header {
@@ -764,11 +770,13 @@ body {
   transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.option-btn:hover:not(:disabled) {
-  border-color: var(--apple-blue);
-  background: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--apple-blue);
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  }
 }
 
 .option-btn.correct {
@@ -1001,10 +1009,12 @@ body {
   cursor: pointer;
 }
 
-.task-skip-btn:hover:not(:disabled) {
-  background: var(--apple-red-subtle);
-  color: var(--apple-red-text);
-  border-color: transparent;
+@media (hover: hover) and (pointer: fine) {
+  .task-skip-btn:hover:not(:disabled) {
+    background: var(--apple-red-subtle);
+    color: var(--apple-red-text);
+    border-color: transparent;
+  }
 }
 
 .task-skip-btn:disabled {
@@ -1069,8 +1079,10 @@ body {
   transition: var(--spring-press), background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.cal-week-cell:hover {
-  background: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .cal-week-cell:hover {
+    background: #ffffff;
+  }
 }
 
 .cal-week-cell:active,
@@ -1140,8 +1152,10 @@ body {
   transition: var(--spring-press), background-color 0.2s ease;
 }
 
-.cal-month-cell:hover {
-  background: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .cal-month-cell:hover {
+    background: #ffffff;
+  }
 }
 
 .cal-month-cell:active,
@@ -1263,10 +1277,12 @@ body {
   transition: var(--spring-press), background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.countdown-delete:hover {
-  background: var(--apple-red-subtle);
-  color: var(--apple-red-text);
-  border-color: transparent;
+@media (hover: hover) and (pointer: fine) {
+  .countdown-delete:hover {
+    background: var(--apple-red-subtle);
+    color: var(--apple-red-text);
+    border-color: transparent;
+  }
 }
 
 .countdown-delete:active,
@@ -1610,8 +1626,10 @@ body {
   transition: var(--spring-press), border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.sleep-mode-card:hover {
-  border-color: var(--apple-blue);
+@media (hover: hover) and (pointer: fine) {
+  .sleep-mode-card:hover {
+    border-color: var(--apple-blue);
+  }
 }
 
 .sleep-mode-card:active,
@@ -1801,8 +1819,10 @@ body {
   height: 26px;
 }
 
-.chat-fab:hover {
-  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.46);
+@media (hover: hover) and (pointer: fine) {
+  .chat-fab:hover {
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.46);
+  }
 }
 
 .chat-fab:active,
@@ -1814,12 +1834,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 70vh;
+  height: 70dvh;
   max-height: 640px;
 }
 
 .chat-messages {
   flex: 1 1 auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -1929,6 +1951,8 @@ body {
   position: fixed;
   top: 0; left: 0;
   width: 100vw; height: 100vh;
+  /* 手機上 100vh 是「網址列收起來」的高度，網址列還在時底部 sheet 會被蓋住；dvh 才是實際看得到的高度 */
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(20px) brightness(0.82) saturate(0.85);
   -webkit-backdrop-filter: blur(20px) brightness(0.82) saturate(0.85);
@@ -1958,7 +1982,9 @@ body {
   width: 100%;
   max-width: 600px;
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: 1.5rem 1.75rem;
   box-shadow: var(--shadow-modal);
@@ -2042,7 +2068,9 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease, var(--spring-press);
 }
 
-.close-btn:hover { background: rgba(120, 120, 128, 0.2); color: var(--text-main); }
+@media (hover: hover) and (pointer: fine) {
+  .close-btn:hover { background: rgba(120, 120, 128, 0.2); color: var(--text-main); }
+}
 .close-btn:active,
 .close-btn.is-pressing { transform: scale(0.88); }
 
@@ -2161,8 +2189,10 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
-.debug-toggle:hover {
-  background: rgba(28, 28, 30, 0.88);
+@media (hover: hover) and (pointer: fine) {
+  .debug-toggle:hover {
+    background: rgba(28, 28, 30, 0.88);
+  }
 }
 
 .debug-toggle:active {
@@ -2271,7 +2301,8 @@ body {
   justify-content: space-around;
   align-items: center;
 
-  height: 60px;
+  /* 高度要把底部安全區加進去：box-sizing 是 border-box，只加 padding 會把 60px 的圖示區擠扁 */
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
 
   background: rgba(242, 242, 247, 0.85);
@@ -2327,5 +2358,26 @@ body {
   .tab-bar {
     background: rgba(28, 28, 30, 0.85);
     border-top-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ========== MOBILE / TOUCH ========== */
+
+/* double-tap zoom never applies to controls, so the browser can fire click without waiting;
+   control labels should not get selected or show the long-press callout */
+button, select, [role="button"] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* iOS Safari zooms the page when a focused field is under 16px and never zooms back */
+@media (pointer: coarse) {
+  .countdown-input,
+  .chat-input,
+  .interval-input,
+  .task-postpone-select {
+    font-size: 16px;
   }
 }
