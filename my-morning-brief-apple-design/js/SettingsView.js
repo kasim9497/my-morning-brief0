@@ -21,6 +21,7 @@ import {
   postponeTarget,
 } from './mediaTracker.js';
 
+import { exportBackup, importBackup } from './backup.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -196,6 +197,18 @@ export function renderSettingsView() {
           <button type="submit" class="btn-action btn-primary">${ICON_PLUS}新增</button>
         </form>
       </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
+        <div class="card-header">
+          <h3 class="card-title">資料備份</h3>
+          <span class="card-badge">資料只存在這個瀏覽器</span>
+        </div>
+        <div class="media-add-form">
+          <button type="button" class="btn-action btn-primary" id="backup-export-btn">匯出備份檔</button>
+          <button type="button" class="btn-action" id="backup-import-btn">從備份檔還原</button>
+          <input type="file" id="backup-import-input" accept="application/json,.json" hidden>
+        </div>
+      </div>
     </main>
   `;
 
@@ -268,4 +281,12 @@ export function renderSettingsView() {
     });
   }
 
+  const importInput = document.getElementById('backup-import-input');
+  document.getElementById('backup-export-btn').addEventListener('click', exportBackup);
+  document.getElementById('backup-import-btn').addEventListener('click', () => importInput.click());
+  importInput.addEventListener('change', async () => {
+    const error = importInput.files[0] ? await importBackup(importInput.files[0]) : null;
+    importInput.value = '';
+    if (error) window.alert(error);
+  });
 }
