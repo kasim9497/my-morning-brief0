@@ -5,6 +5,7 @@
  */
 
 const TABS = ['today', 'calendar', 'countdown', 'sleep', 'settings'];
+const TAB_TITLES = { today: '今日', calendar: '週曆', countdown: '倒數', sleep: '睡眠', settings: '設定' };
 let currentTab = 'today';
 
 export function initTabs() {
@@ -34,6 +35,10 @@ export function switchTab(tabName) {
   document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
   const targetBtn = document.querySelector(`.tab-item[data-view="${tabName}"]`);
   if (targetBtn) targetBtn.classList.add('active');
+
+  // 大標題和導覽列小標題是跨分頁共用的同一組元素
+  document.getElementById('page-title').textContent = TAB_TITLES[tabName];
+  document.getElementById('navbar-title').textContent = TAB_TITLES[tabName];
 
   currentTab = tabName;
   localStorage.setItem('currentTab', tabName);

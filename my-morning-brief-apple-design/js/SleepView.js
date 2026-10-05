@@ -125,15 +125,16 @@ function renderReminderCard() {
     <div class="card" style="margin-top: 1.25rem;">
       <div class="card-header">
         <h3 class="card-title">就寢提醒</h3>
-        <span class="card-badge">瀏覽器通知</span>
       </div>
-      <div class="sleep-reminder-box">
-        <label class="sleep-reminder-label">
-          <input type="checkbox" id="sleep-reminder-toggle" ${reminderConfig.enabled ? 'checked' : ''}>
-          <span>到了就寢時間跳瀏覽器通知提醒我（僅限這個分頁開著時，PWA 純前端沒辦法背景推播）</span>
-        </label>
+      <label class="list-row">
+        <span>開啟提醒</span>
+        <input type="checkbox" class="ios-switch" id="sleep-reminder-toggle" ${reminderConfig.enabled ? 'checked' : ''}>
+      </label>
+      <label class="list-row">
+        <span>就寢時間</span>
         <input type="time" class="countdown-input" id="sleep-reminder-time" value="${escapeHtml(reminderConfig.bedTime)}">
-      </div>
+      </label>
+      <p class="list-footnote">時間到會跳瀏覽器通知。只有晨序開著的時候才會提醒，關掉就收不到。</p>
     </div>
   `;
 }

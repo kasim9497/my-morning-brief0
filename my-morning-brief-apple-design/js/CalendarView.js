@@ -165,8 +165,7 @@ export function renderCalendarView() {
     <main class="container">
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">週曆</h3>
-          <span class="card-badge">${state.mode === 'week' ? '週檢視' : '月檢視'}</span>
+          <h3 class="card-title">${state.mode === 'week' ? '週檢視' : '月檢視'}</h3>
         </div>
         ${renderControls()}
         ${state.mode === 'week' ? renderWeekGrid() : renderMonthGrid()}

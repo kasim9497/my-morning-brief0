@@ -3,7 +3,8 @@
  */
 
 import { dataService } from './services/dataService.js';
-import { initTabs } from './tabs.js';
+import { initTabs, switchTab } from './tabs.js';
+import { applyTheme } from './theme.js';
 import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
@@ -23,7 +24,9 @@ let quizState = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("Initializing 晨序 (Personal AI Life Scheduling System)...");
+  applyTheme();
   initTabs();
+  setupSectionLinks();
   setupInstantPressListeners();
   setupScrollShadow();
   renderTaskList();
@@ -57,8 +60,9 @@ const PRESSABLE_SELECTOR = [
   '.sleep-option',
   '.countdown-delete',
   '.tab-item',
-  '.chat-fab',
   '.close-btn',
+  '.nav-btn',
+  '.section-action',
 ].join(', ');
 
 function setupInstantPressListeners() {
@@ -88,13 +92,22 @@ function setupCalendarTabRefresh() {
 }
 
 /**
- * §12: masthead gains .scrolled class after page scrolls > 10px
+ * 今日頁區塊標題旁的藍色文字按鈕（編輯／管理）：跳到對應的分頁
+ */
+function setupSectionLinks() {
+  document.querySelectorAll('[data-goto]').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.goto));
+  });
+}
+
+/**
+ * 大標題捲到導覽列底下之後，導覽列加上 .scrolled（浮出玻璃底和置中的小標題）
  */
 function setupScrollShadow() {
   const masthead = document.querySelector('.masthead');
   if (!masthead) return;
   const onScroll = () => {
-    masthead.classList.toggle('scrolled', window.scrollY > 10);
+    masthead.classList.toggle('scrolled', window.scrollY > 56);
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -160,8 +173,7 @@ function triggerCardStagger() {
 }
 
 // 小型行內 icon，取代散落各處的表情符號，統一用 currentColor 走版面配色
-const ICON_PIN = '<svg aria-hidden="true" focusable="false" class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>';
-const ICON_CLOUD_LG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:2.4rem;height:2.4rem;color:var(--apple-blue);"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>';
+const ICON_CLOUD_LG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:2.4rem;height:2.4rem;color:var(--tint);"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -191,19 +203,8 @@ function renderHeader({ user, meta }) {
     timeEl.textContent = `資料時間：${meta.lastUpdated}`;
   }
 
-  const userEl = document.getElementById('greeting-user');
-  if (userEl) userEl.textContent = `早安，${escapeHtml(user.name)}！`;
-
   const descEl = document.getElementById('greeting-desc');
   if (descEl) descEl.textContent = meta.greeting;
-
-  const locPill = document.getElementById('header-location-pill');
-  if (locPill) {
-    const locText = (user.city && user.district) 
-      ? `${user.city}${user.district}` 
-      : (user.city || user.location || '南京市栖霞區');
-    locPill.innerHTML = `${ICON_PIN}${escapeHtml(locText)}`;
-  }
 }
 
 /**
@@ -211,7 +212,6 @@ function renderHeader({ user, meta }) {
  */
 function renderWeather(w) {
   const container = document.getElementById('weather-widget-content');
-  const safeLoc = escapeHtml(w.location || '南京市栖霞區');
   const safeCond = escapeHtml(w.condition || '多雲');
   const safeTemp = escapeHtml(w.tempCurrent || 'N/A');
   const safeMin = escapeHtml(w.tempMin || 'N/A');
@@ -221,10 +221,12 @@ function renderWeather(w) {
   const safeUv = escapeHtml(w.uvIndex || 'N/A');
   const safeTip = escapeHtml(w.aiTip || '提醒您注意天氣變化。');
 
+  // 地點放在卡片標題列右邊，卡片裡不再重複一次
+  const badge = document.getElementById('weather-card-badge');
+  if (badge) badge.textContent = w.location || '南京市栖霞區';
+
   container.innerHTML = `
-    <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
-      ${ICON_PIN}${safeLoc} ${w.isFallback ? '<span style="color: var(--apple-red);">(資料暫無法更新)</span>' : ''}
-    </div>
+    ${w.isFallback ? '<div style="font-size: var(--text-footnote); color: var(--apple-red); margin-bottom: 0.35rem;">資料暫時無法更新</div>' : ''}
     <div class="weather-main">
       <div>
         <div class="weather-temp">${safeTemp}</div>
@@ -235,25 +237,25 @@ function renderWeather(w) {
     
     <div class="weather-details">
       <div class="weather-detail-item">
-        <span class="weather-detail-label">最低 / 最高：</span>
+        <span class="weather-detail-label">最低 / 最高</span>
         <span class="weather-detail-val">${safeMin} ~ ${safeMax}</span>
       </div>
       <div class="weather-detail-item">
-        <span class="weather-detail-label">降雨機率：</span>
+        <span class="weather-detail-label">降雨機率</span>
         <span class="weather-detail-val" style="color: var(--apple-blue);">${safeRain}</span>
       </div>
       <div class="weather-detail-item">
-        <span class="weather-detail-label">體感溫度：</span>
+        <span class="weather-detail-label">體感溫度</span>
         <span class="weather-detail-val">${safeFeels}</span>
       </div>
       <div class="weather-detail-item">
-        <span class="weather-detail-label">紫外線指數：</span>
+        <span class="weather-detail-label">紫外線指數</span>
         <span class="weather-detail-val">${safeUv}</span>
       </div>
     </div>
 
     <div class="ai-tip-box">
-      <div class="ai-tip-title">今日 AI 出門提醒</div>
+      <div class="ai-tip-title">出門提醒</div>
       <div>${safeTip}</div>
     </div>
   `;
@@ -264,7 +266,10 @@ function renderWeather(w) {
  */
 function renderDailyQuote(q) {
   const container = document.getElementById('quote-banner-content');
-  if (!container || !q) return;
+  if (!container) return;
+  // 沒有語錄資料時整張卡片收起來，不要留一張只有標題的空卡
+  container.closest('.card').hidden = !q;
+  if (!q) return;
   container.innerHTML = `
     <div class="quote-text">「${escapeHtml(q.text)}」</div>
     <div class="quote-author">— ${escapeHtml(q.author)}${q.source ? ` ${escapeHtml(q.source)}` : ''}</div>
@@ -287,28 +292,20 @@ function renderHoroscope(h) {
 
   container.innerHTML = `
     <div class="horoscope-header">
-      <div style="font-size: 1.1rem; font-weight: 700;">${escapeHtml(h.sign)}</div>
       <div class="stars">${escapeHtml(h.ratingStars)}</div>
-    </div>
-
-    <div class="horoscope-meta">
-      <span class="tag-lucky">幸運色：${escapeHtml(h.luckyColor)}</span>
-      <span class="tag-lucky">幸運數字：${escapeHtml(h.luckyNumber)}</span>
+      <div class="horoscope-meta">幸運色 ${escapeHtml(h.luckyColor)} · 幸運數字 ${escapeHtml(h.luckyNumber)}</div>
     </div>
 
     ${transitAlertHtml}
 
-    <div class="horoscope-summary">
-      <strong>AI 今日運勢摘要：</strong><br/>
-      ${escapeHtml(h.aiSummary)}
-    </div>
+    <div class="horoscope-summary">${escapeHtml(h.aiSummary)}</div>
 
     <div class="horoscope-categories">
-      <div class="cat-item"><span class="cat-name">整體：</span><span>${escapeHtml(h.details.overall)}</span></div>
-      <div class="cat-item"><span class="cat-name">工作：</span><span>${escapeHtml(h.details.work)}</span></div>
-      <div class="cat-item"><span class="cat-name">感情：</span><span>${escapeHtml(h.details.love)}</span></div>
-      <div class="cat-item"><span class="cat-name">財運：</span><span>${escapeHtml(h.details.wealth)}</span></div>
-      <div class="cat-item"><span class="cat-name">健康：</span><span>${escapeHtml(h.details.health)}</span></div>
+      <div class="cat-item"><span class="cat-name">整體</span><span>${escapeHtml(h.details.overall)}</span></div>
+      <div class="cat-item"><span class="cat-name">工作</span><span>${escapeHtml(h.details.work)}</span></div>
+      <div class="cat-item"><span class="cat-name">感情</span><span>${escapeHtml(h.details.love)}</span></div>
+      <div class="cat-item"><span class="cat-name">財運</span><span>${escapeHtml(h.details.wealth)}</span></div>
+      <div class="cat-item"><span class="cat-name">健康</span><span>${escapeHtml(h.details.health)}</span></div>
     </div>
   `;
 }
@@ -319,92 +316,62 @@ function renderHoroscope(h) {
 function renderExchangeRate(r) {
   const container = document.getElementById('rate-widget-content');
   if (!r || r.current === null || r.current === undefined) {
-    container.innerHTML = `
-      <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">CNY → TWD</div>
-      <div class="rate-display"><div class="rate-primary">即時匯率資料暫無法取得</div></div>
-    `;
+    container.innerHTML = '<div class="countdown-empty">即時匯率資料暫時無法取得</div>';
     return;
   }
 
-  const changeClass = (r.change !== null && r.change >= 0) ? 'rate-up' : 'rate-down';
-  const yesterdayStr = (r.yesterday !== null && r.yesterday !== undefined) ? `昨日收盤：${Number(r.yesterday).toFixed(2)}` : '昨日收盤：歷史資料暫無';
-  const changeStr = (r.change !== null && r.change !== undefined) 
-    ? `${r.change >= 0 ? '▲' : '▼'} ${Math.abs(r.change).toFixed(2)} (${escapeHtml(r.changePercent)})` 
-    : '即時異動：暫無歷史對照';
+  const hasChange = r.change !== null && r.change !== undefined;
+  const changeHtml = hasChange
+    ? `<span class="rate-change ${r.change >= 0 ? 'rate-up' : 'rate-down'}">${r.change >= 0 ? '▲' : '▼'} ${Math.abs(r.change).toFixed(2)} (${escapeHtml(r.changePercent)})</span>`
+    : '';
+  const yesterdayStr = (r.yesterday !== null && r.yesterday !== undefined) ? `昨日 ${Number(r.yesterday).toFixed(2)}` : '還沒有昨日資料';
 
-  let sparklineHtml = '';
-  const detailed = Array.isArray(r.last7DaysDetailed) ? r.last7DaysDetailed : null;
-
+  // 右邊的小長條圖：近 7 日走勢，最新一天上色
+  let barsHtml = '';
   if (Array.isArray(r.last7Days) && r.last7Days.length > 0) {
     const maxVal = Math.max(...r.last7Days);
     const minVal = Math.min(...r.last7Days);
     const range = maxVal - minVal || 0.01;
-    const barsHtml = r.last7Days.map((val, idx) => {
+    barsHtml = r.last7Days.map((val, idx) => {
       const heightPercent = Math.max(20, Math.round(((val - minVal) / range) * 80 + 20));
       const isActive = idx === r.last7Days.length - 1 ? 'active' : '';
-      const dateLabel = detailed && detailed[idx] ? formatShortDate(detailed[idx].date) : `Day ${idx + 1}`;
-      return `<div class="bar ${isActive}" style="height: ${heightPercent}%;" title="${dateLabel}: ${val}"></div>`;
+      return `<div class="bar ${isActive}" style="height: ${heightPercent}%;"></div>`;
     }).join('');
-
-    const historyListHtml = detailed
-      ? detailed
-          .slice()
-          .reverse()
-          .map((entry, idxFromEnd) => {
-            const tag = idxFromEnd === 0 ? '今天' : idxFromEnd === 1 ? '昨天' : formatShortDate(entry.date);
-            return `
-              <div class="rate-history-row ${idxFromEnd === 0 ? 'is-today' : ''}">
-                <span>${tag}</span>
-                <span>${Number(entry.rate).toFixed(2)}</span>
-              </div>
-            `;
-          })
-          .join('')
-      : '';
-
-    sparklineHtml = `
-      <div class="sparkline-container" data-action="toggle-rate-history" role="button" tabindex="0" aria-expanded="false">
-        <div class="sparkline-title-row">
-          <span class="sparkline-title">近 7 日匯率走勢 (CNY / TWD)</span>
-          <span class="sparkline-toggle-hint">點一下看每日明細</span>
-        </div>
-        <div class="sparkline-bars">${barsHtml}</div>
-        ${historyListHtml ? `<div class="rate-history-list" hidden>${historyListHtml}</div>` : ''}
-      </div>
-    `;
-  } else {
-    sparklineHtml = `
-      <div class="sparkline-container">
-        <div class="sparkline-title" style="color: var(--text-muted); font-size: 0.78rem;">📊 歷史 7 日匯率走勢：暫無數據 (僅提供即時匯率)</div>
-      </div>
-    `;
   }
 
+  const detailed = Array.isArray(r.last7DaysDetailed) ? r.last7DaysDetailed : [];
+  const historyListHtml = detailed
+    .slice()
+    .reverse()
+    .map((entry, idxFromEnd) => {
+      const tag = idxFromEnd === 0 ? '今天' : idxFromEnd === 1 ? '昨天' : formatShortDate(entry.date);
+      return `
+        <div class="rate-history-row ${idxFromEnd === 0 ? 'is-today' : ''}">
+          <span>${tag}</span>
+          <span>${Number(entry.rate).toFixed(2)}</span>
+        </div>
+      `;
+    })
+    .join('');
+
   container.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">${escapeHtml(r.pair || 'CNY → TWD')}</span>
-      <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener" style="font-size: 0.7rem; color: var(--text-muted); text-decoration: underline;">
-        Rates by ExchangeRate-API
-      </a>
-    </div>
-    
-    <div class="rate-display">
-      <div class="rate-primary">1 CNY ≈ ${Number(r.current).toFixed(2)} TWD</div>
-      <div class="rate-change ${changeClass}">${changeStr}</div>
+    <div class="metric-row">
+      <div class="metric">
+        <span class="metric-value">${Number(r.current).toFixed(2)}</span>
+        <span class="metric-unit">TWD</span>
+      </div>
+      ${barsHtml ? `<div class="sparkline-bars" aria-hidden="true">${barsHtml}</div>` : ''}
     </div>
 
     <div class="rate-meta">
-      <span>${yesterdayStr}</span>
-      <span>${escapeHtml(r.updateTime || '')}</span>
+      <span>${changeHtml}${yesterdayStr}</span>
+      ${historyListHtml ? '<button type="button" class="section-action card-link" data-action="toggle-rate-history" aria-expanded="false">每日明細</button>' : ''}
     </div>
 
-    ${sparklineHtml}
-  `;
+    ${historyListHtml ? `<div class="rate-history-list" hidden>${historyListHtml}</div>` : ''}
 
-  container.querySelectorAll('.bar').forEach(bar => {
-    bar.addEventListener('pointerenter', () => bar.classList.add('bar-hover'));
-    bar.addEventListener('pointerleave', () => bar.classList.remove('bar-hover'));
-  });
+    <a class="list-footnote" href="https://www.exchangerate-api.com" target="_blank" rel="noopener">${r.updateTime ? `${escapeHtml(r.updateTime)} 更新 · ` : ''}Rates by ExchangeRate-API</a>
+  `;
 
   const historyToggle = container.querySelector('[data-action="toggle-rate-history"]');
   const historyList = container.querySelector('.rate-history-list');
@@ -419,12 +386,6 @@ function renderExchangeRate(r) {
       historyToggle.setAttribute('aria-expanded', String(isHidden));
     };
     historyToggle.addEventListener('click', toggle);
-    historyToggle.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggle();
-      }
-    });
   }
 }
 
@@ -486,7 +447,7 @@ function renderDrivingQuiz() {
           ${isCorrect ? '✓ 答對了！' : `✗ 答錯了！正確答案是 (${currentQ.answer})`}
         </div>
         <div><strong>官方解析：</strong>${currentQ.explanation}</div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+        <div style="font-size: var(--text-caption); color: var(--text-muted); margin-top: 0.35rem;">
           來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener" style="color: var(--text-muted);">${currentQ.source || '交通部公路局機車筆試題庫'}</a> (更新日期: ${currentQ.updated_at || '2026-06-02'})
         </div>
       </div>
@@ -498,7 +459,7 @@ function renderDrivingQuiz() {
 
   container.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+      <span style="font-size: var(--text-subhead); font-weight: 600; color: var(--text-muted);">
         題目 ${currIdx + 1} / ${total}
       </span>
       <span class="quiz-score-badge">${scoreText}</span>
@@ -813,16 +774,15 @@ class AppleFluidModal {
 function setupEventListeners() {
   const refreshBtn = document.getElementById('btn-refresh-brief');
   if (refreshBtn) {
-    const refreshBtnDefaultHtml = refreshBtn.innerHTML;
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.disabled = true;
-      refreshBtn.textContent = '載入最新數據…';
+      refreshBtn.classList.add('is-loading');
 
       await dataService.refreshAll();
       await loadAllBriefData();
 
       refreshBtn.disabled = false;
-      refreshBtn.innerHTML = refreshBtnDefaultHtml;
+      refreshBtn.classList.remove('is-loading');
     });
   }
 

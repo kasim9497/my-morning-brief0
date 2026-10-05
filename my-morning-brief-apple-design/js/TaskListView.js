@@ -22,6 +22,9 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// 「⋯」選單裡「只跳過今天」那一項的值（走 skipTask，不是延後），跟延後選項放在同一個 select
+const SKIP_VALUE = '__skip';
+
 const STATUS_LABEL = {
   pending: '',
   done: '已完成',
@@ -68,13 +71,11 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
             ${carriedTag}
             ${statusTag}
           </div>
-          <div class="task-actions">
-            <button class="task-skip-btn" data-action="skip" data-instance="${t.instanceId}" ${isInactive ? 'disabled' : ''}>跳過</button>
-            <select class="task-postpone-select" data-instance="${t.instanceId}" ${isInactive ? 'disabled' : ''}>
-              <option value="">延後…</option>
-              ${optionsHtml}
-            </select>
-          </div>
+          <select class="task-postpone-select" data-instance="${t.instanceId}" aria-label="延後或跳過" ${isInactive ? 'disabled' : ''}>
+            <option value="">⋯</option>
+            <option value="${SKIP_VALUE}">只跳過今天</option>
+            ${optionsHtml}
+          </select>
         </div>
       `;
     })
@@ -100,18 +101,15 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
     });
   });
 
-  container.querySelectorAll('[data-action="skip"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      skipTask(dateStr, btn.dataset.instance);
-      rerender();
-    });
-  });
-
   container.querySelectorAll('.task-postpone-select').forEach((select) => {
     select.addEventListener('change', () => {
       const option = select.value;
       if (!option) return;
-      postponeTask(dateStr, select.dataset.instance, option);
+      if (option === SKIP_VALUE) {
+        skipTask(dateStr, select.dataset.instance);
+      } else {
+        postponeTask(dateStr, select.dataset.instance, option);
+      }
       rerender();
     });
   });

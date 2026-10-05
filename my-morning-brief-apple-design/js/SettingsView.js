@@ -22,9 +22,16 @@ import {
 } from './mediaTracker.js';
 
 import { exportBackup, importBackup } from './backup.js';
+import { getThemePref, setThemePref } from './theme.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+const THEME_OPTIONS = [
+  { value: 'auto', label: '自動' },
+  { value: 'light', label: '淺色' },
+  { value: 'dark', label: '深色' },
+];
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -155,9 +162,22 @@ export function renderSettingsView() {
   const mediaItems = getMediaItems();
   const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書，在下面新增一個吧</div>';
 
+  const themePref = getThemePref();
+  const themeButtonsHtml = THEME_OPTIONS.map(
+    (opt) => `<button type="button" class="mode-btn ${opt.value === themePref ? 'is-active' : ''}" data-action="set-theme" data-theme-value="${opt.value}">${opt.label}</button>`
+  ).join('');
+
   container.innerHTML = `
     <main class="container">
       <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">外觀</h3>
+          <span class="card-badge">自動會跟著手機的深色模式</span>
+        </div>
+        <div class="routine-mode-switch">${themeButtonsHtml}</div>
+      </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
         <div class="card-header">
           <h3 class="card-title">作息設定</h3>
           <span class="card-badge">星期幾 / 每 N 天，每項任務自己選</span>
@@ -211,6 +231,13 @@ export function renderSettingsView() {
       </div>
     </main>
   `;
+
+  container.querySelectorAll('[data-action="set-theme"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setThemePref(btn.dataset.themeValue);
+      renderSettingsView();
+    });
+  });
 
   container.querySelectorAll('[data-action="toggle-day"]').forEach((btn) => {
     btn.addEventListener('click', () => {

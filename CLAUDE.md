@@ -57,6 +57,17 @@
   - **點輸入框頁面會放大**：iOS 對字級小於 16px 的 input/select 會放大頁面且不縮回來。`@media (pointer: coarse)` 下把 `.countdown-input`／`.chat-input`／`.interval-input`／`.task-postpone-select` 設成 16px（桌機維持原樣）。副作用：手機上任務列的「延後…」字比旁邊的「跳過」大
   - 所有 `button`／`select` 加 `touch-action: manipulation`（免等雙擊縮放判定）與 `user-select: none`；`.chat-messages`／`.modal-content` 加 `overscroll-behavior: contain`
   - **驗證範圍**：規則有載入、桌機 hover 仍有效、模擬手機寬度下字級與版面正常，這些測過。**sticky hover、輸入框放大、安全區、加到主畫面後的樣子都只有真機才看得出來，還沒在真的手機上確認**
+- **整體介面改成 iOS「健康」App 的樣子 + 深淺色（2026-10-06）**：使用者給了 5 張健康 App 截圖，要求版面和風格比照、要有深色和淺色。用 AskUserQuestion 確認過四件事：底部浮動膠囊保留 5 個分頁、外觀跟系統走且可手動、每一頁都要重新設計（分階段做）、每個區塊一個代表色。**這一條跟上面比較舊的條目有衝突時，以這一條為準**（例如上面寫的右下角 `.chat-fab`、`.greeting-banner`／`.quote-banner`、masthead 的品牌標題和太陽 icon、3 欄版面、tab bar 用線條 icon，都已經不存在）
+  - **顏色全部走 `styles.css` 最上面的變數，下面不要寫死色碼**。深色的值寫了兩次：`@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`（跟系統）和 `:root[data-theme="dark"]`（手動），**改深色的值兩塊要一起改**。`js/theme.js` 負責在 `<html>` 放 `data-theme` 和更新兩個 `theme-color` meta，偏好存在 localStorage `morningBrief.theme`（沒有這個 key = 自動）；`index.html` 的 `<head>` 另有一小段行內 script 在樣式載入前先套用，避免閃一下。切換的 UI 在設定頁最上面的「外觀」卡片
+  - **字級只有九級**（`--text-large-title` 34／`--text-title1` 28／`--text-title2` 22／`--text-title3` 20／`--text-body` 17／`--text-subhead` 15／`--text-footnote` 13／`--text-caption` 12／`--text-caption2` 11），**不要再寫零散的 rem 數字**。使用者第一版看完說「怪怪的」，用「品牌與介面系統」skill 的 `validate-tokens.cjs` 掃出來的主因是原本有三十多種字級（多半 13–14px）而且九成是粗體。字重規則：700 只給頁面大標題、區塊標題、大數字；其他最多 600；內文 400
+  - **版面元件**：導覽列（class 還是叫 `.masthead`）是 fixed、頂端透明，捲超過 56px 才加 `.scrolled` 浮出玻璃底和置中小標題；右上角兩顆 `.nav-btn` 圓鈕（重新整理、AI 助理）。大標題在 `.page-head`，是跨分頁共用的同一個元素，文字由 `tabs.js` 的 `TAB_TITLES` 切換。底部 `.tab-bar` 是置中的浮動玻璃膠囊，**只有這裡的 icon 是實心的**（使用者要求，比照 iOS tab bar），其他地方的 icon 還是線條。`.card` 沒有邊框和陰影，小標題顏色來自卡片上的 `.tint-xxx`（任務橘、倒數紅、天氣青、星座紫、匯率綠、題庫藍、語錄靛）。卡片外的區塊標題用 `.section-head`／`.section-title`，右邊的藍色文字按鈕是 `.section-action`（加 `data-goto="分頁名"` 會跳到那個分頁）
+  - **卡片裡不要再包一層有底色的小框**：使用者明確要求對照健康 App。明細一律是「細線分隔的列」（`.list-row`、`.weather-detail-item`、`.task-row`、`.countdown-item`）。大數字用 `.metric`（`.metric-value` + `.metric-unit`），匯率卡和倒數共用
+  - **不要有重複文字**：使用者點名過「處女座運勢／8/23 - 9/22／處女座 ♍」這種。頁面大標題、卡片標題、卡片內容三層不要重複同一個詞；天氣的地點現在只出現在卡片標題列右邊（`#weather-card-badge`）
+  - **設定頁使用者嫌「太多圓形很亂」**：星期按鈕是圓角方形排成一列 7 格；「星期幾／每 N 天」和外觀選項是分段控制（`.routine-mode-switch` + `.mode-btn`），不要改回一顆顆膠囊。開關用 `.ios-switch`（底下還是 checkbox）
+  - **任務列尾端只有一個「⋯」**（原生 select，class 還是 `.task-postpone-select`）：裡面是「只跳過今天」（走 `skipTask`）加上原本的延後選項。原本獨立的「跳過」按鈕拿掉了，因為字級調到 16px 之後手機上一列放不下。**「只跳過今天」和選單裡的「這件事跳過這週」是兩個不同的功能，不要合併**
+  - **AI 助理按鈕在右上角導覽列**（`#btn-open-chat`），不是右下角浮動按鈕了——浮動按鈕會蓋到內容，使用者要求處理。「未來規劃」的按鈕（`#btn-open-settings`）和 Debug 面板搬到頁尾
+  - **字體**：`fonts/noto-sans-tc/` 是自己放的思源黑體可變字重版（來自 npm `@fontsource-variable/noto-sans-tc` 5.3.0，OFL 授權，105 個依 unicode-range 切開的 woff2，瀏覽器只抓用到的那幾片），Google Fonts 的連結拿掉了。字體堆疊裡系統的 SF Pro／蘋方排在前面，所以 iPhone 不會下載這份。**SF Pro／蘋方不能放進網站（Apple 授權不允許），不要去下載**
+  - **還沒做**：週曆、倒數、睡眠、設定四頁只換了外觀和上面提到的幾處，內部排版還沒照健康 App 重新設計。匯率卡的小長條圖沒看過實際畫出來的樣子（本機資料沒有歷史匯率）。玻璃模糊、安全區、深色模式在真機上的樣子都還沒確認
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題
