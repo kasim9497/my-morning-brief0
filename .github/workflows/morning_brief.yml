@@ -59,6 +59,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      # 簡轉繁用（generate_brief.py 的 to_traditional），沒裝的話 AI 內容會維持模型回的簡體字
+      - name: Install Python Dependencies
+        run: pip install opencc-python-reimplemented
+
       - name: Run Daily Briefing Generation Script
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

@@ -20,6 +20,27 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
+# 簡轉繁：AI 模型（deepseek）就算 prompt 要求繁體，還是常常整段回簡體字，
+# 所以 AI 回傳的內容一律再過一次 OpenCC（s2twp = 簡體 → 台灣繁體，連用語一起轉）。
+# 沒裝這個套件時（例如本機沒裝）不會壞，只是不轉。
+try:
+    from opencc import OpenCC
+    _S2TW = OpenCC('s2twp')
+except Exception:
+    _S2TW = None
+
+
+def to_traditional(value):
+    if _S2TW is None:
+        return value
+    if isinstance(value, str):
+        return _S2TW.convert(value)
+    if isinstance(value, list):
+        return [to_traditional(v) for v in value]
+    if isinstance(value, dict):
+        return {k: to_traditional(v) for k, v in value.items()}
+    return value
+
 def strip_html(raw: str) -> str:
     """Remove all HTML tags and decode HTML entities from a string.
     Does NOT require BeautifulSoup — uses stdlib re + html.unescape only.
@@ -201,7 +222,8 @@ def fetch_exchange_rate():
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-            twd_rate = round(data['rates']['TWD'], 2)
+            # 人民幣兌台幣一天通常只動到小數第三位，四捨五入到兩位會讓每天看起來都一樣
+            twd_rate = round(data['rates']['TWD'], 4)
 
             # ExchangeRate-API 免費版只給最新匯率，沒有歷史資料可以查。
             # 改成自己每天存一筆，`data/exchange_rate_history.json` 由 Actions
@@ -221,7 +243,7 @@ def fetch_exchange_rate():
             yesterday_rate, change, change_percent = None, None, None
             if len(sorted_dates) >= 2:
                 yesterday_rate = trimmed[sorted_dates[-2]]
-                change = round(twd_rate - yesterday_rate, 2)
+                change = round(twd_rate - yesterday_rate, 4)
                 change_percent = f"{'+' if change >= 0 else ''}{round(change / yesterday_rate * 100, 2)}%"
 
             return {
@@ -251,8 +273,11 @@ def fetch_exchange_rate():
             "isFallback": True
         }
 
+# 每天出幾題；題庫不夠這麼多題時，就是題庫有幾題出幾題
+DAILY_QUIZ_SIZE = 10
+
 def load_quiz_questions():
-    print("Selecting 5 Scooter License Test Questions from data/questions.json...")
+    print("Selecting daily Scooter License Test Questions from data/questions.json...")
     now_tw = datetime.now(TZ_TAIWAN)
     random.seed(now_tw.strftime("%Y-%m-%d"))  # Fixed daily seed for quiz consistency
     quiz_file = "data/questions.json"
@@ -261,7 +286,7 @@ def load_quiz_questions():
             with open(quiz_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 questions = data.get("questions", [])
-                sample_size = min(5, len(questions))
+                sample_size = min(DAILY_QUIZ_SIZE, len(questions))
                 sampled = random.sample(questions, sample_size)
                 for idx, item in enumerate(sampled):
                     item['id'] = f"q_{idx+1}"
@@ -501,7 +526,7 @@ def main():
     driving_quiz = load_quiz_questions()
     rss_news = fetch_rss_news()
 
-    ai_synthesis = synthesize_with_openrouter(weather, exchange_rate, rss_news, openrouter_key)
+    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, rss_news, openrouter_key))
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 

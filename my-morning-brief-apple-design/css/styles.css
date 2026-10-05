@@ -226,6 +226,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 頁面最外層也要有底色：iOS 的狀態列和上下回彈露出來的區域是看這裡 */
+html { background-color: var(--bg-system); }
+
 body {
   font-family: var(--font-system);
   background-color: var(--bg-system);
@@ -896,6 +899,19 @@ body {
 }
 
 .quiz-explanation-title { font-weight: 600; margin-bottom: 0.3rem; }
+
+/* 題庫卡片最下面那一列：錯題本入口 */
+.quiz-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-footnote);
+  color: var(--text-muted);
+}
 
 .quiz-controls {
   display: flex;
@@ -2112,26 +2128,6 @@ body {
 .close-btn:active,
 .close-btn.is-pressing { transform: scale(0.88); }
 
-.roadmap-section { margin-bottom: 1.25rem; }
-
-.roadmap-section h4 {
-  font-size: var(--text-body);
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--apple-blue);
-  margin-bottom: 0.5rem;
-}
-
-.roadmap-list {
-  font-size: var(--text-subhead);
-  letter-spacing: 0.003em;
-  color: var(--text-main);
-  padding-left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
 /* FOOTER */
 
 .footer {
@@ -2143,14 +2139,26 @@ body {
   margin-top: 1.5rem;
 }
 
-.footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 0.5rem;
+/* Debug 面板是開發用的：網址加 ?debug 時 index.html 會在 <html> 加上 .debug-on 才顯示 */
+.debug-on .debug-widget { display: inline-block; }
+
+/* 左右切換的滑入動畫（js/motion.js 的 slideIn 會加這兩個 class） */
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: none; }
 }
 
-.footer-links .section-action { font-size: var(--text-subhead); }
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.slide-in-right { animation: slideInRight 0.28s var(--ease-out-smooth) both; }
+.slide-in-left  { animation: slideInLeft 0.28s var(--ease-out-smooth) both; }
+
+/* 滑入的那一瞬間內容會超出螢幕右邊一點，不要讓頁面因此可以左右捲 */
+#view-container { overflow-x: clip; }
 
 /* REDUCED MOTION & TRANSPARENCY */
 
@@ -2206,7 +2214,7 @@ body {
    ============================================================ */
 
 .debug-widget {
-  display: inline-block;
+  display: none;
   margin-top: 0.75rem;
   text-align: left;
   font-family: var(--font-system);

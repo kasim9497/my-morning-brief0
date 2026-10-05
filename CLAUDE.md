@@ -68,6 +68,14 @@
   - **AI 助理按鈕在右上角導覽列**（`#btn-open-chat`），不是右下角浮動按鈕了——浮動按鈕會蓋到內容，使用者要求處理。「未來規劃」的按鈕（`#btn-open-settings`）和 Debug 面板搬到頁尾
   - **字體**：`fonts/noto-sans-tc/` 是自己放的思源黑體可變字重版（來自 npm `@fontsource-variable/noto-sans-tc` 5.3.0，OFL 授權，105 個依 unicode-range 切開的 woff2，瀏覽器只抓用到的那幾片），Google Fonts 的連結拿掉了。字體堆疊裡系統的 SF Pro／蘋方排在前面，所以 iPhone 不會下載這份。**SF Pro／蘋方不能放進網站（Apple 授權不允許），不要去下載**
   - **還沒做**：週曆、倒數、睡眠、設定四頁只換了外觀和上面提到的幾處，內部排版還沒照健康 App 重新設計。匯率卡的小長條圖沒看過實際畫出來的樣子（本機資料沒有歷史匯率）。玻璃模糊、安全區、深色模式在真機上的樣子都還沒確認
+- **實機回饋後的一輪調整（2026-10-06）**：使用者在 iPhone 17 實機看過，確認深淺色（跟系統、手動、重開後保留）、底部選單不擋 home indicator 都正常，接著要求下面這些：
+  - **「未來規劃」整個刪掉**：頁尾的按鈕、`#modal-roadmap`、`app.js` 裡的接線、`.roadmap-*` 樣式都拿掉了。`AppleFluidModal` 現在只剩 AI 助理那一個用
+  - **AI 內容會是簡體字 → 後端加簡轉繁**：deepseek 就算 prompt 要求繁體，星座和天氣出門提醒還是常整段回簡體。`generate_brief.py` 的 `to_traditional()` 把 `synthesize_with_openrouter()` 的回傳值整個過一次 OpenCC（`s2twp`）。workflow 多一步 `pip install opencc-python-reimplemented`——**這是這支腳本第一個第三方套件**，沒裝時 `to_traditional()` 會原樣回傳不會壞（所以本機沒裝也能跑，只是不轉）
+  - **題庫一天 10 題 + 錯題本**：`DAILY_QUIZ_SIZE = 10`。**但 `data/questions.json` 目前只有 8 題**，所以實際上每天是同樣那 8 題；要真的有 10 題不重複，得先擴充題庫，而且題目必須來自公路局官方題庫，**不可以自己編題目或答案**（卡片上標的是官方題庫，編的題目會害使用者考試答錯）。錯題本是 `js/quizMistakes.js`（localStorage `morningBrief.quizMistakes.v1`，用題目文字當 key，因為每天的 `q_1`… 是重編的）：答錯自動存、累計錯幾次；題庫卡片最下面有「複習錯題」，複習時答對那題就移除。`quizState.mode` 分 `daily`／`review`
+  - **左右切換的滑入動畫**：`js/motion.js` 的 `slideIn(el, direction)`，用在分頁切換（照底部選單左右順序）、週曆上下週／上下月、題庫上下題。只有動畫，**沒有做手指左右滑的手勢**
+  - **匯率精度改成小數 4 位存、3 位顯示**：人民幣兌台幣一天只動到小數第三位，原本四捨五入到兩位，使用者看到連續五天都是 4.75 以為資料壞了。`exchange_rate_history.json` 裡舊的幾筆還是兩位小數，新的會是四位，混在一起是正常的。明細清單的「今天／昨天」改成照手機當下日期標
+  - **看起來更像正式產品（使用者要求「更正經、像能上架的 App，但不要變難用」）**：Debug 面板平常不顯示，網址加 `?debug` 才出現；日期和問候語改用手機當下時間算（早安／午安／晚安），不再顯示資料檔裡那句「這是為您整理的今日個人化 AI 數位晨報」；設定頁最下面加「關於晨序」（版本號 `APP_VERSION` 在 `SettingsView.js`、資料只存本機、三個資料來源）；`<title>` 和頁尾只寫「晨序」；題庫的「✓ 答對了！」這類符號和驚嘆號拿掉。**還沒清的**：睡眠頁模式卡片的 🌙☀️、週曆的「🗓 切換月曆」，留到那兩頁重新設計時一起處理
+  - **使用者回報但沒有確定原因的**：淺色時螢幕最上面（動態島那一條）是黑的。推測是手機系統在深色、App 手動選淺色時，狀態列跟系統走；補了 `html { background-color }`，但沒辦法在這邊重現，要等使用者回覆是哪種情況
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

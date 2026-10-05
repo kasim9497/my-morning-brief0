@@ -27,6 +27,16 @@ import { getThemePref, setThemePref } from './theme.js';
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 
+const APP_VERSION = '1.0.0';
+
+const ABOUT_ROWS = [
+  { label: '版本', value: APP_VERSION },
+  { label: '資料儲存', value: '只存在這台裝置，不會上傳' },
+  { label: '天氣', value: '和風天氣' },
+  { label: '匯率', value: 'ExchangeRate-API' },
+  { label: '題庫', value: '交通部公路局機車筆試題庫' },
+];
+
 const THEME_OPTIONS = [
   { value: 'auto', label: '自動' },
   { value: 'light', label: '淺色' },
@@ -159,6 +169,15 @@ export function renderSettingsView() {
     `
   ).join('');
 
+  const aboutHtml = ABOUT_ROWS.map(
+    (item) => `
+      <div class="fixed-schedule-row">
+        <span class="fixed-schedule-label">${escapeHtml(item.label)}</span>
+        <span class="fixed-schedule-value">${escapeHtml(item.value)}</span>
+      </div>
+    `
+  ).join('');
+
   const mediaItems = getMediaItems();
   const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書，在下面新增一個吧</div>';
 
@@ -228,6 +247,13 @@ export function renderSettingsView() {
           <button type="button" class="btn-action" id="backup-import-btn">從備份檔還原</button>
           <input type="file" id="backup-import-input" accept="application/json,.json" hidden>
         </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
+        <div class="card-header">
+          <h3 class="card-title">關於晨序</h3>
+        </div>
+        <div class="fixed-schedule-list">${aboutHtml}</div>
       </div>
     </main>
   `;

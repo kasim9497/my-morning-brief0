@@ -5,6 +5,8 @@
 import { dataService } from './services/dataService.js';
 import { initTabs, switchTab } from './tabs.js';
 import { applyTheme } from './theme.js';
+import { slideIn } from './motion.js';
+import { recordMistake, resolveMistake, getMistakes, getMistakeCount } from './quizMistakes.js';
 import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
@@ -14,7 +16,10 @@ import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 
 // Global Quiz State
+// mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
 let quizState = {
+  mode: 'daily',
+  dailyQuestions: [],
   questions: [],
   currentIndex: 0,
   userAnswers: {},
@@ -134,6 +139,8 @@ async function loadAllBriefData() {
     renderDailyQuote(quoteData);
 
     const quizData = await dataService.getDrivingQuiz();
+    quizState.mode = 'daily';
+    quizState.dailyQuestions = quizData;
     quizState.questions = quizData;
     quizState.currentIndex = 0;
     quizState.userAnswers = {};
@@ -189,22 +196,26 @@ function escapeHtml(str) {
  * Render Header & Greeting
  */
 function renderHeader({ user, meta }) {
+  // 日期和問候語用手機當下的時間算，不用資料檔裡的（資料是早上產生的，下午打開還寫「早安」很怪）
+  const now = new Date();
   const dateEl = document.getElementById('header-date');
   if (dateEl) {
-    if (meta.isStale) {
-      dateEl.innerHTML = `<span style="color: var(--apple-red); font-weight: 700;">${escapeHtml(meta.date)}</span>`;
-    } else {
-      dateEl.textContent = meta.date;
-    }
-  }
-  
-  const timeEl = document.getElementById('header-updated-time');
-  if (timeEl) {
-    timeEl.textContent = `資料時間：${meta.lastUpdated}`;
+    dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${'日一二三四五六'[now.getDay()]}`;
   }
 
+  const hour = now.getHours();
+  const hello = hour < 5 ? '夜深了' : hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
   const descEl = document.getElementById('greeting-desc');
-  if (descEl) descEl.textContent = meta.greeting;
+  if (descEl) descEl.textContent = `${hello}，${user.name}`;
+
+  const timeEl = document.getElementById('header-updated-time');
+  if (timeEl) {
+    if (meta.isStale) {
+      timeEl.innerHTML = '<span style="color: var(--apple-red);">連不上最新資料，目前顯示的是內建的範例內容</span>';
+    } else {
+      timeEl.textContent = `資料更新於 ${meta.lastUpdated}`;
+    }
+  }
 }
 
 /**
@@ -321,34 +332,43 @@ function renderExchangeRate(r) {
   }
 
   const hasChange = r.change !== null && r.change !== undefined;
-  const changeHtml = hasChange
-    ? `<span class="rate-change ${r.change >= 0 ? 'rate-up' : 'rate-down'}">${r.change >= 0 ? '▲' : '▼'} ${Math.abs(r.change).toFixed(2)} (${escapeHtml(r.changePercent)})</span>`
-    : '';
-  const yesterdayStr = (r.yesterday !== null && r.yesterday !== undefined) ? `昨日 ${Number(r.yesterday).toFixed(2)}` : '還沒有昨日資料';
+  const changeHtml = !hasChange ? '' : r.change === 0
+    ? '<span class="rate-change">持平</span>'
+    : `<span class="rate-change ${r.change > 0 ? 'rate-up' : 'rate-down'}">${r.change >= 0 ? '▲' : '▼'} ${Math.abs(r.change).toFixed(3)} (${escapeHtml(r.changePercent)})</span>`;
+  const yesterdayStr = (r.yesterday !== null && r.yesterday !== undefined) ? `昨日 ${Number(r.yesterday).toFixed(3)}` : '還沒有昨日資料';
 
   // 右邊的小長條圖：近 7 日走勢，最新一天上色
   let barsHtml = '';
   if (Array.isArray(r.last7Days) && r.last7Days.length > 0) {
     const maxVal = Math.max(...r.last7Days);
     const minVal = Math.min(...r.last7Days);
-    const range = maxVal - minVal || 0.01;
+    const range = maxVal - minVal;
     barsHtml = r.last7Days.map((val, idx) => {
-      const heightPercent = Math.max(20, Math.round(((val - minVal) / range) * 80 + 20));
+      // 七天完全一樣時畫成等高的一排，不要全部縮在最底下
+      const heightPercent = range === 0 ? 60 : Math.round(((val - minVal) / range) * 80 + 20);
       const isActive = idx === r.last7Days.length - 1 ? 'active' : '';
       return `<div class="bar ${isActive}" style="height: ${heightPercent}%;"></div>`;
     }).join('');
   }
 
   const detailed = Array.isArray(r.last7DaysDetailed) ? r.last7DaysDetailed : [];
+  // 「今天／昨天」照手機當下的日期標，不是照資料的順序（資料還沒更新時，最新一筆其實是昨天的）
+  const dayKey = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const todayKey = dayKey(0);
+  const yesterdayKey = dayKey(-1);
   const historyListHtml = detailed
     .slice()
     .reverse()
     .map((entry, idxFromEnd) => {
-      const tag = idxFromEnd === 0 ? '今天' : idxFromEnd === 1 ? '昨天' : formatShortDate(entry.date);
+      const tag = entry.date === todayKey ? '今天' : entry.date === yesterdayKey ? '昨天' : formatShortDate(entry.date);
       return `
         <div class="rate-history-row ${idxFromEnd === 0 ? 'is-today' : ''}">
           <span>${tag}</span>
-          <span>${Number(entry.rate).toFixed(2)}</span>
+          <span>${Number(entry.rate).toFixed(3)}</span>
         </div>
       `;
     })
@@ -357,7 +377,7 @@ function renderExchangeRate(r) {
   container.innerHTML = `
     <div class="metric-row">
       <div class="metric">
-        <span class="metric-value">${Number(r.current).toFixed(2)}</span>
+        <span class="metric-value">${Number(r.current).toFixed(3)}</span>
         <span class="metric-unit">TWD</span>
       </div>
       ${barsHtml ? `<div class="sparkline-bars" aria-hidden="true">${barsHtml}</div>` : ''}
@@ -403,9 +423,15 @@ function renderDrivingQuiz() {
   const currIdx = quizState.currentIndex;
   const currentQ = quizState.questions[currIdx];
 
-  if (!currentQ) return;
+  const isReview = quizState.mode === 'review';
+  const mistakeCount = getMistakeCount();
 
-  const scoreText = `今日得分：${quizState.score} / ${total}`;
+  if (!currentQ) {
+    container.innerHTML = '<div class="countdown-empty">今天的題目暫時載入不了</div>';
+    return;
+  }
+
+  const scoreText = `答對 ${quizState.score} / ${total}`;
 
   const dotsHtml = quizState.questions.map((q, idx) => {
     let dotClass = 'quiz-dot';
@@ -444,8 +470,10 @@ function renderDrivingQuiz() {
     explanationHtml = `
       <div class="quiz-explanation">
         <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green)' : 'var(--apple-red)'};">
-          ${isCorrect ? '✓ 答對了！' : `✗ 答錯了！正確答案是 (${currentQ.answer})`}
+          ${isCorrect ? '答對了' : `答錯了，正確答案是 (${currentQ.answer})`}
         </div>
+        ${isReview && isCorrect ? '<div>這題已經從錯題本移除。</div>' : ''}
+        ${!isCorrect ? '<div>這題已經存進錯題本。</div>' : ''}
         <div><strong>官方解析：</strong>${currentQ.explanation}</div>
         <div style="font-size: var(--text-caption); color: var(--text-muted); margin-top: 0.35rem;">
           來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener" style="color: var(--text-muted);">${currentQ.source || '交通部公路局機車筆試題庫'}</a> (更新日期: ${currentQ.updated_at || '2026-06-02'})
@@ -460,21 +488,23 @@ function renderDrivingQuiz() {
   container.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
       <span style="font-size: var(--text-subhead); font-weight: 600; color: var(--text-muted);">
-        題目 ${currIdx + 1} / ${total}
+        ${isReview ? '錯題複習' : '題目'} ${currIdx + 1} / ${total}
       </span>
       <span class="quiz-score-badge">${scoreText}</span>
     </div>
 
     <div class="quiz-progress">${dotsHtml}</div>
 
-    <div class="quiz-question-box">
-      <span class="quiz-cat-tag">${currentQ.category}</span>
-      <div class="quiz-q-title">Q${currIdx + 1}. ${currentQ.question}</div>
+    <div class="quiz-body">
+      <div class="quiz-question-box">
+        <span class="quiz-cat-tag">${currentQ.category}</span>
+        <div class="quiz-q-title">${currIdx + 1}. ${currentQ.question}</div>
+      </div>
+
+      <div class="quiz-options">${optionsHtml}</div>
+
+      ${explanationHtml}
     </div>
-
-    <div class="quiz-options">${optionsHtml}</div>
-
-    ${explanationHtml}
 
     <div class="quiz-controls">
       <button class="btn-action" id="btn-quiz-prev" ${isFirst ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
@@ -482,13 +512,20 @@ function renderDrivingQuiz() {
       </button>
       ${isLast ? `
         <button class="btn-action btn-primary" id="btn-quiz-reset">
-          重新練習
+          ${isReview ? '回到今日題目' : '重新練習'}
         </button>
       ` : `
         <button class="btn-action btn-primary" id="btn-quiz-next">
           下一題 →
         </button>
       `}
+    </div>
+
+    <div class="quiz-footer">
+      <span>${isReview ? '複習時答對，那一題就會從錯題本移除' : `錯題本目前有 ${mistakeCount} 題`}</span>
+      ${isReview
+        ? '<button type="button" class="section-action card-link" id="btn-quiz-daily">回到今日題目</button>'
+        : (mistakeCount > 0 ? '<button type="button" class="section-action card-link" id="btn-quiz-review">複習錯題</button>' : '')}
     </div>
   `;
 
@@ -500,18 +537,13 @@ function renderDrivingQuiz() {
     });
   });
 
-  // §1: sparkline bars — instant hover highlight via pointerenter
-  container.querySelectorAll('.bar').forEach(bar => {
-    bar.addEventListener('pointerenter', () => bar.classList.add('bar-hover'));
-    bar.addEventListener('pointerleave', () => bar.classList.remove('bar-hover'));
-  });
-
   const prevBtn = document.getElementById('btn-quiz-prev');
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
       if (quizState.currentIndex > 0) {
         quizState.currentIndex--;
         renderDrivingQuiz();
+        slideIn(container.querySelector('.quiz-body'), -1);
       }
     });
   }
@@ -522,19 +554,33 @@ function renderDrivingQuiz() {
       if (quizState.currentIndex < quizState.questions.length - 1) {
         quizState.currentIndex++;
         renderDrivingQuiz();
+        slideIn(container.querySelector('.quiz-body'), 1);
       }
     });
   }
 
   const resetBtn = document.getElementById('btn-quiz-reset');
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      quizState.currentIndex = 0;
-      quizState.userAnswers = {};
-      quizState.score = 0;
-      renderDrivingQuiz();
-    });
+    resetBtn.addEventListener('click', () => startQuiz('daily'));
   }
+
+  const reviewBtn = document.getElementById('btn-quiz-review');
+  if (reviewBtn) reviewBtn.addEventListener('click', () => startQuiz('review'));
+
+  const dailyBtn = document.getElementById('btn-quiz-daily');
+  if (dailyBtn) dailyBtn.addEventListener('click', () => startQuiz('daily'));
+}
+
+/** 從第一題重新開始：'daily' 是今天的題目，'review' 是錯題本裡的題目 */
+function startQuiz(mode) {
+  quizState.mode = mode;
+  quizState.questions = mode === 'review'
+    ? getMistakes().map((m, idx) => ({ ...m, id: `m_${idx + 1}` }))
+    : quizState.dailyQuestions;
+  quizState.currentIndex = 0;
+  quizState.userAnswers = {};
+  quizState.score = 0;
+  renderDrivingQuiz();
 }
 
 function handleQuizAnswer(qId, selectedKey, clickedBtn) {
@@ -544,6 +590,10 @@ function handleQuizAnswer(qId, selectedKey, clickedBtn) {
   const q = quizState.questions.find(item => item.id === qId);
   const isCorrect = q && q.answer === selectedKey;
   if (isCorrect) quizState.score++;
+
+  // 錯題本：答錯就存起來；複習時答對就移除
+  if (q && !isCorrect) recordMistake(q);
+  if (q && isCorrect && quizState.mode === 'review') resolveMistake(q.question);
 
   // §13: Play confirmation animation BEFORE re-rendering for instant feedback
   if (clickedBtn) {
@@ -784,15 +834,6 @@ function setupEventListeners() {
       refreshBtn.disabled = false;
       refreshBtn.classList.remove('is-loading');
     });
-  }
-
-  const settingsBtn = document.getElementById('btn-open-settings');
-  const modalOverlay = document.getElementById('modal-roadmap');
-  const closeModalBtn = document.getElementById('btn-close-modal');
-  const modalContent = modalOverlay ? modalOverlay.querySelector('.modal-content') : null;
-
-  if (modalOverlay && modalContent) {
-    window.fluidModalInstance = new AppleFluidModal(modalOverlay, modalContent, settingsBtn, closeModalBtn);
   }
 
   const chatFab = document.getElementById('btn-open-chat');

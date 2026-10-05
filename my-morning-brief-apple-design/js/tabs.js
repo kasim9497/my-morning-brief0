@@ -4,6 +4,8 @@
  * 不處理各 view 內部渲染（各自負責，之後再加）
  */
 
+import { slideIn } from './motion.js';
+
 const TABS = ['today', 'calendar', 'countdown', 'sleep', 'settings'];
 const TAB_TITLES = { today: '今日', calendar: '週曆', countdown: '倒數', sleep: '睡眠', settings: '設定' };
 let currentTab = 'today';
@@ -21,16 +23,19 @@ export function initTabs() {
 
   const saved = localStorage.getItem('currentTab');
   if (saved && TABS.includes(saved)) {
-    switchTab(saved);
+    switchTab(saved, false);
   }
 }
 
-export function switchTab(tabName) {
+export function switchTab(tabName, animate = true) {
   if (!TABS.includes(tabName)) return;
+  const direction = TABS.indexOf(tabName) - TABS.indexOf(currentTab);
 
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const targetView = document.getElementById(`view-${tabName}`);
   if (targetView) targetView.classList.add('active');
+  // 照底部選單的左右順序滑入：往右邊的分頁切，新畫面就從右邊進來
+  if (animate) slideIn(targetView, direction);
 
   document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
   const targetBtn = document.querySelector(`.tab-item[data-view="${tabName}"]`);

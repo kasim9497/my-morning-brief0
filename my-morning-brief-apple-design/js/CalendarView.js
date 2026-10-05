@@ -4,6 +4,7 @@
  */
 
 import { getTasksForDate, getTodayStr, addDays, getWeekday } from './taskEngine.js';
+import { slideIn } from './motion.js';
 import { renderTaskListInto } from './TaskListView.js';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -157,6 +158,9 @@ function renderMonthGrid() {
   `;
 }
 
+// 按「上一週／下一週」之後，下一次重畫時格子要從哪一邊滑進來（-1 左、1 右、0 不動）
+let pendingSlide = 0;
+
 export function renderCalendarView() {
   const container = document.getElementById('view-calendar');
   if (!container) return;
@@ -180,6 +184,9 @@ export function renderCalendarView() {
     </main>
   `;
 
+  slideIn(container.querySelector('.cal-week-grid, .cal-month-grid'), pendingSlide);
+  pendingSlide = 0;
+
   container.querySelectorAll('[data-cal-action]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.calAction;
@@ -190,8 +197,10 @@ export function renderCalendarView() {
         state.selectedDate = getTodayStr();
       } else if (action === 'prev') {
         state.anchorDate = state.mode === 'week' ? addDays(state.anchorDate, -7) : addMonths(state.anchorDate, -1);
+        pendingSlide = -1;
       } else if (action === 'next') {
         state.anchorDate = state.mode === 'week' ? addDays(state.anchorDate, 7) : addMonths(state.anchorDate, 1);
+        pendingSlide = 1;
       }
       renderCalendarView();
     });
