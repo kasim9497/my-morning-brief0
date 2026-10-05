@@ -56,15 +56,26 @@ function getMonthGrid(dateStr) {
   return { days, currentMonth: m };
 }
 
-function dayLabel(dateStr) {
-  const [, m, d] = dateStr.split('-').map(Number);
-  return `${m}/${d}`;
+const ICON_PREV = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,5 8,12 15,19"/></svg>';
+const ICON_NEXT = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,5 16,12 9,19"/></svg>';
+
+/** 卡片標題：目前顯示的是哪一週（10月5日 – 11日）或哪一個月（2026年10月） */
+function rangeTitle() {
+  if (state.mode === 'month') {
+    const [y, m] = state.anchorDate.split('-').map(Number);
+    return `${y}年${m}月`;
+  }
+  const days = getWeekDays(state.anchorDate);
+  const [, m1, d1] = days[0].split('-').map(Number);
+  const [, m2, d2] = days[6].split('-').map(Number);
+  return m1 === m2 ? `${m1}月${d1}日 – ${d2}日` : `${m1}月${d1}日 – ${m2}月${d2}日`;
 }
 
-function detailLabel(dateStr) {
-  const wd = WEEKDAY_LABELS[getWeekday(dateStr)];
-  const prefix = dateStr === getTodayStr() ? '今天・' : '';
-  return `${prefix}${dayLabel(dateStr)}（${wd}）`;
+/** 下面那張任務卡片上方的區塊標題 */
+function detailTitle(dateStr) {
+  if (dateStr === getTodayStr()) return '今天';
+  const [, m, d] = dateStr.split('-').map(Number);
+  return `${m}月${d}日 星期${WEEKDAY_LABELS[getWeekday(dateStr)]}`;
 }
 
 function getDayStatus(dateStr) {
@@ -83,17 +94,11 @@ function dotClassFor(dateStr) {
   return 'cal-dot-partial';
 }
 
-function renderControls() {
+function renderModeSwitch() {
   return `
-    <div class="cal-controls">
-      <div class="cal-nav">
-        <button class="btn-action" data-cal-action="prev">← ${state.mode === 'week' ? '上週' : '上個月'}</button>
-        <button class="btn-action" data-cal-action="today">回到今天</button>
-        <button class="btn-action" data-cal-action="next">${state.mode === 'week' ? '下週' : '下個月'} →</button>
-      </div>
-      <button class="btn-action btn-primary" data-cal-action="toggle-mode">
-        ${state.mode === 'week' ? '📆 切換月曆' : '🗓️ 切換週曆'}
-      </button>
+    <div class="routine-mode-switch">
+      <button type="button" class="mode-btn ${state.mode === 'week' ? 'is-active' : ''}" data-cal-action="set-week">週</button>
+      <button type="button" class="mode-btn ${state.mode === 'month' ? 'is-active' : ''}" data-cal-action="set-month">月</button>
     </div>
   `;
 }
@@ -113,7 +118,7 @@ function renderWeekGrid() {
       return `
         <button class="${cellClass}" data-cal-date="${dateStr}">
           <span class="cal-week-day">${WEEKDAY_LABELS[getWeekday(dateStr)]}</span>
-          <span class="cal-week-date">${dayLabel(dateStr)}</span>
+          <span class="cal-week-date">${Number(dateStr.split('-')[2])}</span>
           <span class="cal-week-progress">${total > 0 ? `${done}/${total}` : ''}</span>
         </button>
       `;
@@ -166,19 +171,25 @@ export function renderCalendarView() {
   if (!container) return;
 
   container.innerHTML = `
-    <main class="container">
+    <main class="container card-stack">
+      ${renderModeSwitch()}
+
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">${state.mode === 'week' ? '週檢視' : '月檢視'}</h3>
+          <h3 class="card-title">${rangeTitle()}</h3>
+          <div class="cal-nav">
+            <button type="button" class="section-action card-link" data-cal-action="today">今天</button>
+            <button type="button" class="icon-btn" data-cal-action="prev" aria-label="${state.mode === 'week' ? '上一週' : '上個月'}">${ICON_PREV}</button>
+            <button type="button" class="icon-btn" data-cal-action="next" aria-label="${state.mode === 'week' ? '下一週' : '下個月'}">${ICON_NEXT}</button>
+          </div>
         </div>
-        ${renderControls()}
         ${state.mode === 'week' ? renderWeekGrid() : renderMonthGrid()}
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
-        <div class="card-header">
-          <h3 class="card-title">當天任務</h3>
-        </div>
+      <div class="section-head">
+        <h2 class="section-title">${detailTitle(state.selectedDate)}</h2>
+      </div>
+      <div class="card tint-orange">
         <div id="calendar-detail-content"></div>
       </div>
     </main>
@@ -190,8 +201,8 @@ export function renderCalendarView() {
   container.querySelectorAll('[data-cal-action]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.calAction;
-      if (action === 'toggle-mode') {
-        state.mode = state.mode === 'week' ? 'month' : 'week';
+      if (action === 'set-week' || action === 'set-month') {
+        state.mode = action === 'set-week' ? 'week' : 'month';
       } else if (action === 'today') {
         state.anchorDate = getTodayStr();
         state.selectedDate = getTodayStr();
@@ -220,5 +231,5 @@ export function renderCalendarView() {
   });
 
   const detailContainer = document.getElementById('calendar-detail-content');
-  renderTaskListInto(detailContainer, state.selectedDate, detailLabel(state.selectedDate), renderCalendarView);
+  renderTaskListInto(detailContainer, state.selectedDate, state.selectedDate === getTodayStr() ? '今天' : '這天', renderCalendarView);
 }

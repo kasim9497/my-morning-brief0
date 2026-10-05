@@ -26,26 +26,22 @@ let wakeTimeInput = '';
 let calcResult = null;
 let selectedCycles = null;
 
+const ICON_MOON = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>';
+const ICON_SUN = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>';
+
 function renderModeSelector() {
   return `
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">睡眠計算機</h3>
-        <span class="card-badge">90 分鐘週期</span>
-      </div>
-      <div class="sleep-mode-select-title">你想要怎麼計算？</div>
-      <div class="sleep-mode-cards">
-        <button type="button" class="sleep-mode-card" data-action="pick-mode" data-mode="now">
-          <span class="sleep-mode-icon">🌙</span>
-          <h4>我現在要睡</h4>
-          <p>找適合的起床時間</p>
-        </button>
-        <button type="button" class="sleep-mode-card" data-action="pick-mode" data-mode="wake">
-          <span class="sleep-mode-icon">☀️</span>
-          <h4>我要幾點起床</h4>
-          <p>找適合的入睡時間</p>
-        </button>
-      </div>
+    <div class="sleep-mode-cards">
+      <button type="button" class="sleep-mode-card tint-indigo" data-action="pick-mode" data-mode="now">
+        <span class="sleep-mode-icon">${ICON_MOON}</span>
+        <h4>我現在要睡</h4>
+        <p>算出適合的起床時間</p>
+      </button>
+      <button type="button" class="sleep-mode-card tint-orange" data-action="pick-mode" data-mode="wake">
+        <span class="sleep-mode-icon">${ICON_SUN}</span>
+        <h4>我要幾點起床</h4>
+        <p>算出適合的上床時間</p>
+      </button>
     </div>
   `;
 }
@@ -55,7 +51,7 @@ function renderInputPanel() {
     const now = new Date();
     const sleepTime = new Date(now.getTime() + 15 * 60000);
     return `
-      <div class="card">
+      <div class="card tint-indigo">
         <div class="card-header">
           <h3 class="card-title">我現在要睡</h3>
           <button type="button" class="close-btn" data-action="back-to-select" aria-label="換一種方式">&times;</button>
@@ -74,7 +70,7 @@ function renderInputPanel() {
   }
 
   return `
-    <div class="card">
+    <div class="card tint-orange">
       <div class="card-header">
         <h3 class="card-title">我要幾點起床</h3>
         <button type="button" class="close-btn" data-action="back-to-select" aria-label="換一種方式">&times;</button>
@@ -107,12 +103,12 @@ function renderResultsPanel() {
     .join('');
 
   return `
-    <div class="card">
+    <div class="card ${isWakeMode ? 'tint-orange' : 'tint-indigo'}">
       <div class="card-header">
-        <h3 class="card-title">建議時間</h3>
-        <span class="card-badge">根據 90 分鐘睡眠週期計算</span>
+        <h3 class="card-title">${subtitle}</h3>
+        <span class="card-badge">每 90 分鐘一個週期</span>
       </div>
-      <div class="sleep-results-subtitle">${subtitle}${isWakeMode ? '，點一下直接設成就寢提醒時間' : ''}</div>
+      ${isWakeMode ? '<div class="sleep-results-subtitle">點一個時間，會直接設成就寢提醒</div>' : ''}
       <div class="sleep-options">${cardsHtml}</div>
       <button type="button" class="btn-action sleep-recalc-btn" id="sleep-recalc-btn">重新計算</button>
     </div>
@@ -122,10 +118,10 @@ function renderResultsPanel() {
 function renderReminderCard() {
   const reminderConfig = getSleepReminderConfig();
   return `
-    <div class="card" style="margin-top: 1.25rem;">
-      <div class="card-header">
-        <h3 class="card-title">就寢提醒</h3>
-      </div>
+    <div class="section-head">
+      <h2 class="section-title">就寢提醒</h2>
+    </div>
+    <div class="card">
       <label class="list-row">
         <span>開啟提醒</span>
         <input type="checkbox" class="ios-switch" id="sleep-reminder-toggle" ${reminderConfig.enabled ? 'checked' : ''}>
@@ -153,7 +149,10 @@ function renderView() {
   }
 
   container.innerHTML = `
-    <main class="container">
+    <main class="container card-stack">
+      <div class="section-head">
+        <h2 class="section-title">睡眠計算機</h2>
+      </div>
       ${calculatorHtml}
       ${renderReminderCard()}
     </main>

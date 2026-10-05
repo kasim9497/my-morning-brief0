@@ -67,6 +67,7 @@ const PRESSABLE_SELECTOR = [
   '.tab-item',
   '.close-btn',
   '.nav-btn',
+  '.icon-btn',
   '.section-action',
 ].join(', ');
 

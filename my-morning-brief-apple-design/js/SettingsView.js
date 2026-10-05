@@ -187,7 +187,7 @@ export function renderSettingsView() {
   ).join('');
 
   container.innerHTML = `
-    <main class="container">
+    <main class="container card-stack">
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">外觀</h3>
@@ -196,33 +196,39 @@ export function renderSettingsView() {
         <div class="routine-mode-switch">${themeButtonsHtml}</div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="section-head">
+        <h2 class="section-title">作息</h2>
+      </div>
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">作息設定</h3>
-          <span class="card-badge">星期幾 / 每 N 天，每項任務自己選</span>
+          <h3 class="card-title">每週安排</h3>
+          <span class="card-badge">每項可以各自設定</span>
         </div>
         <div class="routine-config-list">${rowsHtml}</div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">固定作息時間參考</h3>
-          <span class="card-badge">目前不開放調整</span>
+          <h3 class="card-title">固定時間</h3>
+          <span class="card-badge">目前不能調整</span>
         </div>
         <div class="fixed-schedule-list">${fixedHtml}</div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="section-head">
+        <h2 class="section-title">追劇／讀書</h2>
+      </div>
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">追劇／讀書進度</h3>
+          <h3 class="card-title">進行中</h3>
           <span class="card-badge">${mediaItems.length} 項</span>
         </div>
         <div class="media-list">${mediaListHtml}</div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">新增追劇／讀書</h3>
+          <h3 class="card-title">新增</h3>
         </div>
         <form class="media-add-form" id="media-add-form">
           <input type="text" class="countdown-input" id="media-title-input" placeholder="劇名／書名" maxlength="40" required>
@@ -237,10 +243,13 @@ export function renderSettingsView() {
         </form>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="section-head">
+        <h2 class="section-title">資料</h2>
+      </div>
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">資料備份</h3>
-          <span class="card-badge">資料只存在這個瀏覽器</span>
+          <h3 class="card-title">備份</h3>
+          <span class="card-badge">換手機前先匯出</span>
         </div>
         <div class="media-add-form">
           <button type="button" class="btn-action btn-primary" id="backup-export-btn">匯出備份檔</button>
@@ -249,7 +258,7 @@ export function renderSettingsView() {
         </div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
+      <div class="card">
         <div class="card-header">
           <h3 class="card-title">關於晨序</h3>
         </div>

@@ -16,7 +16,6 @@ function escapeHtml(str) {
 }
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
-const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 
 function statusClass(daysLeft) {
   if (daysLeft === 0) return 'is-today';
@@ -68,26 +67,27 @@ export function renderCountdownView() {
     .join('');
 
   container.innerHTML = `
-    <main class="container">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">${items.length} 個倒數</h3>
-        </div>
+    <main class="container card-stack">
+      <div class="card tint-red">
         <div class="countdown-list">
-          ${itemsHtml || '<div class="countdown-empty">還沒有任何倒數，在下面新增一個吧</div>'}
+          ${itemsHtml || '<div class="countdown-empty">還沒有任何倒數，在下面新增一個</div>'}
         </div>
       </div>
 
-      <div class="card" style="margin-top: 1.25rem;">
-        <div class="card-header">
-          <h3 class="card-title">新增倒數</h3>
-        </div>
-        <form class="countdown-form" id="countdown-add-form">
-          <input type="text" class="countdown-input" id="countdown-label-input" placeholder="例如：期末考、回台灣" maxlength="40" required>
-          <input type="date" class="countdown-input" id="countdown-date-input" required>
-          <button type="submit" class="btn-action btn-primary">${ICON_PLUS}新增</button>
-        </form>
+      <div class="section-head">
+        <h2 class="section-title">新增倒數</h2>
       </div>
+      <form class="card" id="countdown-add-form">
+        <label class="list-row">
+          <span>名稱</span>
+          <input type="text" class="row-input" id="countdown-label-input" placeholder="例如：期末考" maxlength="40" required>
+        </label>
+        <label class="list-row">
+          <span>日期</span>
+          <input type="date" class="countdown-input" id="countdown-date-input" required>
+        </label>
+        <button type="submit" class="btn-action btn-primary btn-block">新增</button>
+      </form>
     </main>
   `;
 
