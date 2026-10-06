@@ -104,6 +104,11 @@
     - 現在的做法：那塊淺灰剛好等於 `manifest.webmanifest` 裡寫死的 `theme_color`，推測是它蓋過了 `index.html` 裡會跟著深淺色變的兩個 `theme-color` meta（`js/theme.js` 手動切換時也會更新它們）。所以把 manifest 的 `theme_color` 拿掉，讓系統改讀 meta。**這是推測，要等使用者重新加到主畫面後回報才知道對不對**；如果狀態列還是不跟著變，代表 iOS 的主畫面 App 不會動態讀 meta，網頁這條路就做不到「深淺色各自正確」，要等包成 Capacitor App 才能由原生那一層控制
     - 每次改這類設定都要請使用者把主畫面的圖示刪掉重加，設定是在「加入主畫面」時讀的
   - **標題區**：使用者說日期小字＋大標題＋問候語＋更新時間那一疊很醜。現在只有大標題；「今日」頁的大標題是問候語（`tabs.js` 的 `setTodayTitle()`，由 `app.js` 的 `renderHeader()` 給「午安，Kasim」），下面一行灰字日期，其他四頁只有大標題沒有日期。捲動後導覽列的小標題仍然是「今日」。「資料更新於」那行拿掉了；連不上最新資料時才顯示紅字的 `#stale-notice`
+- **清掉沒人用的內容、部署時加版本號、設定頁再整理（2026-10-06）**：
+  - **新聞和「今日三件事」整條拿掉**：畫面早就不顯示，但後端每天還在抓 RSS、叫模型寫摘要。`generate_brief.py` 的 `fetch_rss_news()`／`process_ai_news_output()`／`strip_html()`、prompt 裡的 `aiNews`／`dailyAdvice`、`dataService.js` 的 `getAiNews()`／`getDailyAdvice()`、`mockData.js` 對應的假資料、workflow 裡檢查 `aiNews` 的那段、Telegram 通知裡那行永遠是空的「今日核心目標」都刪了。**上面舊條目提到 `strip_html()`「不要移除」是它還有人用的時候，現在整個功能不在了**
+  - **部署時幫 CSS／JS 網址加版本號**：workflow 的「Stamp asset URLs with the commit hash」步驟，用 sed 把 `index.html` 裡的 `css/styles.css`、`js/app.js`、字體 CSS，以及每個 JS 檔裡的 `from './xxx.js'` 都加上 `?v=<commit 前 7 碼>`。目的是換版時瀏覽器整組一起重抓，不會出現新 HTML 配舊 JS。只改要部署的那一份，不 commit 回 repo，本機開發看不到。**所以 JS 之間的 import 一律寫成 `from './xxx.js'`（單引號、相對路徑、以 .js 結尾）**，寫成雙引號或動態 `import()` 的話 sed 抓不到，那個檔案就不會帶版本號
+  - **設定頁**：「固定時間」改成可以改的「作息時間」，六個時間點各一列時間輸入（`js/fixedSchedule.js`，localStorage `morningBrief.fixedSchedule.v1`）；**這些時間只是給使用者自己看的，沒有接任何通知**，原本列在這裡的保健食品和每月檢查不是時間點，拿掉了。追劇／讀書原本「進行中」「新增」兩張卡片合成一張，新增表單收在原生 `<details>` 裡（點「新增一部」才展開）。「向左滑可以刪除」那行提示和每頁最下面的「晨序」兩個字是使用者要求刪的
+  - **今日頁**：星座卡片右上角改標今天日期（使用者要「每天的」，不要星座月份 8/23 - 9/22）；題庫卡片右上角標「每日 N 題」或「錯題複習」
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

@@ -104,16 +104,6 @@ export const dataService = {
     return live ? live.drivingQuiz : mockData.drivingQuiz;
   },
 
-  async getAiNews() {
-    const live = await fetchLiveTodayJson();
-    return live ? live.aiNews : mockData.aiNews;
-  },
-
-  async getDailyAdvice() {
-    const live = await fetchLiveTodayJson();
-    return live ? live.dailyAdvice : mockData.dailyAdvice;
-  },
-
   async getDailyQuote() {
     const live = await fetchLiveTodayJson();
     return live ? live.dailyQuote : mockData.dailyQuote;
@@ -133,9 +123,7 @@ export const dataService = {
       weather: live ? live.weather : mockData.weather,
       horoscope: live ? live.horoscope : mockData.horoscope,
       exchangeRate: live ? live.exchangeRate : mockData.exchangeRate,
-      drivingQuiz: live ? live.drivingQuiz : mockData.drivingQuiz,
-      aiNews: live ? live.aiNews : mockData.aiNews,
-      dailyAdvice: live ? live.dailyAdvice : mockData.dailyAdvice
+      drivingQuiz: live ? live.drivingQuiz : mockData.drivingQuiz
     };
   }
 };

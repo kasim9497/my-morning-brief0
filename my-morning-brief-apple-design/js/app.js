@@ -299,6 +299,10 @@ function renderHoroscope(h) {
     `
     : '';
 
+  // 標題列右邊標今天的日期：運勢是每天一份，不是整個星座月份通用
+  const now = new Date();
+  document.getElementById('horoscope-card-badge').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
+
   container.innerHTML = `
     <div class="horoscope-header">
       <div class="stars">${escapeHtml(h.ratingStars)}</div>
@@ -430,6 +434,7 @@ function renderDrivingQuiz() {
   }
 
   const scoreText = `答對 ${quizState.score} / ${total}`;
+  document.getElementById('quiz-card-badge').textContent = isReview ? '錯題複習' : `每日 ${total} 題`;
 
   const dotsHtml = quizState.questions.map((q, idx) => {
     let dotClass = 'quiz-dot';
@@ -486,7 +491,7 @@ function renderDrivingQuiz() {
   container.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
       <span style="font-size: var(--text-subhead); font-weight: 600; color: var(--text-muted);">
-        ${isReview ? '錯題複習' : '題目'} ${currIdx + 1} / ${total}
+        第 ${currIdx + 1} / ${total} 題
       </span>
       <span class="quiz-score-badge">${scoreText}</span>
     </div>

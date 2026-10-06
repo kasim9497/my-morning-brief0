@@ -1487,10 +1487,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.media-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .media-item-top {
@@ -1833,6 +1836,28 @@ body {
 
 .routine-add-form { border-bottom: none; }
 .routine-add-input { text-align: left; }
+
+/* 清單列標題下面的小字說明（例如「平日就寢」下面的「週一至週三」） */
+.row-note {
+  display: block;
+  font-size: var(--text-footnote);
+  color: var(--text-tertiary);
+}
+
+/* 收合起來的新增表單（原生 <details>）：平常只看到一行藍字，點開才出現欄位 */
+.add-details {
+  margin-top: 0.75rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.add-details summary {
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.add-details summary::-webkit-details-marker { display: none; }
 
 /* 設定清單列：左邊標題、右邊控制項，列與列之間細線分隔 */
 .list-row {

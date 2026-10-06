@@ -111,10 +111,6 @@ jobs:
               print("❌ ERROR: 'exchangeRate' field missing or invalid", file=sys.stderr)
               sys.exit(1)
 
-          if not isinstance(data.get("aiNews"), list) or len(data.get("aiNews")) == 0:
-              print("❌ ERROR: 'aiNews' is missing or not a non-empty array", file=sys.stderr)
-              sys.exit(1)
-
           if not isinstance(data.get("drivingQuiz"), list) or len(data.get("drivingQuiz")) == 0:
               print("❌ ERROR: 'drivingQuiz' is missing or not a non-empty array", file=sys.stderr)
               sys.exit(1)
@@ -141,6 +137,17 @@ jobs:
           else
             echo "No exchange rate history change to commit."
           fi
+
+      # 手機有時會拿到「新的 HTML 配舊的 JS」（各檔案的快取到期時間不同），畫面就會有按了沒反應這類怪現象。
+      # 部署前把每個 CSS／JS 的網址都加上這次的 commit 編號，換版時瀏覽器會整組一起重抓。
+      # 只改要部署出去的這一份，不會 commit 回 repo，本機開發不受影響。
+      - name: Stamp asset URLs with the commit hash
+        run: |
+          cd my-morning-brief-apple-design
+          V="${GITHUB_SHA::7}"
+          sed -i -E "s#(from '\.{1,2}/[^']+\.js)'#\1?v=$V'#g" js/*.js js/services/*.js
+          sed -i -E "s#(css/styles\.css|js/app\.js|fonts/noto-sans-tc/noto-sans-tc\.css)#\1?v=$V#g" index.html
+          grep -c "?v=$V" index.html js/app.js
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

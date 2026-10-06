@@ -9,15 +9,12 @@ Clean Single Repository Root Architecture:
 """
 
 import os
-import re
 import json
 import gzip
 import random
-import html as html_module
 import urllib.request
 import urllib.parse
 import urllib.error
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
 # 簡轉繁：AI 模型（deepseek）就算 prompt 要求繁體，還是常常整段回簡體字，
@@ -40,25 +37,6 @@ def to_traditional(value):
     if isinstance(value, dict):
         return {k: to_traditional(v) for k, v in value.items()}
     return value
-
-def strip_html(raw: str) -> str:
-    """Remove all HTML tags and decode HTML entities from a string.
-    Does NOT require BeautifulSoup — uses stdlib re + html.unescape only.
-    Handles both direct HTML and HTML-entity-encoded HTML (double-encoded).
-    """
-    if not raw or not isinstance(raw, str):
-        return ""
-    # Step 1: Unescape entities first (&lt;img&gt; → <img>)
-    text = html_module.unescape(raw)
-    # Step 2: Remove <script>...</script> and <style>...</style> blocks
-    text = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
-    # Step 3: Remove all remaining HTML tags
-    text = re.sub(r'<[^>]+>', '', text)
-    # Step 4: Unescape any remaining entities (e.g. &amp; &nbsp;)
-    text = html_module.unescape(text)
-    # Step 5: Collapse whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
 
 QWEATHER_LOCATION_ID = "101190112"  # 南京市栖霞區（涵蓋仙林大學城，比市中心資料更準）
 
@@ -298,56 +276,18 @@ def load_quiz_questions():
 
     return []
 
-def fetch_rss_news():
-    print("Fetching AI & Tech RSS Feeds...")
-    rss_urls = [
-        ("OpenAI / Official", "https://openai.com/news/rss.xml"),
-        ("Google AI Blog", "https://blog.google/technology/ai/rss/"),
-        ("TechCrunch AI", "https://techcrunch.com/category/artificial-intelligence/feed/")
-    ]
-    candidate_items = []
-
-    for source_name, url in rss_urls:
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                xml_data = resp.read()
-                root = ET.fromstring(xml_data)
-                for item in root.findall('.//item')[:2]:
-                    title_el = item.find('title')
-                    link_el  = item.find('link')
-                    desc_el  = item.find('description')
-                    title = strip_html(title_el.text) if title_el is not None else ''
-                    link  = link_el.text.strip() if link_el is not None and link_el.text else ''
-                    desc  = strip_html(desc_el.text) if desc_el is not None and desc_el.text else ''
-                    safe_link = sanitize_url(link)
-                    if title:
-                        candidate_items.append({
-                            "source": source_name,
-                            "title": title,
-                            "link": safe_link,
-                            # Full cleaned plain-text snippet — no truncation
-                            "snippet": desc if desc else title
-                        })
-        except Exception as e:
-            print(f"Failed to fetch RSS from {source_name}: {e}")
-
-    return candidate_items
-
-def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api_key):
+def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key):
     if not openrouter_api_key:
         print("OPENROUTER_API_KEY not provided. Using offline smart synthesis template.")
-        return generate_offline_synthesis(weather, exchange_rate, rss_items)
+        return generate_offline_synthesis(weather)
 
     print("Calling OpenRouter (deepseek/deepseek-chat-v3.1) for AI Synthesis...")
     prompt_text = f"""
 你是一位專業的個人 AI 助理。請根據以下事實資料，為使用者 (Kasim，處女座，目前在南京交換，正在準備機車筆試與規劃 AI PM 職涯) 生成每日晨報摘要。
 
 【重要準則】：
-1. 嚴格基於提供之【候選新聞項目】做摘要，絕對不得自行編造未在 RSS 中出現的虛構事件或假新聞！
-2. 輸出之 aiNews List 數量必須與傳入之候選新聞數量相對應。
-3. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
-4. 如果你確實知道今天日期附近有正在發生、廣為人知的重大天象事件（例如水星逆行、土星逆行、其他行星逆行區間、日食／月食等），要在 horoscopeTransitAlert 欄位提醒一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，horoscopeTransitAlert 就填 null，絕對不要編造一個聽起來合理但其實不確定的天象事件。這個欄位是獨立的提醒區塊，不要跟 horoscopeSummary 的內容重複。
+1. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
+2. 如果你確實知道今天日期附近有正在發生、廣為人知的重大天象事件（例如水星逆行、土星逆行、其他行星逆行區間、日食／月食等），要在 horoscopeTransitAlert 欄位提醒一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，horoscopeTransitAlert 就填 null，絕對不要編造一個聽起來合理但其實不確定的天象事件。這個欄位是獨立的提醒區塊，不要跟 horoscopeSummary 的內容重複。
 
 【真實命盤重點】:
 {BIRTH_CHART_SUMMARY}
@@ -355,7 +295,6 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
 【已知事實資料】:
 - 今日地點：{weather['location']}，天氣狀況：{weather['condition']}，溫度：{weather['tempMin']}~{weather['tempMax']}，降雨機率：{weather['rainChance']}
 - 匯率：CNY/TWD = {exchange_rate['current'] if exchange_rate['current'] else '暫無數據'}
-- 候選新聞項目: {json.dumps(rss_items[:5], ensure_ascii=False)}
 
 【請輸出嚴格的 JSON 格式】:
 {{
@@ -371,22 +310,7 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
   "horoscopeLuckyColor": "一個顏色名稱，例如 寶藍色（只要文字，不要表情符號）",
   "horoscopeLuckyNumber": "一個 1-99 的數字字串",
   "horoscopeRating": "今天的整體運勢評分，1.0-5.0 之間可以有小數的數字",
-  "horoscopeTransitAlert": "只有在確定知道今天附近有廣為人知的重大天象事件時才填字串提醒；不確定或沒有就填 null",
-  "aiNews": [
-    {{
-      "id": "n1",
-      "summary": "一句話摘要發生什麼事",
-      "whyImportant": "為什麼重要 (產業趨勢)",
-      "myImpact": "對使用者 (AI PM / 個人專案) 的啟發與意義"
-    }}
-  ],
-  "dailyAdvice": {{
-    "top3": [
-      {{"text": "天氣/攜帶物品提醒"}},
-      {{"text": "駕照練習方向提醒"}},
-      {{"text": "科技新知閱讀建議"}}
-    ]
-  }}
+  "horoscopeTransitAlert": "只有在確定知道今天附近有廣為人知的重大天象事件時才填字串提醒；不確定或沒有就填 null"
 }}
 """
     payload = {
@@ -419,63 +343,15 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
                 result = json.loads(resp.read().decode('utf-8'))
                 content_text = result['choices'][0]['message']['content']
                 parsed_json = json.loads(content_text)
-                return process_ai_news_output(parsed_json, rss_items)
+                return parsed_json
         except Exception as e:
             last_error = e
             print(f"OpenRouter API call failed on attempt {attempt + 1} ({e}).")
 
     print(f"OpenRouter API call failed after retry ({last_error}). Falling back to smart template synthesis.")
-    return generate_offline_synthesis(weather, exchange_rate, rss_items)
+    return generate_offline_synthesis(weather)
 
-def process_ai_news_output(parsed_json, rss_items):
-    """Enforce strict preservation of original RSS title, source, and link."""
-    ai_news = parsed_json.get("aiNews", [])
-    processed_news = []
-    
-    for idx, rss_item in enumerate(rss_items[:len(ai_news)] if ai_news else rss_items[:3]):
-        ai_item = ai_news[idx] if idx < len(ai_news) else {}
-        processed_news.append({
-            "id": f"n{idx+1}",
-            "source": rss_item.get("source", "Tech News"),
-            "title": rss_item.get("title", ""),
-            "link": sanitize_url(rss_item.get("link", "#")),
-            # Prefer AI-generated summary; fallback to full RSS snippet (no truncation)
-            "summary": ai_item.get("summary") or rss_item.get("snippet", ""),
-            "whyImportant": ai_item.get("whyImportant", "重點產業與技術動態趨勢。"),
-            "myImpact": ai_item.get("myImpact", "值得關注其商業落地與產品化應用價值。")
-        })
-    
-    parsed_json["aiNews"] = processed_news
-    return parsed_json
-
-def generate_offline_synthesis(weather, exchange_rate, rss_items):
-    news_list = []
-    if rss_items:
-        for idx, item in enumerate(rss_items[:3]):
-            news_list.append({
-                "id": f"n{idx+1}",
-                "source": item.get("source", "RSS Feed"),
-                "title": item.get("title", ""),
-                "link": sanitize_url(item.get("link", "#")),
-                # Full RSS snippet — no truncation
-                "summary": item.get("snippet", ""),
-                "whyImportant": "即時科技趨勢動態。",
-                "myImpact": "值得關注其技術落地與產品化應用。"
-            })
-    else:
-        news_list = [
-            {
-                "id": "n1",
-                "source": "Google DeepMind / AI Official",
-                "title": "Google 發布新一代輕量級 AI Agent 架構",
-                "link": "https://blog.google/technology/ai/",
-                "summary": "Google 推出全新針對端側與邊緣運算優化的 Agent 開發工具包。",
-                "whyImportant": "標誌著 AI Agent 正在從純雲端走向端側混合部署。",
-                "myImpact": "若未來想做 AI PM，這項技術趨勢指明了端側智能設計方向。"
-            }
-        ]
-
-    weather_rain_str = weather.get('rainChance', 'N/A')
+def generate_offline_synthesis(weather):
     return {
         # 標記這份是離線樣板，main() 用它判斷今天的運勢是不是 AI 寫的
         "_offline": True,
@@ -495,14 +371,6 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
         "horoscopeRating": 4.0,
         # 離線 fallback 不確定當下真的有沒有天象事件，寧可不提也不要編
         "horoscopeTransitAlert": None,
-        "aiNews": news_list,
-        "dailyAdvice": {
-            "top3": [
-                {"text": f"天氣狀態：{weather.get('condition', '多雲')}，出門記得準備雨具。"},
-                {"text": "駕照筆試練習今日重點：加強交岔路口路權與雙黃線禁跨題型。"},
-                {"text": "今日 AI 產業有即時動態發布，可花 10 分鐘快速了解趨勢。"}
-            ]
-        }
     }
 
 PUBLISHED_TODAY_URL = os.environ.get(
@@ -549,9 +417,8 @@ def main():
     weather = fetch_weather(qweather_key, qweather_host)
     exchange_rate = fetch_exchange_rate()
     driving_quiz = load_quiz_questions()
-    rss_news = fetch_rss_news()
 
-    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, rss_news, openrouter_key))
+    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, openrouter_key))
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 
@@ -585,8 +452,6 @@ def main():
         },
         "exchangeRate": exchange_rate,
         "drivingQuiz": driving_quiz,
-        "aiNews": ai_synthesis.get("aiNews", []),
-        "dailyAdvice": ai_synthesis.get("dailyAdvice", {}),
         "dailyQuote": get_daily_quote(now_tw)
     }
 

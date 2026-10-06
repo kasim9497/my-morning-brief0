@@ -43,7 +43,6 @@ def main():
     meta = data.get("briefMeta", {})
     weather = data.get("weather", {})
     rate = data.get("exchangeRate", {})
-    advice = data.get("dailyAdvice", {})
 
     msg = f"""
 ☀️ *您的今日 AI 數位晨報已準備完成！*
@@ -51,8 +50,6 @@ def main():
 
 🌤 *天氣預報 ({weather.get('location', '南京市栖霞區')})*：{weather.get('condition', '')} ({weather.get('tempMin')} ~ {weather.get('tempMax')})
 💰 *人民幣匯率*：1 CNY ≈ {rate.get('current')} TWD
-🎯 *今日核心目標*：
-_{advice.get('primeGoal', '')}_
 
 👉 [打開觀看完整晨報 Dashboard]({pages_url})
 """

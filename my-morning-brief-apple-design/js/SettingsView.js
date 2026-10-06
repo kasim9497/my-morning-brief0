@@ -29,9 +29,9 @@ import { exportBackup, importBackup } from './backup.js';
 import { getThemePref, setThemePref } from './theme.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
+import { getFixedSchedule, setFixedTime } from './fixedSchedule.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
-const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 
 const APP_VERSION = '1.0.0';
 
@@ -50,15 +50,6 @@ const THEME_OPTIONS = [
 ];
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
-
-const FIXED_SCHEDULE = [
-  { label: '平日就寢／起床（週一～三）', value: '01:20 → 08:50（5 個 90 分鐘睡眠週期）' },
-  { label: '週末作息（週四～日）', value: '01:00 → 10:00（6 個 90 分鐘睡眠週期）' },
-  { label: '手機宵禁', value: '每天 23:00' },
-  { label: '洗澡提醒', value: '每天 23:30' },
-  { label: '保健食品', value: '每天早上（固定任務，不開放關閉）' },
-  { label: '居家用品檢查 + 旅遊規劃', value: '每月第一個週日（固定，不開放調整）' },
-];
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -169,12 +160,12 @@ export function renderSettingsView() {
     })
     .join('');
 
-  const fixedHtml = FIXED_SCHEDULE.map(
+  const fixedHtml = getFixedSchedule().map(
     (item) => `
-      <div class="fixed-schedule-row">
-        <span class="fixed-schedule-label">${escapeHtml(item.label)}</span>
-        <span class="fixed-schedule-value">${escapeHtml(item.value)}</span>
-      </div>
+      <label class="list-row">
+        <span>${escapeHtml(item.label)}<small class="row-note">${escapeHtml(item.note)}</small></span>
+        <input type="time" class="countdown-input" data-action="fixed-time" data-id="${item.id}" value="${item.time}">
+      </label>
     `
   ).join('');
 
@@ -188,7 +179,7 @@ export function renderSettingsView() {
   ).join('');
 
   const mediaItems = getMediaItems();
-  const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書，在下面新增一個吧</div>';
+  const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書</div>';
 
   const themePref = getThemePref();
   const themeButtonsHtml = THEME_OPTIONS.map(
@@ -211,7 +202,6 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">每週安排</h3>
-          <span class="card-badge">向左滑可以刪除</span>
         </div>
         <div class="routine-config-list">${rowsHtml}</div>
         <form class="list-row routine-add-form" id="routine-add-form">
@@ -223,10 +213,9 @@ export function renderSettingsView() {
 
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">固定時間</h3>
-          <span class="card-badge">目前不能調整</span>
+          <h3 class="card-title">作息時間</h3>
         </div>
-        <div class="fixed-schedule-list">${fixedHtml}</div>
+        ${fixedHtml}
       </div>
 
       <div class="section-head">
@@ -238,23 +227,32 @@ export function renderSettingsView() {
           <span class="card-badge">${mediaItems.length} 項</span>
         </div>
         <div class="media-list">${mediaListHtml}</div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">新增</h3>
-        </div>
-        <form class="media-add-form" id="media-add-form">
-          <input type="text" class="countdown-input" id="media-title-input" placeholder="劇名／書名" maxlength="40" required>
-          <select class="countdown-input media-type-select" id="media-type-input">
-            <option value="drama">劇</option>
-            <option value="book">書</option>
-            <option value="movie">電影</option>
-          </select>
-          <input type="number" class="countdown-input" id="media-units-input" placeholder="總集數／頁數" min="1" required>
-          <input type="date" class="countdown-input" id="media-target-input" required>
-          <button type="submit" class="btn-action btn-primary">${ICON_PLUS}新增</button>
-        </form>
+        <details class="add-details">
+          <summary class="section-action">新增一部</summary>
+          <form id="media-add-form">
+            <label class="list-row">
+              <span>名稱</span>
+              <input type="text" class="row-input" id="media-title-input" placeholder="劇名或書名" maxlength="40" required>
+            </label>
+            <label class="list-row">
+              <span>類型</span>
+              <select class="countdown-input" id="media-type-input">
+                <option value="drama">劇</option>
+                <option value="book">書</option>
+                <option value="movie">電影</option>
+              </select>
+            </label>
+            <label class="list-row">
+              <span>集數／頁數</span>
+              <input type="number" class="row-input" id="media-units-input" placeholder="例如 16" min="1" required>
+            </label>
+            <label class="list-row">
+              <span>目標日</span>
+              <input type="date" class="countdown-input" id="media-target-input" required>
+            </label>
+            <button type="submit" class="btn-action btn-primary btn-block">加入</button>
+          </form>
+        </details>
       </div>
 
       <div class="section-head">
@@ -282,6 +280,10 @@ export function renderSettingsView() {
   `;
 
   enableSwipeRows(container);
+
+  container.querySelectorAll('[data-action="fixed-time"]').forEach((input) => {
+    input.addEventListener('change', () => setFixedTime(input.dataset.id, input.value));
+  });
 
   container.querySelectorAll('[data-action="delete-routine"]').forEach((btn) => {
     btn.addEventListener('click', () => {

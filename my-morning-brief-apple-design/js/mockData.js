@@ -137,50 +137,6 @@ export const mockData = {
     }
   ],
 
-  aiNews: [
-    {
-      id: "n1",
-      source: "Google DeepMind / AI Official",
-      title: "Google 發布新一代輕量級 AI Agent 架構",
-      summary: "Google 推出全新針對端側與邊緣運算優化的 Agent 開發工具包，可顯著降低模型調用延遲並提高工具呼叫準確率。",
-      whyImportant: "這標誌著 AI Agent 正在從純雲端走向端側混合部署，將大幅降低 AI 產品的營運成本與反應時間。",
-      myImpact: "若未來想做 AI PM，這項技術趨勢指明了「端側智能 + Agent 產品互動模式」的設計方向，值得深入研究。"
-    },
-    {
-      id: "n2",
-      source: "OpenAI",
-      title: "OpenAI 更新 API 函數呼叫（Function Calling）與結構化輸出規範",
-      summary: "OpenAI 強化了 API JSON Schema 的嚴格約束能力，確保複雜工具鏈調用時 100% 符合型別定義。",
-      whyImportant: "解決了過往 LLM 偶爾輸出格式錯誤導致系統崩潰的痛點，使 Enterprise 級別 AI 應用更為穩定可靠。",
-      myImpact: "在規劃 AI 數位晨報或作品集專案時，可以使用 Strict JSON Mode 來確保抓取資料的安定性。"
-    },
-    {
-      id: "n3",
-      source: "Anthropic",
-      title: "Anthropic 發表 AI 系統架構評估報告：強調長文本推理邏輯",
-      summary: "Anthropic 釋出最新技術白皮書，探討如何利用多步驟思考與自自我修正（Self-Correction）機制提升複雜決策準確度。",
-      whyImportant: "示範了除了單純加大模型參數外，如何透過 Prompt 工程與系統層級架構提升 LLM 的實際落地品質。",
-      myImpact: "對於 AI PM 而言，理解「系統級 Prompt + 多階段評估」比單純調參更能解決實際業務問題。"
-    }
-  ],
-
-  dailyAdvice: {
-    top3: [
-      {
-        icon: "🌧️",
-        text: "午後局部地區降雨機率 40%，下午出門請記得帶傘。"
-      },
-      {
-        icon: "🛵",
-        text: "駕照筆試練習今日重點：請特別加強「路權優先順序與雙黃線禁跨」題型。"
-      },
-      {
-        icon: "🤖",
-        text: "Google 與 OpenAI 今日皆有 Agent 與 API 更新，可花 10 分鐘快速了解趨勢。"
-      }
-    ],
-    primeGoal: "今日最重要的一件事：集中精力完成 AI PM 作品集首頁與核心功能展示，避免同時啟動太多分散注意力的次要專案。"
-  },
 
   dailyQuote: {
     text: "工欲善其事，必先利其器。",
