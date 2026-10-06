@@ -43,6 +43,12 @@ def main():
     meta = data.get("briefMeta", {})
     weather = data.get("weather", {})
     rate = data.get("exchangeRate", {})
+    # AI 沒回應時頁面會安靜地換成備用文字，這裡講一聲，才知道今天的運勢和出門提醒不是 AI 寫的
+    ai_error = (data.get("buildInfo") or {}).get("aiError")
+    if ai_error:
+        # 訊息是用 Markdown 送的，原因裡的 _ * ` [ 會讓 Telegram 解析失敗、整則通知送不出去
+        ai_error = "".join(" " if ch in "_*`[]" else ch for ch in str(ai_error))
+    ai_warning = f"\n⚠️ 今天 AI 沒有回應，運勢和出門提醒是備用文字。原因：{ai_error}\n" if ai_error else ""
 
     msg = f"""
 ☀️ *您的今日 AI 數位晨報已準備完成！*
@@ -50,7 +56,7 @@ def main():
 
 🌤 *天氣預報 ({weather.get('location', '南京市栖霞區')})*：{weather.get('condition', '')} ({weather.get('tempMin')} ~ {weather.get('tempMax')})
 💰 *人民幣匯率*：1 CNY ≈ {rate.get('current')} TWD
-
+{ai_warning}
 👉 [打開觀看完整晨報 Dashboard]({pages_url})
 """
 

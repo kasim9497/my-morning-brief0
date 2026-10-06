@@ -1,8 +1,7 @@
 /* Personal AI Morning Brief - Apple Fluid Design System Stylesheet */
 /* 版面與材質比照 iOS「健康」App：純色底、不透明大圓角卡片、玻璃只給導覽列／浮動選單／sheet */
 
-/* 顏色一律走這裡的變數，不要在下面寫死色碼——深色模式是靠換掉這組變數的值做的。
-   深色的值在下面兩個區塊各寫一次（跟系統走／手動指定），改的時候兩邊一起改。 */
+/* 顏色一律走這裡的變數，不要在下面寫死色碼。只有淺色一種外觀（深色模式拿掉了）。 */
 :root {
   color-scheme: light;
 
@@ -79,96 +78,6 @@
   --text-caption2: 0.6875rem;    /* 11px 標籤、tab 文字 */
 
   --navbar-height: 52px;
-}
-
-/* 深色：跟系統走（使用者沒有在設定頁手動指定淺色時） */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg-system: #000000;
-    --bg-card: rgba(28, 28, 30, 0.82);
-    --bg-card-solid: #1c1c1e;
-    --bg-subtle: rgba(118, 118, 128, 0.22);
-    --bg-subtle-hover: rgba(118, 118, 128, 0.34);
-    --bg-bar: rgba(0, 0, 0, 0.62);
-    --bg-float: rgba(44, 44, 46, 0.72);
-    --bg-float-active: rgba(118, 118, 128, 0.30);
-    --bg-sheet: rgba(28, 28, 30, 0.96);
-    --bg-segment-active: #636366;
-    --text-main: #ffffff;
-    --text-muted: #aeaeb2;
-    --text-tertiary: #8e8e93;
-    --border-glass: rgba(255, 255, 255, 0.12);
-    --border-subtle: rgba(84, 84, 88, 0.55);
-    --apple-blue: #0a84ff;
-    --apple-blue-hover: #409cff;
-    --apple-blue-subtle: rgba(10, 132, 255, 0.22);
-    --apple-green: #30d158;
-    --apple-green-subtle: rgba(48, 209, 88, 0.20);
-    --apple-red: #ff453a;
-    --apple-red-subtle: rgba(255, 69, 58, 0.20);
-    --apple-orange: #ff9f0a;
-    --apple-orange-subtle: rgba(255, 159, 10, 0.18);
-    --apple-purple: #bf5af2;
-    --apple-indigo: #5e5ce6;
-    --apple-orange-text: #ffb340;
-    --apple-red-text: #ff6961;
-    --apple-green-text: #4cd964;
-    --apple-blue-text: #64acff;
-    --tint-orange: #ff9f0a;
-    --tint-red: #ff375f;
-    --tint-teal: #64d2ff;
-    --tint-purple: #bf5af2;
-    --tint-green: #30d158;
-    --tint-indigo: #7d7aff;
-    --tint-blue: #0a84ff;
-    --shadow-float: 0 8px 28px rgba(0, 0, 0, 0.5);
-    --shadow-modal: 0 32px 64px rgba(0, 0, 0, 0.6);
-  }
-}
-
-/* 深色：設定頁手動指定（值跟上面那塊一樣） */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg-system: #000000;
-  --bg-card: rgba(28, 28, 30, 0.82);
-  --bg-card-solid: #1c1c1e;
-  --bg-subtle: rgba(118, 118, 128, 0.22);
-  --bg-subtle-hover: rgba(118, 118, 128, 0.34);
-  --bg-bar: rgba(0, 0, 0, 0.62);
-  --bg-float: rgba(44, 44, 46, 0.72);
-  --bg-float-active: rgba(118, 118, 128, 0.30);
-  --bg-sheet: rgba(28, 28, 30, 0.96);
-  --bg-segment-active: #636366;
-  --text-main: #ffffff;
-  --text-muted: #aeaeb2;
-  --text-tertiary: #8e8e93;
-  --border-glass: rgba(255, 255, 255, 0.12);
-  --border-subtle: rgba(84, 84, 88, 0.55);
-  --apple-blue: #0a84ff;
-  --apple-blue-hover: #409cff;
-  --apple-blue-subtle: rgba(10, 132, 255, 0.22);
-  --apple-green: #30d158;
-  --apple-green-subtle: rgba(48, 209, 88, 0.20);
-  --apple-red: #ff453a;
-  --apple-red-subtle: rgba(255, 69, 58, 0.20);
-  --apple-orange: #ff9f0a;
-  --apple-orange-subtle: rgba(255, 159, 10, 0.18);
-  --apple-purple: #bf5af2;
-  --apple-indigo: #5e5ce6;
-  --apple-orange-text: #ffb340;
-  --apple-red-text: #ff6961;
-  --apple-green-text: #4cd964;
-  --apple-blue-text: #64acff;
-  --tint-orange: #ff9f0a;
-  --tint-red: #ff375f;
-  --tint-teal: #64d2ff;
-  --tint-purple: #bf5af2;
-  --tint-green: #30d158;
-  --tint-indigo: #7d7aff;
-  --tint-blue: #0a84ff;
-  --shadow-float: 0 8px 28px rgba(0, 0, 0, 0.5);
-  --shadow-modal: 0 32px 64px rgba(0, 0, 0, 0.6);
 }
 
 .tint-orange { --tint: var(--tint-orange); }
@@ -472,6 +381,8 @@ body {
   font-size: var(--text-body);
   color: var(--apple-blue);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .section-action:active,
@@ -1836,6 +1747,12 @@ body {
 
 .routine-add-form { border-bottom: none; }
 .routine-add-input { text-align: left; }
+
+.backup-reminder-row {
+  padding: 0;
+  min-height: 0;
+  border-bottom: none;
+}
 
 /* 清單列標題下面的小字說明（例如「平日就寢」下面的「週一至週三」） */
 .row-note {

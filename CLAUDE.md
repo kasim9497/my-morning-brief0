@@ -109,6 +109,11 @@
   - **部署時幫 CSS／JS 網址加版本號**：workflow 的「Stamp asset URLs with the commit hash」步驟，用 sed 把 `index.html` 裡的 `css/styles.css`、`js/app.js`、字體 CSS，以及每個 JS 檔裡的 `from './xxx.js'` 都加上 `?v=<commit 前 7 碼>`。目的是換版時瀏覽器整組一起重抓，不會出現新 HTML 配舊 JS。只改要部署的那一份，不 commit 回 repo，本機開發看不到。**所以 JS 之間的 import 一律寫成 `from './xxx.js'`（單引號、相對路徑、以 .js 結尾）**，寫成雙引號或動態 `import()` 的話 sed 抓不到，那個檔案就不會帶版本號
   - **設定頁**：「固定時間」改成可以改的「作息時間」，六個時間點各一列時間輸入（`js/fixedSchedule.js`，localStorage `morningBrief.fixedSchedule.v1`）；**這些時間只是給使用者自己看的，沒有接任何通知**，原本列在這裡的保健食品和每月檢查不是時間點，拿掉了。追劇／讀書原本「進行中」「新增」兩張卡片合成一張，新增表單收在原生 `<details>` 裡（點「新增一部」才展開）。「向左滑可以刪除」那行提示和每頁最下面的「晨序」兩個字是使用者要求刪的
   - **今日頁**：星座卡片右上角改標今天日期（使用者要「每天的」，不要星座月份 8/23 - 9/22）；題庫卡片右上角標「每日 N 題」或「錯題複習」
+- **深色模式整個拿掉了；加了自動測試、備份提醒、AI 失敗通知（2026-10-06）**：
+  - **深色模式刪除**：使用者在實機上試了三種做法，加到主畫面後最上面的狀態列在深色時始終是一塊淺色（系統畫的，網頁控制不了），最後決定不要深色模式。`styles.css` 的兩塊深色變數、`js/theme.js`、設定頁的「外觀」卡片、`index.html` 的行內 script 和雙 `theme-color` 都刪了，現在只有淺色一種。**上面幾條講深淺色切換、`data-theme`、`black-translucent`、狀態列實驗的內容都是歷史紀錄，程式裡已經沒有**。顏色還是一律走 `:root` 變數。之後要是包成原生 App 想把深色加回來，狀態列可以由原生那層控制，到時再談
+  - **自動測試**：`my-morning-brief-apple-design/tests/logic.test.js`，用 Node 內建的測試工具，在那個資料夾跑 `node --test`（多了一個只有 `"type": "module"` 的 `package.json` 讓 Node 認得 ES module，沒有任何相依套件）。21 項，涵蓋睡眠計算、任務排程（星期幾／每 N 天／每月第一個週日）、延後與跳過、自訂作息、追劇每日份量、倒數。這些模組一載入就讀 localStorage，測試檔開頭放了一個假的。**workflow 在產生資料前會先跑測試，沒過就不部署**。改 `taskEngine.js`／`sleepCalculator.js`／`mediaTracker.js`／`countdown.js` 之後先在本機跑一次；改了行為就同步改測試，不要為了讓它過而刪測試
+  - **備份提醒**：`backup.js` 匯出時記下時間（`morningBrief.lastBackupAt`），`daysSinceBackup()` 回傳距今幾天（沒備份過是 null）。超過 `BACKUP_REMINDER_DAYS`（14）天或從沒備份過，今日頁最上面會出現一張提醒卡片（`#backup-reminder`）；設定頁備份卡片右上角顯示上次備份是幾天前
+  - **AI 沒回應時 Telegram 會講**：`generate_brief.py` 把失敗原因放進 `today.json` 的 `buildInfo.aiError`（成功時是 null），`notify_telegram.py` 看到有值就在通知裡多一行警告和原因。原因文字裡的 `_ * \` [ ]` 會先換成空白，因為通知是用 Markdown 送的，這些符號會讓 Telegram 拒收整則訊息
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

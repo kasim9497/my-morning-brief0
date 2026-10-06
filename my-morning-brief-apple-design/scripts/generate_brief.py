@@ -279,7 +279,7 @@ def load_quiz_questions():
 def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key):
     if not openrouter_api_key:
         print("OPENROUTER_API_KEY not provided. Using offline smart synthesis template.")
-        return generate_offline_synthesis(weather)
+        return generate_offline_synthesis(weather, "OPENROUTER_API_KEY not provided")
 
     print("Calling OpenRouter (deepseek/deepseek-chat-v3.1) for AI Synthesis...")
     prompt_text = f"""
@@ -349,12 +349,14 @@ def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key):
             print(f"OpenRouter API call failed on attempt {attempt + 1} ({e}).")
 
     print(f"OpenRouter API call failed after retry ({last_error}). Falling back to smart template synthesis.")
-    return generate_offline_synthesis(weather)
+    return generate_offline_synthesis(weather, str(last_error)[:200])
 
-def generate_offline_synthesis(weather):
+def generate_offline_synthesis(weather, error):
     return {
         # 標記這份是離線樣板，main() 用它判斷今天的運勢是不是 AI 寫的
         "_offline": True,
+        # 為什麼沒用到模型，會寫進 today.json 的 buildInfo.aiError，Telegram 通知會提醒
+        "_error": error,
         "weatherTip": f"天氣狀態：{weather.get('condition', '多雲')}，出門請注意天候變化。",
         # OpenRouter 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
         # 只是沒辦法每天換說法
@@ -454,6 +456,9 @@ def main():
         "drivingQuiz": driving_quiz,
         "dailyQuote": get_daily_quote(now_tw)
     }
+
+    # 模型這次沒回應的話把原因留下來，notify_telegram.py 會在通知裡講
+    build_info["aiError"] = ai_synthesis.get("_error")
 
     # 同一天只用一份運勢：這支腳本每次 push 都會重跑，模型每次寫出來的內容都不一樣，
     # 使用者會看到同一天的運勢前後不同。今天已經發布過 AI 寫的運勢就沿用那一份。

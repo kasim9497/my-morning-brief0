@@ -3,22 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#f2f2f7">
-  <meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000">
+  <meta name="theme-color" content="#f2f2f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="晨序">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>晨序</title>
-  <!-- 在樣式載入前先套用手動指定的外觀，避免先閃一下另一種顏色；完整邏輯在 js/theme.js -->
+  <!-- Debug 面板平常不顯示，網址後面加 ?debug 才出現 -->
   <script>
-    (function () {
-      try {
-        var t = localStorage.getItem('morningBrief.theme');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-        if (location.search.indexOf('debug') !== -1) document.documentElement.classList.add('debug-on');
-      } catch (e) {}
-    })();
+    if (location.search.indexOf('debug') !== -1) document.documentElement.classList.add('debug-on');
   </script>
   <link rel="stylesheet" href="css/styles.css">
   <!-- 思源黑體放在專案裡自己供應，不依賴 Google 的字體服務；Apple 裝置會直接用系統字體，不會抓這份 -->
@@ -66,6 +59,14 @@
           <h3 class="card-title">每日語錄</h3>
         </div>
         <div id="quote-banner-content"></div>
+      </article>
+
+      <!-- 太久沒備份才會出現（js/app.js 的 renderBackupReminder） -->
+      <article class="card col-span-2" id="backup-reminder" hidden>
+        <div class="list-row backup-reminder-row">
+          <span id="backup-reminder-text"></span>
+          <button type="button" class="section-action" data-goto="settings">去備份</button>
+        </div>
       </article>
 
       <div class="section-head">

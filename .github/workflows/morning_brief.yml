@@ -59,6 +59,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      # 日期與排程邏輯的自動測試。沒過就停在這裡，不會把壞掉的版本部署出去
+      - name: Run Logic Tests
+        run: cd my-morning-brief-apple-design && node --test
+
       # 簡轉繁用（generate_brief.py 的 to_traditional），沒裝的話 AI 內容會維持模型回的簡體字
       - name: Install Python Dependencies
         run: pip install opencc-python-reimplemented

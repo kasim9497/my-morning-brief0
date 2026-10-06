@@ -25,8 +25,7 @@ import {
   postponeTarget,
 } from './mediaTracker.js';
 
-import { exportBackup, importBackup } from './backup.js';
-import { getThemePref, setThemePref } from './theme.js';
+import { exportBackup, importBackup, daysSinceBackup } from './backup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
 import { getFixedSchedule, setFixedTime } from './fixedSchedule.js';
@@ -41,12 +40,6 @@ const ABOUT_ROWS = [
   { label: '天氣', value: '和風天氣' },
   { label: '匯率', value: 'ExchangeRate-API' },
   { label: '題庫', value: '交通部公路局機車筆試題庫' },
-];
-
-const THEME_OPTIONS = [
-  { value: 'auto', label: '自動' },
-  { value: 'light', label: '淺色' },
-  { value: 'dark', label: '深色' },
 ];
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -181,21 +174,11 @@ export function renderSettingsView() {
   const mediaItems = getMediaItems();
   const mediaListHtml = mediaItems.map(renderMediaItem).join('') || '<div class="countdown-empty">還沒有追蹤任何劇或書</div>';
 
-  const themePref = getThemePref();
-  const themeButtonsHtml = THEME_OPTIONS.map(
-    (opt) => `<button type="button" class="mode-btn ${opt.value === themePref ? 'is-active' : ''}" data-action="set-theme" data-theme-value="${opt.value}">${opt.label}</button>`
-  ).join('');
+  const backupDays = daysSinceBackup();
+  const backupLabel = backupDays === null ? '還沒備份過' : backupDays === 0 ? '今天備份過' : `上次備份是 ${backupDays} 天前`;
 
   container.innerHTML = `
     <main class="container card-stack">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">外觀</h3>
-          <span class="card-badge">自動會跟著手機的深色模式</span>
-        </div>
-        <div class="routine-mode-switch">${themeButtonsHtml}</div>
-      </div>
-
       <div class="section-head">
         <h2 class="section-title">作息</h2>
       </div>
@@ -261,7 +244,7 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">備份</h3>
-          <span class="card-badge">換手機前先匯出</span>
+          <span class="card-badge">${backupLabel}</span>
         </div>
         <div class="media-add-form">
           <button type="button" class="btn-action btn-primary" id="backup-export-btn">匯出備份檔</button>
@@ -308,13 +291,6 @@ export function renderSettingsView() {
       renderSettingsView();
     });
   }
-
-  container.querySelectorAll('[data-action="set-theme"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      setThemePref(btn.dataset.themeValue);
-      renderSettingsView();
-    });
-  });
 
   container.querySelectorAll('[data-action="toggle-day"]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -386,7 +362,10 @@ export function renderSettingsView() {
   }
 
   const importInput = document.getElementById('backup-import-input');
-  document.getElementById('backup-export-btn').addEventListener('click', exportBackup);
+  document.getElementById('backup-export-btn').addEventListener('click', () => {
+    exportBackup();
+    renderSettingsView();
+  });
   document.getElementById('backup-import-btn').addEventListener('click', () => importInput.click());
   importInput.addEventListener('change', async () => {
     const error = importInput.files[0] ? await importBackup(importInput.files[0]) : null;

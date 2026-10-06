@@ -5,8 +5,19 @@
 
 const KEY_PREFIX = 'morningBrief.';
 const APP_ID = 'chenxu';
+const LAST_BACKUP_KEY = 'morningBrief.lastBackupAt';
+
+/** 超過這麼多天沒匯出備份，今日頁會提醒 */
+export const BACKUP_REMINDER_DAYS = 14;
+
+/** 距離上次匯出備份幾天；從來沒匯出過回傳 null */
+export function daysSinceBackup() {
+  const last = Date.parse(localStorage.getItem(LAST_BACKUP_KEY));
+  return Number.isNaN(last) ? null : Math.floor((Date.now() - last) / 86400000);
+}
 
 export function exportBackup() {
+  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);

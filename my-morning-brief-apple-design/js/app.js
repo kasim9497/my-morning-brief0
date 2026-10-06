@@ -4,7 +4,6 @@
 
 import { dataService } from './services/dataService.js';
 import { initTabs, switchTab, setTodayTitle } from './tabs.js';
-import { applyTheme } from './theme.js';
 import { slideIn } from './motion.js';
 import { recordMistake, resolveMistake, getMistakes, getMistakeCount } from './quizMistakes.js';
 import { renderTaskList } from './TaskListView.js';
@@ -14,6 +13,7 @@ import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView } from './SleepView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
+import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
 
 // Global Quiz State
 // mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
@@ -29,9 +29,9 @@ let quizState = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("Initializing 晨序 (Personal AI Life Scheduling System)...");
-  applyTheme();
   initTabs();
   setupSectionLinks();
+  renderBackupReminder();
   setupInstantPressListeners();
   setupScrollShadow();
   renderTaskList();
@@ -97,7 +97,20 @@ function setupCalendarTabRefresh() {
   if (btn) btn.addEventListener('click', renderCalendarView);
   // 「今日」也一樣：在設定頁新增、刪除或改了作息之後，切回來要看到新的任務清單
   const todayBtn = document.querySelector('.tab-item[data-view="today"]');
-  if (todayBtn) todayBtn.addEventListener('click', () => renderTaskList());
+  if (todayBtn) todayBtn.addEventListener('click', () => { renderTaskList(); renderBackupReminder(); });
+}
+
+/**
+ * 太久沒備份時，在今日頁最上面提醒一次。資料只存在這支手機，掉了就沒了
+ */
+function renderBackupReminder() {
+  const card = document.getElementById('backup-reminder');
+  if (!card) return;
+  const days = daysSinceBackup();
+  card.hidden = days !== null && days < BACKUP_REMINDER_DAYS;
+  document.getElementById('backup-reminder-text').textContent = days === null
+    ? '還沒備份過。資料只存在這支手機裡'
+    : `已經 ${days} 天沒備份了`;
 }
 
 /**
