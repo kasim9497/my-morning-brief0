@@ -1,7 +1,8 @@
 /**
  * 錯題本：把機車筆試答錯的題目存起來，之後可以單獨拿出來複習
  * 資料存 localStorage（key 用 morningBrief. 開頭，會被設定頁的備份涵蓋）
- * 每天的題目 id 是當天重編的（q_1、q_2…），不能拿來認題目，所以用「題目文字」當 key
+ * 每天的題目 id 是當天重編的（q_1、q_2…），不能拿來認題目。用題庫編號 qid 當 key；
+ * 早期存進來的題目沒有 qid，退回用題目文字（看圖題的題目文字會重複，所以不能只靠文字）
  */
 
 const STORAGE_KEY = 'morningBrief.quizMistakes.v1';
@@ -14,6 +15,11 @@ function loadStore() {
   }
 }
 
+/** 一題在錯題本裡的 key */
+export function mistakeKey(q) {
+  return q.qid || q.question;
+}
+
 function saveStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
@@ -21,9 +27,12 @@ function saveStore(store) {
 /** 答錯時呼叫：第一次會存下整題，之後再錯只累加次數 */
 export function recordMistake(q) {
   const store = loadStore();
-  const existing = store[q.question];
-  store[q.question] = {
+  const key = mistakeKey(q);
+  const existing = store[key];
+  store[key] = {
+    qid: q.qid,
     question: q.question,
+    image: q.image,
     options: q.options,
     answer: q.answer,
     category: q.category,
@@ -38,9 +47,9 @@ export function recordMistake(q) {
 }
 
 /** 複習時答對了：從錯題本移除 */
-export function resolveMistake(questionText) {
+export function resolveMistake(q) {
   const store = loadStore();
-  delete store[questionText];
+  delete store[mistakeKey(q)];
   saveStore(store);
 }
 

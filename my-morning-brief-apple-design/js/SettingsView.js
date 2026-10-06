@@ -42,6 +42,9 @@ const ABOUT_ROWS = [
   { label: '題庫', value: '交通部公路局機車筆試題庫' },
 ];
 
+// 「每週安排」是不是在編輯狀態（每一列都露出刪除鈕）。刪除後整頁會重畫，所以要記在這裡
+let editingRoutines = false;
+
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 function escapeHtml(str) {
@@ -185,8 +188,9 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">每週安排</h3>
+          <button type="button" class="section-action card-link" id="routine-edit-btn">${editingRoutines ? '完成' : '編輯'}</button>
         </div>
-        <div class="routine-config-list">${rowsHtml}</div>
+        <div class="routine-config-list ${editingRoutines ? 'is-editing' : ''}">${rowsHtml}</div>
         <form class="list-row routine-add-form" id="routine-add-form">
           <input type="text" class="row-input routine-add-input" id="routine-add-input" placeholder="新增項目，例如：背單字" maxlength="30" required>
           <button type="submit" class="section-action">加入</button>
@@ -273,6 +277,11 @@ export function renderSettingsView() {
       removeRoutineTask(btn.dataset.def);
       renderSettingsView();
     });
+  });
+
+  document.getElementById('routine-edit-btn').addEventListener('click', () => {
+    editingRoutines = !editingRoutines;
+    renderSettingsView();
   });
 
   const routineAddForm = document.getElementById('routine-add-form');

@@ -9,7 +9,38 @@
  * 執行、執行哪一個」，不負責「真的去改」。
  */
 
-const ALLOWED_ORIGIN = '*'; // 之後如果想收斂，改成你的 GitHub Pages 網域
+// 只接受從晨序網站（和本機開發）送來的請求。瀏覽器會自動帶 Origin，別的網站沒辦法冒用；
+// 用 curl 之類的工具還是可以自己填這個標頭，所以這只擋「別的網頁偷用」，
+// 真正的上限是 OpenRouter 那把 key 的花費額度。
+const ALLOWED_ORIGINS = ['https://kasim9497.github.io'];
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function isAllowedOrigin(origin) {
+  return ALLOWED_ORIGINS.includes(origin) || LOCAL_ORIGIN.test(origin || '');
+}
+
+// 同一個 IP 在一段時間內最多幾次。
+// ponytail: 計數放在記憶體裡，Worker 換一台機器或重啟就歸零，所以只是擋掉一口氣狂打的情況。
+// 要做到嚴格的限制，改用 Cloudflare 的 Rate Limiting 規則或 KV。
+const RATE_LIMIT = 20;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const hits = new Map();
+
+function isRateLimited(ip, now = Date.now()) {
+  const recent = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(ip, recent);
+  return false;
+}
+
+// 請求內容的大小上限，避免有人塞一大包文字進來燒額度
+const MAX_BODY_CHARS = 40000;
+const MAX_MESSAGE_CHARS = 2000;
+const MAX_HISTORY = 10;
 const MODEL = 'deepseek/deepseek-chat-v3.1';
 
 const SYSTEM_PROMPT = `你是 Kasim 的個人生活排程 App 裡的 AI 助理。你可以直接幫他操作 App（延後任務、改作息設定、記錄追劇/讀書進度、管理倒數等），不是只能聊天的客服機器人。
@@ -47,9 +78,10 @@ const SYSTEM_PROMPT = `你是 Kasim 的個人生活排程 App 裡的 AI 助理�
 }
 不需要執行任何動作時，actions 給空陣列 []。`;
 
-function corsHeaders() {
+function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+    'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0],
+    Vary: 'Origin',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
@@ -85,32 +117,50 @@ async function callOpenRouter(apiKey, messages) {
 
 export default {
   async fetch(request, env) {
+    const origin = request.headers.get('Origin');
+    const json = (payload, status = 200) => new Response(JSON.stringify(payload), {
+      status,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+    });
+
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders() });
+      return new Response(null, { headers: corsHeaders(origin) });
+    }
+
+    if (!isAllowedOrigin(origin)) {
+      return json({ reply: '這個來源不能使用 AI 助理。', action: null }, 403);
+    }
+
+    if (isRateLimited(request.headers.get('CF-Connecting-IP') || 'unknown')) {
+      return json({ reply: '問得太頻繁了，過幾分鐘再試。', action: null }, 429);
     }
 
     if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405, headers: corsHeaders() });
+      return new Response('Method Not Allowed', { status: 405, headers: corsHeaders(origin) });
     }
 
     if (!env.OPENROUTER_API_KEY) {
       return new Response(JSON.stringify({ reply: '後端還沒設定 OPENROUTER_API_KEY，請用 wrangler secret put 加上去。', action: null }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
       });
     }
 
     let body;
     try {
-      body = await request.json();
+      const raw = await request.text();
+      if (raw.length > MAX_BODY_CHARS) return json({ reply: '這次的內容太長了。', action: null }, 413);
+      body = JSON.parse(raw);
     } catch (e) {
       return new Response(JSON.stringify({ reply: '請求格式錯誤。', action: null }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
       });
     }
 
-    const history = Array.isArray(body.history) ? body.history : [];
+    const history = (Array.isArray(body.history) ? body.history : [])
+      .slice(-MAX_HISTORY)
+      .map((m) => ({ role: m.role, content: String(m.content || '').slice(0, MAX_MESSAGE_CHARS) }));
     const appState = body.appState || {};
 
     const messages = [
@@ -134,7 +184,7 @@ export default {
             // 舊版前端（瀏覽器還留著快取時）只認得單一個 action
             action: actions[0] || null,
           }),
-          { headers: { 'Content-Type': 'application/json', ...corsHeaders() } }
+          { headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } }
         );
       } catch (e) {
         lastError = e;
@@ -143,7 +193,7 @@ export default {
 
     return new Response(JSON.stringify({ reply: `AI 服務暫時不可用（${lastError?.message || '未知錯誤'}），稍後再試試看。`, action: null }), {
       status: 502,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
     });
   },
 };

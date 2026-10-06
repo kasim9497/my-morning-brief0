@@ -689,6 +689,17 @@ body {
   line-height: 1.45;
 }
 
+/* 看圖題的圖：官方檔案裁下來的小圖，放在白底上（有些圖本身是透明或淺色邊） */
+.quiz-image {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0.875rem auto 0;
+  padding: 0.5rem;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+}
+
 .quiz-options {
   display: flex;
   flex-direction: column;
@@ -1744,6 +1755,9 @@ body {
 }
 
 .swipe-content.is-dragging { transition: none; }
+
+/* 按了卡片右上角的「編輯」：每一列都滑開露出刪除鈕（給不知道可以向左滑的人） */
+.is-editing .swipe-content { transform: translateX(-88px); }
 
 .routine-add-form { border-bottom: none; }
 .routine-add-input { text-align: left; }

@@ -4,7 +4,7 @@
   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
   "updated_at": "2026-02-18",
   "license_type": "普通重型機車",
-  "description": "由公路局「機車駕照筆試題庫(全部804題)-1150218.pdf」解析而來，題目、選項、答案都照原檔，沒有改寫。只收純文字的選擇題；需要看圖的題目（標誌、標線、情境圖）和解析不完整的題目沒有收。官方檔案沒有附解析，所以這裡也沒有。"
+  "description": "由公路局「機車駕照筆試題庫(全部804題)-1150218.pdf」解析而來，選項和答案都照原檔，沒有改寫。純文字題的題目照原檔；看圖題在原檔裡只有一張圖沒有題目文字，圖是從原檔裁下來的，「這張圖代表什麼？」這句是這個 App 自己加的提示。解析不完整的題目沒有收。官方檔案沒有附解析，所以這裡也沒有。"
  },
  "questions": [
   {
@@ -187,6 +187,30 @@
     }
    ],
    "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_9",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_9.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車輛總重限制"
+    },
+    {
+     "key": "2",
+     "text": "車輛載重限制"
+    },
+    {
+     "key": "3",
+     "text": "車輛空重"
+    }
+   ],
+   "answer": "1",
    "source": "交通部公路局 機車駕照筆試題庫",
    "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
    "updated_at": "2026-02-18"
@@ -1480,6 +1504,150 @@
    "updated_at": "2026-02-18"
   },
   {
+   "id": "thb_67",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_67.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "路面高突"
+    },
+    {
+     "key": "2",
+     "text": "路滑"
+    },
+    {
+     "key": "3",
+     "text": "禁止超車"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_68",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_68.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "注意右側落石"
+    },
+    {
+     "key": "2",
+     "text": "斷崖"
+    },
+    {
+     "key": "3",
+     "text": "注意左側落石"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_69",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_69.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "注意右側落石"
+    },
+    {
+     "key": "2",
+     "text": "注意左側落石"
+    },
+    {
+     "key": "3",
+     "text": "危險路面"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_70",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_70.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右側斷崖"
+    },
+    {
+     "key": "2",
+     "text": "碼頭堤岸"
+    },
+    {
+     "key": "3",
+     "text": "注意右側落石"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_71",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_71.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "警告號誌"
+    },
+    {
+     "key": "2",
+     "text": "危險"
+    },
+    {
+     "key": "3",
+     "text": "慢行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_72",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_72.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "此路不通"
+    },
+    {
+     "key": "2",
+     "text": "救護站"
+    },
+    {
+     "key": "3",
+     "text": "醫院"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
    "id": "thb_73",
    "type": "single_choice",
    "question": "機車發生交通事故後，關於事故現場清除作業，下列敘述何者正確？",
@@ -2530,6 +2698,54 @@
     {
      "key": "3",
      "text": "不一定，視情況而定"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_119",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_119.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "岔路"
+    },
+    {
+     "key": "2",
+     "text": "此路不通"
+    },
+    {
+     "key": "3",
+     "text": "匝道會車"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_120",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_120.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "岔路"
+    },
+    {
+     "key": "2",
+     "text": "匝道會車"
+    },
+    {
+     "key": "3",
+     "text": "狹橋"
     }
    ],
    "answer": "2",
@@ -4695,6 +4911,102 @@
     }
    ],
    "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_217",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_217.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車輛寬度限制"
+    },
+    {
+     "key": "2",
+     "text": "禁止停車"
+    },
+    {
+     "key": "3",
+     "text": "車輛高度限制"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_218",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_218.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車輛長度限制"
+    },
+    {
+     "key": "2",
+     "text": "車寬限制"
+    },
+    {
+     "key": "3",
+     "text": "禁止汽車進入"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_219",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_219.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停車再開"
+    },
+    {
+     "key": "2",
+     "text": "停車檢查"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人通行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_220",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_220.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停車再開"
+    },
+    {
+     "key": "2",
+     "text": "停車檢查"
+    },
+    {
+     "key": "3",
+     "text": "禁止通行"
+    }
+   ],
+   "answer": "2",
    "source": "交通部公路局 機車駕照筆試題庫",
    "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
    "updated_at": "2026-02-18"
@@ -8886,6 +9198,1038 @@
    "updated_at": "2026-02-18"
   },
   {
+   "id": "thb_405",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_405.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右側斷崖"
+    },
+    {
+     "key": "2",
+     "text": "碼頭、堤岸"
+    },
+    {
+     "key": "3",
+     "text": "危險"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_406",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_406.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "狹路"
+    },
+    {
+     "key": "2",
+     "text": "隧道"
+    },
+    {
+     "key": "3",
+     "text": "狹橋"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_407",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_407.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止停車"
+    },
+    {
+     "key": "2",
+     "text": "禁止臨時停車"
+    },
+    {
+     "key": "3",
+     "text": "禁止超車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_408",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_408.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止行人通行"
+    },
+    {
+     "key": "2",
+     "text": "停車再開"
+    },
+    {
+     "key": "3",
+     "text": "禁止任何車輛進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_409",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_409.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止行人通行"
+    },
+    {
+     "key": "2",
+     "text": "禁止任何車輛進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止四輪以上汽車進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_410",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_410.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止任何車輛進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止拖車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止大貨車及聯結車進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_411",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_411.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止大型重型機車以外之機車進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止四輪以上汽車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止超車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_412",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_412.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "省道路線編號"
+    },
+    {
+     "key": "2",
+     "text": "縣道路線編號"
+    },
+    {
+     "key": "3",
+     "text": "國道路線編號"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_413",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_413.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "省道路線編號"
+    },
+    {
+     "key": "2",
+     "text": "縣道路線編號"
+    },
+    {
+     "key": "3",
+     "text": "國道路線編號"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_414",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_414.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "快速公路之省道路線編號"
+    },
+    {
+     "key": "2",
+     "text": "縣道路線編號"
+    },
+    {
+     "key": "3",
+     "text": "國道路線編號"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_415",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_415.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "省道路線編號"
+    },
+    {
+     "key": "2",
+     "text": "市、縣道路線編號"
+    },
+    {
+     "key": "3",
+     "text": "國道路線編號"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_416",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_416.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "產業道路編號"
+    },
+    {
+     "key": "2",
+     "text": "縣道路線編號"
+    },
+    {
+     "key": "3",
+     "text": "區、鄉道路線編號標誌"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_417",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_417.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "雙線以上電化鐵路平交道"
+    },
+    {
+     "key": "2",
+     "text": "雙線以上鐵路平交道"
+    },
+    {
+     "key": "3",
+     "text": "單線電化鐵路平交道"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_418",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_418.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停止線"
+    },
+    {
+     "key": "2",
+     "text": "近障礙物線"
+    },
+    {
+     "key": "3",
+     "text": "車輛停放線"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_419",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_419.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停車處"
+    },
+    {
+     "key": "2",
+     "text": "鐵路車站"
+    },
+    {
+     "key": "3",
+     "text": "高速鐵路車站"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_420",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_420.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "人行天橋"
+    },
+    {
+     "key": "2",
+     "text": "人行地下道"
+    },
+    {
+     "key": "3",
+     "text": "停車處"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_421",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_421.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "迴轉道"
+    },
+    {
+     "key": "2",
+     "text": "安全方向導引"
+    },
+    {
+     "key": "3",
+     "text": "車道預告"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_422",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_422.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "迴轉道"
+    },
+    {
+     "key": "2",
+     "text": "安全方向導引"
+    },
+    {
+     "key": "3",
+     "text": "車道預告"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_423",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_423.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "警告標誌"
+    },
+    {
+     "key": "2",
+     "text": "道路施工標誌"
+    },
+    {
+     "key": "3",
+     "text": "車輛故障標誌"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_424",
+   "type": "single_choice",
+   "question": "機車駕駛人如果在道路上發現圖中的橫向標線時，應該如何反應？",
+   "image": "data/quiz-images/thb_424.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "減速慢行"
+    },
+    {
+     "key": "2",
+     "text": "加速通過"
+    },
+    {
+     "key": "3",
+     "text": "檢查輪胎"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_425",
+   "type": "single_choice",
+   "question": "圖中最外側的路面邊線與車道線中間的白色實線為何種標線？",
+   "image": "data/quiz-images/thb_425.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "快慢車道分隔線"
+    },
+    {
+     "key": "2",
+     "text": "行車分向線"
+    },
+    {
+     "key": "3",
+     "text": "雙方禁止超車線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_426",
+   "type": "single_choice",
+   "question": "圖中路口交叉型標線是？",
+   "image": "data/quiz-images/thb_426.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "對角線行人穿越道線"
+    },
+    {
+     "key": "2",
+     "text": "網狀線"
+    },
+    {
+     "key": "3",
+     "text": "自行車穿越道線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_427",
+   "type": "single_choice",
+   "question": "圖中白色箭頭是",
+   "image": "data/quiz-images/thb_427.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "避車彎"
+    },
+    {
+     "key": "3",
+     "text": "車道縮減標線"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_428",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_428.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "特種閃光紅燈號誌"
+    },
+    {
+     "key": "2",
+     "text": "禁止通行"
+    },
+    {
+     "key": "3",
+     "text": "車道管制號誌"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_429",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_429.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "當心自行車"
+    },
+    {
+     "key": "2",
+     "text": "當心行人"
+    },
+    {
+     "key": "3",
+     "text": "當心機車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_430",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_430.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "港埠"
+    },
+    {
+     "key": "2",
+     "text": "渡口"
+    },
+    {
+     "key": "3",
+     "text": "修理站"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_431",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_431.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "捷運車站"
+    },
+    {
+     "key": "2",
+     "text": "鐵路車站"
+    },
+    {
+     "key": "3",
+     "text": "高速鐵路車站"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_432",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_432.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "公路汽車客運車站或轉運站"
+    },
+    {
+     "key": "2",
+     "text": "捷運車站"
+    },
+    {
+     "key": "3",
+     "text": "計程車招呼站"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_433",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_433.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "允讓後車超越"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_434",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_434.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉彎"
+    },
+    {
+     "key": "2",
+     "text": "允讓後車超越"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_435",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_435.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉彎"
+    },
+    {
+     "key": "2",
+     "text": "允讓後車超越"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_436",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_436.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "右轉彎"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_437",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_437.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定大客車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定高乘載車輛專行"
+    },
+    {
+     "key": "3",
+     "text": "車道指定大眾捷運系統車輛專行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_438",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_438.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止四輪以上汽車"
+    },
+    {
+     "key": "2",
+     "text": "禁止大客車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止大眾捷運系統車輛進入"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_439",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_439.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定四輪以上汽車及排氣量550立方公分以上之大型重型機車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定四輪以上汽車及大型重型機車專行"
+    },
+    {
+     "key": "3",
+     "text": "車道指定四輪以上汽車及大型重型機車以外之機車專行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_440",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_440.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定大客車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定高乘載車輛專行"
+    },
+    {
+     "key": "3",
+     "text": "車道指定大眾捷運系統車輛專行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_441",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_441.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止大客車及大貨車進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止四輪以上汽車及大貨車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止大客車、大貨車及聯結車進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_442",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_442.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "雙線以上鐵路平交道"
+    },
+    {
+     "key": "2",
+     "text": "單線鐵路平交道"
+    },
+    {
+     "key": "3",
+     "text": "單線電化鐵路平交道"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_443",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_443.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "地名"
+    },
+    {
+     "key": "2",
+     "text": "車道指示"
+    },
+    {
+     "key": "3",
+     "text": "地名方向指示"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_444",
+   "type": "single_choice",
+   "question": "自行車騎士手勢預告即將",
+   "image": "data/quiz-images/thb_444.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉"
+    },
+    {
+     "key": "2",
+     "text": "左轉"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_445",
+   "type": "single_choice",
+   "question": "自行車騎士手勢預告即將",
+   "image": "data/quiz-images/thb_445.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉"
+    },
+    {
+     "key": "2",
+     "text": "左轉"
+    },
+    {
+     "key": "3",
+     "text": "減速暫停"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_446",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_446.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "無柵門鐵路平交道"
+    },
+    {
+     "key": "2",
+     "text": "有柵門鐵路平交道"
+    },
+    {
+     "key": "3",
+     "text": "禁止汽車進入"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_447",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_447.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止汽車進入"
+    },
+    {
+     "key": "2",
+     "text": "無柵門鐵路平交道"
+    },
+    {
+     "key": "3",
+     "text": "有柵門鐵路平交道"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
    "id": "thb_448",
    "type": "single_choice",
    "question": "機車進入單一車道依道路線型行駛，因其於單一無分岔車道行駛，依路面箭頭標線指向轉彎時，關於方向燈之使用，下列敘述何者正確？",
@@ -10289,6 +11633,630 @@
    "updated_at": "2026-02-18"
   },
   {
+   "id": "thb_509",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_509.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "雙向道"
+    },
+    {
+     "key": "2",
+     "text": "救護站"
+    },
+    {
+     "key": "3",
+     "text": "岔路"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_510",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_510.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "岔路"
+    },
+    {
+     "key": "2",
+     "text": "雙向道"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人通行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_511",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_511.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "狹路"
+    },
+    {
+     "key": "2",
+     "text": "雙向道"
+    },
+    {
+     "key": "3",
+     "text": "岔路"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_512",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_512.png",
+   "options": [
+    {
+     "key": "1",
+     "text": ")險升坡"
+    },
+    {
+     "key": "2",
+     "text": "險降坡"
+    },
+    {
+     "key": "3",
+     "text": "碼頭"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_513",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_513.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停車再開"
+    },
+    {
+     "key": "2",
+     "text": "當心台車"
+    },
+    {
+     "key": "3",
+     "text": "當心行人"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_514",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_514.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "當心行人"
+    },
+    {
+     "key": "2",
+     "text": "當心兒童"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人通行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_515",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_515.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "當心兒童"
+    },
+    {
+     "key": "2",
+     "text": "當心行人"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人通行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_516",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_516.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "注意號誌"
+    },
+    {
+     "key": "2",
+     "text": "危險"
+    },
+    {
+     "key": "3",
+     "text": "行車管制號誌"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_517",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_517.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止行人通行"
+    },
+    {
+     "key": "2",
+     "text": "當心行人"
+    },
+    {
+     "key": "3",
+     "text": "當心兒童"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_518",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_518.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "當心兒童"
+    },
+    {
+     "key": "2",
+     "text": "當心行人"
+    },
+    {
+     "key": "3",
+     "text": "行人專用"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_519",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_519.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "岔路"
+    },
+    {
+     "key": "2",
+     "text": "此路不通"
+    },
+    {
+     "key": "3",
+     "text": "加油站"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_520",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_520.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "閃光黃燈"
+    },
+    {
+     "key": "2",
+     "text": "行車管制號誌"
+    },
+    {
+     "key": "3",
+     "text": "雙閃光黃燈"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_521",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_521.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "雙閃光黃燈"
+    },
+    {
+     "key": "2",
+     "text": "特種閃光黃燈號誌"
+    },
+    {
+     "key": "3",
+     "text": "時相交通號誌"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_522",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_522.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "行人專用號誌"
+    },
+    {
+     "key": "2",
+     "text": "閃光黃燈"
+    },
+    {
+     "key": "3",
+     "text": "時相交通號誌"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_523",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_523.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "特種閃光「黃燈」號誌"
+    },
+    {
+     "key": "2",
+     "text": "行車管制號誌"
+    },
+    {
+     "key": "3",
+     "text": "行人穿越道號誌"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_524",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_524.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "近障礙物線"
+    },
+    {
+     "key": "2",
+     "text": "近鐵路平交道線"
+    },
+    {
+     "key": "3",
+     "text": "路寬變更線"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_525",
+   "type": "single_choice",
+   "question": "圖中斜紋是指：",
+   "image": "data/quiz-images/thb_525.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "斑馬紋行人穿越道線"
+    },
+    {
+     "key": "2",
+     "text": "停止線"
+    },
+    {
+     "key": "3",
+     "text": "路面邊線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_526",
+   "type": "single_choice",
+   "question": "圖中橫向白色實線是指：",
+   "image": "data/quiz-images/thb_526.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止超車線"
+    },
+    {
+     "key": "2",
+     "text": "停止線"
+    },
+    {
+     "key": "3",
+     "text": "行人穿越道線"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_527",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_527.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "前方來車停止"
+    },
+    {
+     "key": "2",
+     "text": "全部車輛停止"
+    },
+    {
+     "key": "3",
+     "text": "前後來車停止，左右來車通行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_528",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_528.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "全部車輛停止"
+    },
+    {
+     "key": "2",
+     "text": "前後來車停止，左右來車通行"
+    },
+    {
+     "key": "3",
+     "text": "前方來車停止"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_529",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_529.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右方來車左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "右方來車速行"
+    },
+    {
+     "key": "3",
+     "text": "左方來車速行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_530",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_530.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右方來車停止"
+    },
+    {
+     "key": "2",
+     "text": "右方來車左轉彎"
+    },
+    {
+     "key": "3",
+     "text": "右方來車速行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_531",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_531.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右方來車左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "左方來車速行"
+    },
+    {
+     "key": "3",
+     "text": "右方來車速行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_532",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_532.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "左方來車左轉彎"
+    },
+    {
+     "key": "2",
+     "text": "右方來車速行"
+    },
+    {
+     "key": "3",
+     "text": "左方來車停止"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_533",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_533.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "前方來車停止"
+    },
+    {
+     "key": "2",
+     "text": "前後停止左右通行"
+    },
+    {
+     "key": "3",
+     "text": "全部車輛停止"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_534",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_534.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右方來車停止"
+    },
+    {
+     "key": "2",
+     "text": "左方來車通行"
+    },
+    {
+     "key": "3",
+     "text": "右方來車速行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
    "id": "thb_535",
    "type": "single_choice",
    "question": "關於闖紅燈之違規認定標準，下列敘述何者錯誤？",
@@ -10956,6 +12924,30 @@
    "updated_at": "2026-02-18"
   },
   {
+   "id": "thb_564",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_564.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止任何車輛進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止拖車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止大貨車及聯結車進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
    "id": "thb_565",
    "type": "single_choice",
    "question": "關於闖紅燈之違規認定標準，下列敘述何者正確？",
@@ -11339,6 +13331,318 @@
     {
      "key": "3",
      "text": "開亮頭燈"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_582",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_582.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "單行道"
+    },
+    {
+     "key": "2",
+     "text": "雙向道"
+    },
+    {
+     "key": "3",
+     "text": "狹路"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_583",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_583.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止迴車"
+    },
+    {
+     "key": "2",
+     "text": "禁止左轉"
+    },
+    {
+     "key": "3",
+     "text": "禁止右轉"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_584",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_584.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止左轉"
+    },
+    {
+     "key": "2",
+     "text": "禁止右轉"
+    },
+    {
+     "key": "3",
+     "text": "禁止左轉及直行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_585",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_585.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "指示改道方向"
+    },
+    {
+     "key": "2",
+     "text": "單行道"
+    },
+    {
+     "key": "3",
+     "text": "行車方向指示"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_586",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_586.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "道路施工"
+    },
+    {
+     "key": "2",
+     "text": "道路封閉"
+    },
+    {
+     "key": "3",
+     "text": "車輛改道"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_587",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_587.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "機慢車兩段右轉"
+    },
+    {
+     "key": "2",
+     "text": "機車專行"
+    },
+    {
+     "key": "3",
+     "text": "機慢車兩段左轉"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_588",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_588.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "機慢車兩段右轉"
+    },
+    {
+     "key": "2",
+     "text": "機車專行"
+    },
+    {
+     "key": "3",
+     "text": "機慢車兩段左轉"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_589",
+   "type": "single_choice",
+   "question": "圖中白色虛線為：",
+   "image": "data/quiz-images/thb_589.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "路口行車導引線"
+    },
+    {
+     "key": "2",
+     "text": "網狀線"
+    },
+    {
+     "key": "3",
+     "text": "槽化線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_590",
+   "type": "single_choice",
+   "question": "本標誌為：",
+   "image": "data/quiz-images/thb_590.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "地名里程指示"
+    },
+    {
+     "key": "2",
+     "text": "方向里程指示"
+    },
+    {
+     "key": "3",
+     "text": "地名方向指示"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_591",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_591.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "地名里程指示"
+    },
+    {
+     "key": "2",
+     "text": "方向里程指示"
+    },
+    {
+     "key": "3",
+     "text": "地名方向指示"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_592",
+   "type": "single_choice",
+   "question": "本號誌是：",
+   "image": "data/quiz-images/thb_592.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道管制號誌，表示本車道封閉"
+    },
+    {
+     "key": "2",
+     "text": "前有岔道"
+    },
+    {
+     "key": "3",
+     "text": "行車管制號誌"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_593",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_593.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "單行道"
+    },
+    {
+     "key": "2",
+     "text": "車道遵行方向"
+    },
+    {
+     "key": "3",
+     "text": "僅准左轉"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_594",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_594.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "僅准直行"
+    },
+    {
+     "key": "2",
+     "text": "遵行方向"
+    },
+    {
+     "key": "3",
+     "text": "單行道"
     }
    ],
    "answer": "3",
@@ -13693,6 +15997,1230 @@
    "updated_at": "2026-02-18"
   },
   {
+   "id": "thb_699",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_699.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右彎"
+    },
+    {
+     "key": "2",
+     "text": "左彎"
+    },
+    {
+     "key": "3",
+     "text": "連續彎路先向右"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_700",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_700.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "左彎"
+    },
+    {
+     "key": "2",
+     "text": "右彎"
+    },
+    {
+     "key": "3",
+     "text": "連續彎路先向左"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_701",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_701.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "連續彎路先向右"
+    },
+    {
+     "key": "2",
+     "text": "左彎"
+    },
+    {
+     "key": "3",
+     "text": "右彎"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_702",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_702.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "連續彎路先向左"
+    },
+    {
+     "key": "2",
+     "text": "右彎"
+    },
+    {
+     "key": "3",
+     "text": "左彎"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_703",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_703.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "狹路"
+    },
+    {
+     "key": "2",
+     "text": "狹橋"
+    },
+    {
+     "key": "3",
+     "text": "路寬變更線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_704",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_704.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右側車道縮減"
+    },
+    {
+     "key": "2",
+     "text": "左側車道縮減"
+    },
+    {
+     "key": "3",
+     "text": "狹路"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_705",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_705.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右側車道縮減"
+    },
+    {
+     "key": "2",
+     "text": "狹路"
+    },
+    {
+     "key": "3",
+     "text": "匝道會車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_706",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_706.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "彎路"
+    },
+    {
+     "key": "2",
+     "text": "圓環"
+    },
+    {
+     "key": "3",
+     "text": "遵行方向"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_707",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_707.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "路面高突"
+    },
+    {
+     "key": "2",
+     "text": "路面顛簸"
+    },
+    {
+     "key": "3",
+     "text": "修路"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_708",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_708.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "路面顛簸"
+    },
+    {
+     "key": "2",
+     "text": "坡道"
+    },
+    {
+     "key": "3",
+     "text": "路面高突"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_709",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_709.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停車再開"
+    },
+    {
+     "key": "2",
+     "text": "讓路"
+    },
+    {
+     "key": "3",
+     "text": "慢行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_710",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_710.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "最低速限"
+    },
+    {
+     "key": "2",
+     "text": "最高速限"
+    },
+    {
+     "key": "3",
+     "text": "車輛總重限制"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_711",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_711.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止任何車輛進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止四輪以上汽車及機車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人通行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_712",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_712.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止大型重型機車以外之機車進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止汽缸排氣量550立方公分以上大型重型機車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止大型重型機車進入"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_713",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_713.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止汽缸排氣量550立方公分以上大型重型機車進入"
+    },
+    {
+     "key": "2",
+     "text": "汽缸排氣量550立方公分以上大型重型機車專用車道"
+    },
+    {
+     "key": "3",
+     "text": "禁止自行車進入"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_714",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_714.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止電動自行車進入"
+    },
+    {
+     "key": "2",
+     "text": "禁止自行車進入"
+    },
+    {
+     "key": "3",
+     "text": "禁止機車進入"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_715",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_715.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止超車"
+    },
+    {
+     "key": "2",
+     "text": "禁止聯結車超車"
+    },
+    {
+     "key": "3",
+     "text": "禁止行人"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_716",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_716.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止左轉"
+    },
+    {
+     "key": "2",
+     "text": "禁止迴車"
+    },
+    {
+     "key": "3",
+     "text": "禁止停車"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_717",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_717.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "最低速限"
+    },
+    {
+     "key": "2",
+     "text": "最高速限"
+    },
+    {
+     "key": "3",
+     "text": "車輛總重限制"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_718",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_718.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "靠右行駛"
+    },
+    {
+     "key": "2",
+     "text": "單行道"
+    },
+    {
+     "key": "3",
+     "text": "右轉"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_719",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_719.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止停車"
+    },
+    {
+     "key": "2",
+     "text": "停車再開"
+    },
+    {
+     "key": "3",
+     "text": "禁止臨時停車"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_720",
+   "type": "single_choice",
+   "question": "圖中黃色實線是指：",
+   "image": "data/quiz-images/thb_720.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "行人穿越道線"
+    },
+    {
+     "key": "2",
+     "text": "禁止停車線"
+    },
+    {
+     "key": "3",
+     "text": "停止線"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_721",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_721.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "行車分向線"
+    },
+    {
+     "key": "2",
+     "text": "枕木紋行人穿越道線"
+    },
+    {
+     "key": "3",
+     "text": "禁止超車線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_722",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_722.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "路寬變更線"
+    },
+    {
+     "key": "2",
+     "text": "近鐵路平交道線"
+    },
+    {
+     "key": "3",
+     "text": "近障礙物線"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_723",
+   "type": "single_choice",
+   "question": "圖中白色虛線是指：",
+   "image": "data/quiz-images/thb_723.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "枕木紋行人穿越道線"
+    },
+    {
+     "key": "2",
+     "text": "車道線"
+    },
+    {
+     "key": "3",
+     "text": "路面邊線"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_724",
+   "type": "single_choice",
+   "question": "圖中黃色雙實線是指：",
+   "image": "data/quiz-images/thb_724.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "禁止停車線"
+    },
+    {
+     "key": "2",
+     "text": "雙向禁止超車線"
+    },
+    {
+     "key": "3",
+     "text": "路寬變更線"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_725",
+   "type": "single_choice",
+   "question": "圖中紅色實線是指：",
+   "image": "data/quiz-images/thb_725.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "停止線"
+    },
+    {
+     "key": "2",
+     "text": "禁止臨時停車線"
+    },
+    {
+     "key": "3",
+     "text": "車輛停放線"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_726",
+   "type": "single_choice",
+   "question": "圖中白色倒三角形標線是指：",
+   "image": "data/quiz-images/thb_726.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "讓路線"
+    },
+    {
+     "key": "2",
+     "text": "停止線"
+    },
+    {
+     "key": "3",
+     "text": "近障礙物線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_727",
+   "type": "single_choice",
+   "question": "(",
+   "image": "data/quiz-images/thb_727.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "近鐵路平交道線"
+    },
+    {
+     "key": "2",
+     "text": "近障礙物線"
+    },
+    {
+     "key": "3",
+     "text": "路寬變更線"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_728",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_728.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道線"
+    },
+    {
+     "key": "2",
+     "text": "行車分向線"
+    },
+    {
+     "key": "3",
+     "text": "枕木紋行人穿越道線"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_729",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_729.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右道封閉"
+    },
+    {
+     "key": "2",
+     "text": "左道封閉"
+    },
+    {
+     "key": "3",
+     "text": "車輛改道"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_730",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_730.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右道封閉"
+    },
+    {
+     "key": "2",
+     "text": "左道封閉"
+    },
+    {
+     "key": "3",
+     "text": "車輛改道"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_731",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_731.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "道路封閉"
+    },
+    {
+     "key": "2",
+     "text": "車輛改道"
+    },
+    {
+     "key": "3",
+     "text": "道路施工"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_732",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_732.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "道路施工"
+    },
+    {
+     "key": "2",
+     "text": "道路封閉"
+    },
+    {
+     "key": "3",
+     "text": "車輛改道"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_733",
+   "type": "single_choice",
+   "question": "道路指定",
+   "image": "data/quiz-images/thb_733.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "汽車專行"
+    },
+    {
+     "key": "2",
+     "text": "大客車專行"
+    },
+    {
+     "key": "3",
+     "text": "自行車及大型重型機車以外之機車專行"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_734",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_734.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "指定四輪以上汽車及汽缸排氣量550立方公分以上大型重型機車專行"
+    },
+    {
+     "key": "2",
+     "text": "指定自行車與機車專行"
+    },
+    {
+     "key": "3",
+     "text": "禁止四輪以上汽車與汽缸排氣量550立方公分以上大型重型機車進入"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_735",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_735.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "指定四輪以上汽車及汽缸排氣量550立方公分以上大型重型機車專行"
+    },
+    {
+     "key": "2",
+     "text": "道路指定四輪以上汽車及大型重型機車專行"
+    },
+    {
+     "key": "3",
+     "text": "禁止四輪以上汽車及大型重型機車進入"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_736",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_736.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定四輪以上汽車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定四輪以上汽車及汽缸排氣量550立方公分以上大型重型機車專行"
+    },
+    {
+     "key": "3",
+     "text": "禁止四輪以上汽車及汽缸排氣量550立方公分以上大型重型機車進入"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_737",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_737.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定自行車及大型重型機車以外之機車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定自行車及大型重型機車專行"
+    },
+    {
+     "key": "3",
+     "text": "車道指定自行車及輕型機車專行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_738",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_738.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "車道指定自行車專行"
+    },
+    {
+     "key": "2",
+     "text": "車道指定汽車專行"
+    },
+    {
+     "key": "3",
+     "text": "車道指定機車專行"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_739",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_739.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "雙向道"
+    },
+    {
+     "key": "2",
+     "text": "狹橋"
+    },
+    {
+     "key": "3",
+     "text": "狹路"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_740",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_740.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "捷運車站"
+    },
+    {
+     "key": "2",
+     "text": "鐵路車站"
+    },
+    {
+     "key": "3",
+     "text": "高速鐵路車站"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_741",
+   "type": "single_choice",
+   "question": "左臂向上，手掌向右微曲，表示：",
+   "image": "data/quiz-images/thb_741.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉彎"
+    },
+    {
+     "key": "2",
+     "text": "左轉彎"
+    },
+    {
+     "key": "3",
+     "text": "讓後車超車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_742",
+   "type": "single_choice",
+   "question": "左臂平伸，手掌向下，表示：",
+   "image": "data/quiz-images/thb_742.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "右轉彎"
+    },
+    {
+     "key": "2",
+     "text": "左轉彎"
+    },
+    {
+     "key": "3",
+     "text": "慢行"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_743",
+   "type": "single_choice",
+   "question": "左臂向下垂伸，手掌向後，表示：",
+   "image": "data/quiz-images/thb_743.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "減速暫停"
+    },
+    {
+     "key": "2",
+     "text": "讓後車超越"
+    },
+    {
+     "key": "3",
+     "text": "倒車"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_744",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_744.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "道路僅准左轉"
+    },
+    {
+     "key": "2",
+     "text": "單行道"
+    },
+    {
+     "key": "3",
+     "text": "靠左側車道行駛"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_745",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_745.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "地名里程指示"
+    },
+    {
+     "key": "2",
+     "text": "方向里程指示"
+    },
+    {
+     "key": "3",
+     "text": "地名方向指示"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_746",
+   "type": "single_choice",
+   "question": "本標誌為高速公路指引標誌，用以指引：",
+   "image": "data/quiz-images/thb_746.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "快速公路"
+    },
+    {
+     "key": "2",
+     "text": "高速公路"
+    },
+    {
+     "key": "3",
+     "text": "一般道路之車輛駛往高速公路交流道"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_747",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_747.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "里程碑"
+    },
+    {
+     "key": "2",
+     "text": "里程牌"
+    },
+    {
+     "key": "3",
+     "text": "縣道路線編號標誌"
+    }
+   ],
+   "answer": "2",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_748",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_748.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "捷運車站"
+    },
+    {
+     "key": "2",
+     "text": "鐵路車站"
+    },
+    {
+     "key": "3",
+     "text": "高速鐵路車站"
+    }
+   ],
+   "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_749",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_749.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "人行天橋"
+    },
+    {
+     "key": "2",
+     "text": "人行地下道"
+    },
+    {
+     "key": "3",
+     "text": "停車處"
+    }
+   ],
+   "answer": "1",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
    "id": "thb_750",
    "type": "single_choice",
    "question": "機車行駛彎路時，關於安全駕駛之操作方式，下列敘述何者正確？",
@@ -14631,6 +18159,30 @@
     }
    ],
    "answer": "3",
+   "source": "交通部公路局 機車駕照筆試題庫",
+   "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
+   "updated_at": "2026-02-18"
+  },
+  {
+   "id": "thb_792",
+   "type": "single_choice",
+   "question": "這張圖代表什麼？",
+   "image": "data/quiz-images/thb_792.png",
+   "options": [
+    {
+     "key": "1",
+     "text": "開亮頭燈"
+    },
+    {
+     "key": "2",
+     "text": "注意號誌"
+    },
+    {
+     "key": "3",
+     "text": "按鳴喇叭"
+    }
+   ],
+   "answer": "1",
    "source": "交通部公路局 機車駕照筆試題庫",
    "source_url": "https://www.thb.gov.tw/News_Download.aspx?n=82&sms=12823",
    "updated_at": "2026-02-18"

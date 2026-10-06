@@ -515,6 +515,7 @@ function renderDrivingQuiz() {
       <div class="quiz-question-box">
         ${currentQ.category ? `<span class="quiz-cat-tag">${currentQ.category}</span>` : ''}
         <div class="quiz-q-title">${currIdx + 1}. ${currentQ.question}</div>
+        ${currentQ.image ? `<img class="quiz-image" src="${currentQ.image}" alt="這一題的圖">` : ''}
       </div>
 
       <div class="quiz-options">${optionsHtml}</div>
@@ -609,7 +610,7 @@ function handleQuizAnswer(qId, selectedKey, clickedBtn) {
 
   // 錯題本：答錯就存起來；複習時答對就移除
   if (q && !isCorrect) recordMistake(q);
-  if (q && isCorrect && quizState.mode === 'review') resolveMistake(q.question);
+  if (q && isCorrect && quizState.mode === 'review') resolveMistake(q);
 
   // §13: Play confirmation animation BEFORE re-rendering for instant feedback
   if (clickedBtn) {

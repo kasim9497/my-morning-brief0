@@ -114,6 +114,11 @@
   - **自動測試**：`my-morning-brief-apple-design/tests/logic.test.js`，用 Node 內建的測試工具，在那個資料夾跑 `node --test`（多了一個只有 `"type": "module"` 的 `package.json` 讓 Node 認得 ES module，沒有任何相依套件）。21 項，涵蓋睡眠計算、任務排程（星期幾／每 N 天／每月第一個週日）、延後與跳過、自訂作息、追劇每日份量、倒數。這些模組一載入就讀 localStorage，測試檔開頭放了一個假的。**workflow 在產生資料前會先跑測試，沒過就不部署**。改 `taskEngine.js`／`sleepCalculator.js`／`mediaTracker.js`／`countdown.js` 之後先在本機跑一次；改了行為就同步改測試，不要為了讓它過而刪測試
   - **備份提醒**：`backup.js` 匯出時記下時間（`morningBrief.lastBackupAt`），`daysSinceBackup()` 回傳距今幾天（沒備份過是 null）。超過 `BACKUP_REMINDER_DAYS`（14）天或從沒備份過，今日頁最上面會出現一張提醒卡片（`#backup-reminder`）；設定頁備份卡片右上角顯示上次備份是幾天前
   - **AI 沒回應時 Telegram 會講**：`generate_brief.py` 把失敗原因放進 `today.json` 的 `buildInfo.aiError`（成功時是 null），`notify_telegram.py` 看到有值就在通知裡多一行警告和原因。原因文字裡的 `_ * \` [ ]` 會先換成空白，因為通知是用 Markdown 送的，這些符號會讓 Telegram 拒收整則訊息
+- **題庫補上看圖題、作息多一個刪除入口、聊天後端加防護（2026-10-06）**：
+  - **看圖題 148 題**：題庫現在 798 題（650 純文字 + 148 看圖）。官方 PDF 裡這類題目每題剛好一張圖（標誌、標線、手勢）配三個文字選項，圖用 pdfplumber 依圖片的位置裁成 PNG 放在 `data/quiz-images/thb_<題號>.png`（共約 1 MB），題目多一個 `image` 欄位，前端有這個欄位就顯示圖。圖和題目的對應是「圖片中心落在哪一題的表格列裡」，148 張圖剛好對到 148 題各一張，並抽看過幾題圖和答案相符。**其中 126 題在官方檔案裡只有圖沒有題目文字，「這張圖代表什麼？」這句是 App 自己加的提示**（`questions.json` 的 metadata 有寫明），選項和答案照原檔
+  - **錯題本的 key 改用題庫編號**：看圖題的題目文字會重複（例如兩題都叫「自行車騎士手勢預告即將」但圖不同），所以 `generate_brief.py` 把題庫原本的編號留在 `qid`，`quizMistakes.js` 的 `mistakeKey(q)` 用 `qid`，沒有 `qid` 的舊資料才退回用題目文字。`resolveMistake()` 現在收整個題目物件，不是題目文字
+  - **作息的刪除入口**：「每週安排」卡片右上角多了「編輯／完成」，按了每一列都滑開露出刪除鈕（`.is-editing`）。向左滑還是可以用。使用者要求拿掉「向左滑可以刪除」的提示字之後，這是唯一看得到的線索，不要拿掉
+  - **聊天 Worker 的防護**：只接受 `Origin` 是 `https://kasim9497.github.io` 或本機（localhost／127.0.0.1）的請求，其他回 403；同一個 IP 10 分鐘內最多 20 次，超過回 429（計數在記憶體裡，Worker 重啟就歸零，只擋一口氣狂打）；請求本體、每則訊息、歷史則數都有上限。**用 curl 測 Worker 時要自己帶 `-H "Origin: https://kasim9497.github.io"`，不然會拿到 403**。Origin 可以用工具偽造，真正的上限還是 OpenRouter 那把 key 的花費額度（使用者已設 2 美元）。**如果之後換網址或綁自訂網域，要把新網域加進 `ALLOWED_ORIGINS`，不然聊天框會整個不能用**
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

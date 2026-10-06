@@ -267,6 +267,8 @@ def load_quiz_questions():
                 sample_size = min(DAILY_QUIZ_SIZE, len(questions))
                 sampled = random.sample(questions, sample_size)
                 for idx, item in enumerate(sampled):
+                    # id 每天重編成 q_1…，題庫裡原本的編號另外留在 qid（錯題本用它認題目）
+                    item['qid'] = item.get('id')
                     item['id'] = f"q_{idx+1}"
                     if 'source_url' in item:
                         item['source_url'] = sanitize_url(item['source_url'])
