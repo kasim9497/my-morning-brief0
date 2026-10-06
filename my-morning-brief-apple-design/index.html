@@ -6,9 +6,6 @@
   <meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#f2f2f7">
   <meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <!-- 加到主畫面後，iPhone 最上面那條狀態列預設是系統自己畫的一塊固定顏色，不會跟著 App 的深淺色變。
-       black-translucent 讓網頁自己畫到狀態列底下（.status-scrim 負責那一條的底色）；代價是狀態列的字永遠是白的 -->
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="晨序">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -28,9 +25,6 @@
   <link rel="stylesheet" href="fonts/noto-sans-tc/noto-sans-tc.css">
 </head>
 <body>
-
-  <!-- iPhone 狀態列底下的底色（只有加到主畫面後才有高度，一般瀏覽器裡高度是 0） -->
-  <div class="status-scrim" aria-hidden="true"></div>
 
   <!-- 導覽列（跨 tab 共用）：頂端透明，往下捲才浮出玻璃底和置中的小標題 -->
   <header class="masthead">

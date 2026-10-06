@@ -352,17 +352,6 @@ body {
 
 .page-subtitle[hidden] { display: none; }
 
-/* 狀態列底色：字是白的（系統固定），所以這一條在深色、淺色都用黑底，字才看得到 */
-.status-scrim {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top, 0px);
-  background: #000000;
-  z-index: 300;
-}
-
 /* ICONS — 統一取代表情符號的極簡線條 icon，走 currentColor 跟著版面配色 */
 
 .icon {
