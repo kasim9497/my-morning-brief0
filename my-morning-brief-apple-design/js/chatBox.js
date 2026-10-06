@@ -38,13 +38,15 @@ import {
 
 import { getSleepReminderConfig, setSleepReminderConfig } from './sleepReminder.js';
 
+import { dataService } from './services/dataService.js';
+
 const CHAT_WORKER_URL = 'https://my-morning-brief-chat-proxy.loverinline520.workers.dev/';
 
 const VALID_POSTPONE_OPTIONS = ['plus1', 'plus2', 'plus3', 'nextWeek', 'skipWeek'];
 
 let conversationHistory = [];
 
-function buildAppStateContext() {
+async function buildAppStateContext() {
   const todayStr = getTodayStr();
   const todayTasks = getTasksForDate(todayStr).map((t) => ({
     instanceId: t.instanceId,
@@ -67,7 +69,28 @@ function buildAppStateContext() {
   }));
   const sleepReminder = getSleepReminderConfig();
 
-  return { todayStr, todayTasks, configurableTasks, countdowns, mediaItems, sleepReminder };
+  // 今天的晨報資料也帶過去，使用者問天氣、匯率、星座時 AI 才答得出來
+  const [weather, rate, horoscope] = await Promise.all([
+    dataService.getWeather(),
+    dataService.getExchangeRate(),
+    dataService.getHoroscope(),
+  ]);
+  const brief = {
+    weekday: `星期${'日一二三四五六'[new Date().getDay()]}`,
+    weather: weather && {
+      location: weather.location,
+      condition: weather.condition,
+      tempCurrent: weather.tempCurrent,
+      tempMin: weather.tempMin,
+      tempMax: weather.tempMax,
+      rainChance: weather.rainChance,
+      tip: weather.aiTip,
+    },
+    cnyToTwd: rate && rate.current,
+    horoscopeSummary: horoscope && horoscope.aiSummary,
+  };
+
+  return { todayStr, brief, todayTasks, configurableTasks, countdowns, mediaItems, sleepReminder };
 }
 
 // AI 只負責決定要呼叫哪個函式、帶什麼參數，這裡才是真的執行、真的碰 localStorage 的地方。
@@ -89,7 +112,8 @@ const ACTION_EXECUTORS = {
     return '已更新完成狀態。';
   },
   set_task_weekday_schedule: (args) => {
-    if (!args.defId || !Array.isArray(args.weekdays)) return null;
+    const validDays = Array.isArray(args.weekdays) && args.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+    if (!getConfigurableTaskIds().includes(args.defId) || !validDays) return null;
     setTaskWeekdaySchedule(args.defId, args.weekdays);
     return '作息設定已更新。';
   },
@@ -161,7 +185,7 @@ export async function sendChatMessage(userText) {
     return notice;
   }
 
-  const appState = buildAppStateContext();
+  const appState = await buildAppStateContext();
 
   try {
     const resp = await fetch(CHAT_WORKER_URL, {
@@ -175,11 +199,19 @@ export async function sendChatMessage(userText) {
     // Worker 出錯時（例如 key 沒設、OpenRouter 掛了）回的也是 { reply }，直接顯示那段說明
     const data = await resp.json().catch(() => null);
     if (!resp.ok && !data?.reply) throw new Error(`HTTP ${resp.status}`);
-    const reply = data?.reply || '（沒有收到回覆）';
+    let reply = data?.reply || '（沒有收到回覆）';
 
-    if (resp.ok && executeAction(data.action)) {
+    // 一句話可能帶好幾個動作；Worker 還是舊版時只會有單一個 action
+    const actions = Array.isArray(data?.actions) ? data.actions : (data?.action ? [data.action] : []);
+    const requested = actions.filter((a) => a && a.type && a.type !== 'none');
+    const done = resp.ok ? requested.filter((a) => executeAction(a)) : [];
+    if (done.length > 0) {
       // 動作改的是 localStorage，畫面上的任務清單／週曆／倒數要跟著重畫
       window.dispatchEvent(new CustomEvent('chenxu:data-changed'));
+    }
+    // AI 說做了、但參數沒通過這邊的檢查而沒有真的執行時，要讓使用者知道
+    if (done.length < requested.length) {
+      reply += `\n（有 ${requested.length - done.length} 個動作沒有成功執行，請換個說法再試一次。）`;
     }
 
     conversationHistory.push({ role: 'assistant', content: reply });
