@@ -186,11 +186,6 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes greetingEnter {
-  from { opacity: 0; transform: translateX(-10px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes flashCorrect {
   0%   { transform: scale(1); }
   35%  { transform: scale(1.03); box-shadow: 0 0 0 5px rgba(52, 199, 89, 0.28); }
@@ -336,24 +331,8 @@ body {
 /* PAGE HEAD：日期小字 + 大標題 */
 
 .page-head {
-  padding-top: calc(var(--navbar-height) + env(safe-area-inset-top, 0px) + 0.25rem);
-  padding-bottom: 0.9rem;
-}
-
-.sub-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.6rem;
-  color: var(--text-muted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.sub-header-pill {
-  display: inline-flex;
-  align-items: center;
+  padding-top: calc(var(--navbar-height) + env(safe-area-inset-top, 0px) + 1.25rem);
+  padding-bottom: 1.25rem;
 }
 
 .large-title {
@@ -362,6 +341,26 @@ body {
   letter-spacing: -0.022em;
   line-height: 1.2;
   color: var(--text-main);
+}
+
+/* 大標題下面那一行（只有「今日」頁有，顯示日期） */
+.page-subtitle {
+  margin-top: 0.25rem;
+  font-size: var(--text-body);
+  color: var(--text-muted);
+}
+
+.page-subtitle[hidden] { display: none; }
+
+/* 狀態列底色：字是白的（系統固定），所以這一條在深色、淺色都用黑底，字才看得到 */
+.status-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: #000000;
+  z-index: 300;
 }
 
 /* ICONS — 統一取代表情符號的極簡線條 icon，走 currentColor 跟著版面配色 */
@@ -422,22 +421,9 @@ body {
 
 .today-intro {
   font-size: var(--text-subhead);
-  color: var(--text-muted);
+  color: var(--apple-red-text);
   line-height: 1.5;
   margin-bottom: 1.25rem;
-  animation: greetingEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.today-intro strong {
-  color: var(--text-main);
-  font-weight: 600;
-}
-
-.today-intro-meta {
-  display: block;
-  font-size: var(--text-footnote);
-  color: var(--text-tertiary);
-  margin-top: 0.15rem;
 }
 
 /* DAILY QUOTE */
@@ -2214,7 +2200,6 @@ body {
 
   .card { opacity: 1 !important; }
   .card.card-enter { animation: none; opacity: 1; }
-  .today-intro { animation: none; }
   .quiz-explanation { animation: none; }
 
   .modal-content {

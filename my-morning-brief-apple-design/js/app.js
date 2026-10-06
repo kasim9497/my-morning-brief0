@@ -3,7 +3,7 @@
  */
 
 import { dataService } from './services/dataService.js';
-import { initTabs, switchTab } from './tabs.js';
+import { initTabs, switchTab, setTodayTitle } from './tabs.js';
 import { applyTheme } from './theme.js';
 import { slideIn } from './motion.js';
 import { recordMistake, resolveMistake, getMistakes, getMistakeCount } from './quizMistakes.js';
@@ -207,19 +207,13 @@ function renderHeader({ user, meta }) {
     dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${'日一二三四五六'[now.getDay()]}`;
   }
 
+  // 「今日」頁的大標題就是問候語
   const hour = now.getHours();
   const hello = hour < 5 ? '夜深了' : hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
-  const descEl = document.getElementById('greeting-desc');
-  if (descEl) descEl.textContent = `${hello}，${user.name}`;
+  setTodayTitle(`${hello}，${user.name}`);
 
-  const timeEl = document.getElementById('header-updated-time');
-  if (timeEl) {
-    if (meta.isStale) {
-      timeEl.innerHTML = '<span style="color: var(--apple-red);">連不上最新資料，目前顯示的是內建的範例內容</span>';
-    } else {
-      timeEl.textContent = `資料更新於 ${meta.lastUpdated}`;
-    }
-  }
+  const staleEl = document.getElementById('stale-notice');
+  if (staleEl) staleEl.hidden = !meta.isStale;
 }
 
 /**

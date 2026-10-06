@@ -9,6 +9,8 @@ import { slideIn } from './motion.js';
 const TABS = ['today', 'calendar', 'countdown', 'sleep', 'settings'];
 const TAB_TITLES = { today: '今日', calendar: '週曆', countdown: '倒數', sleep: '睡眠', settings: '設定' };
 let currentTab = 'today';
+// 「今日」頁的大標題是問候語（午安，Kasim），資料載入後由 app.js 透過 setTodayTitle 給
+let todayTitle = TAB_TITLES.today;
 
 export function initTabs() {
   const tabButtons = document.querySelectorAll('.tab-item');
@@ -42,12 +44,19 @@ export function switchTab(tabName, animate = true) {
   if (targetBtn) targetBtn.classList.add('active');
 
   // 大標題和導覽列小標題是跨分頁共用的同一組元素
-  document.getElementById('page-title').textContent = TAB_TITLES[tabName];
+  document.getElementById('page-title').textContent = tabName === 'today' ? todayTitle : TAB_TITLES[tabName];
   document.getElementById('navbar-title').textContent = TAB_TITLES[tabName];
+  // 日期只在「今日」頁顯示，其他頁只有大標題
+  document.getElementById('header-date').hidden = tabName !== 'today';
 
   currentTab = tabName;
   localStorage.setItem('currentTab', tabName);
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+export function setTodayTitle(text) {
+  todayTitle = text;
+  if (currentTab === 'today') document.getElementById('page-title').textContent = text;
 }
 
 export function getCurrentTab() {

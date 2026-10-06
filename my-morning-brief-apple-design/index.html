@@ -6,6 +6,9 @@
   <meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#f2f2f7">
   <meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- 加到主畫面後，iPhone 最上面那條狀態列預設是系統自己畫的一塊固定顏色，不會跟著 App 的深淺色變。
+       black-translucent 讓網頁自己畫到狀態列底下（.status-scrim 負責那一條的底色）；代價是狀態列的字永遠是白的 -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="晨序">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -26,6 +29,9 @@
 </head>
 <body>
 
+  <!-- iPhone 狀態列底下的底色（只有加到主畫面後才有高度，一般瀏覽器裡高度是 0） -->
+  <div class="status-scrim" aria-hidden="true"></div>
+
   <!-- 導覽列（跨 tab 共用）：頂端透明，往下捲才浮出玻璃底和置中的小標題 -->
   <header class="masthead">
     <div class="container masthead-inner">
@@ -43,10 +49,8 @@
 
   <!-- 日期小字 + 大標題，跟著內容一起捲走；標題文字由 js/tabs.js 依分頁切換 -->
   <div class="container page-head">
-    <div class="sub-header">
-      <span id="header-date"></span>
-    </div>
     <h1 class="large-title" id="page-title">今日</h1>
+    <p class="page-subtitle" id="header-date"></p>
   </div>
 
   <!-- ============ 5 個畫面容器 ============ -->
@@ -56,10 +60,8 @@
   <section id="view-today" class="view active">
 
   <main class="container">
-    <p class="today-intro">
-      <strong id="greeting-desc">早安</strong>
-      <span class="today-intro-meta" id="header-updated-time"></span>
-    </p>
+    <!-- 只有連不上最新資料時才顯示 -->
+    <p class="today-intro" id="stale-notice" hidden>連不上最新資料，目前顯示的是內建的範例內容</p>
 
     <!-- 排序依「今天早上該先看什麼」：語錄（一句話）→ 待辦（任務、倒數）→ 重點（天氣、星座、匯率）→ 練習（題庫） -->
     <div class="dashboard-grid">
