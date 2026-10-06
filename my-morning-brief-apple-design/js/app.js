@@ -95,6 +95,9 @@ function setupInstantPressListeners() {
 function setupCalendarTabRefresh() {
   const btn = document.querySelector('.tab-item[data-view="calendar"]');
   if (btn) btn.addEventListener('click', renderCalendarView);
+  // 「今日」也一樣：在設定頁新增、刪除或改了作息之後，切回來要看到新的任務清單
+  const todayBtn = document.querySelector('.tab-item[data-view="today"]');
+  if (todayBtn) todayBtn.addEventListener('click', () => renderTaskList());
 }
 
 /**
@@ -509,7 +512,7 @@ function renderDrivingQuiz() {
 
     <div class="quiz-controls">
       <button class="btn-action" id="btn-quiz-prev" ${isFirst ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-        ← 上一題
+        上一題
       </button>
       ${isLast ? `
         <button class="btn-action btn-primary" id="btn-quiz-reset">
@@ -517,7 +520,7 @@ function renderDrivingQuiz() {
         </button>
       ` : `
         <button class="btn-action btn-primary" id="btn-quiz-next">
-          下一題 →
+          下一題
         </button>
       `}
     </div>

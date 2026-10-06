@@ -1348,23 +1348,18 @@ body {
 
 /* SETTINGS */
 
+/* 每一列左右滑要能滑到卡片邊緣，所以清單用負邊距把卡片的內距吃掉，內距改由每一列自己留 */
 .routine-config-list {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  margin: 0 -1.25rem;
 }
 
 .routine-row {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding-bottom: 1.125rem;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.routine-row:last-child {
-  padding-bottom: 0;
-  border-bottom: none;
+  padding: 1rem 1.25rem;
 }
 
 .routine-row-label {
@@ -1376,9 +1371,6 @@ body {
   color: var(--text-main);
 }
 
-.routine-row-icon {
-  font-size: var(--text-body);
-}
 
 .weekday-toggle-group {
   display: grid;
@@ -1816,6 +1808,56 @@ body {
   margin-top: 1rem;
   font-size: var(--text-body);
 }
+
+/* 任務類型圖示：彩色圓角方塊 + 白色線條圖示（js/taskIcons.js） */
+.task-glyph {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--tint);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-glyph svg { width: 18px; height: 18px; }
+
+/* 向左滑露出刪除鈕的清單列（js/swipeRow.js） */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.swipe-delete {
+  appearance: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  border: none;
+  background: var(--apple-red);
+  color: #ffffff;
+  font-family: var(--font-system);
+  font-size: var(--text-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.swipe-content {
+  position: relative;
+  background: var(--bg-card-solid);
+  touch-action: pan-y;
+  transition: transform 0.25s var(--ease-out-smooth);
+}
+
+.swipe-content.is-dragging { transition: none; }
+
+.routine-add-form { border-bottom: none; }
+.routine-add-input { text-align: left; }
 
 /* 設定清單列：左邊標題、右邊控制項，列與列之間細線分隔 */
 .list-row {

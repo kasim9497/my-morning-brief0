@@ -4,7 +4,11 @@
  */
 
 import {
-  TASK_DEFS,
+  getTaskDef,
+  addCustomTask,
+  removeRoutineTask,
+  hasRemovedDefaultTasks,
+  restoreDefaultTasks,
   getConfigurableTaskIds,
   getRoutineConfig,
   setTaskWeekdaySchedule,
@@ -23,6 +27,8 @@ import {
 
 import { exportBackup, importBackup } from './backup.js';
 import { getThemePref, setThemePref } from './theme.js';
+import { renderTaskIcon } from './taskIcons.js';
+import { enableSwipeRows } from './swipeRow.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 const ICON_PLUS = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -140,21 +146,24 @@ export function renderSettingsView() {
 
   const rowsHtml = taskIds
     .map((defId) => {
-      const def = TASK_DEFS[defId] || { label: defId, icon: '•' };
+      const def = getTaskDef(defId);
       const taskConfig = config[defId] || { mode: 'weekday', days: [] };
       const isInterval = taskConfig.mode === 'interval';
 
       return `
-        <div class="routine-row">
-          <div class="routine-row-label">
-            <span class="routine-row-icon">${def.icon}</span>
-            <span>${escapeHtml(def.label)}</span>
+        <div class="swipe-row">
+          <button type="button" class="swipe-delete" data-action="delete-routine" data-def="${defId}">刪除</button>
+          <div class="swipe-content routine-row">
+            <div class="routine-row-label">
+              ${renderTaskIcon(def.icon, def.tint)}
+              <span>${escapeHtml(def.label)}</span>
+            </div>
+            <div class="routine-mode-switch">
+              <button type="button" class="mode-btn ${!isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="weekday">星期幾</button>
+              <button type="button" class="mode-btn ${isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="interval">每 N 天</button>
+            </div>
+            ${isInterval ? renderIntervalMode(defId, taskConfig) : renderWeekdayMode(defId, taskConfig)}
           </div>
-          <div class="routine-mode-switch">
-            <button type="button" class="mode-btn ${!isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="weekday">星期幾</button>
-            <button type="button" class="mode-btn ${isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="interval">每 N 天</button>
-          </div>
-          ${isInterval ? renderIntervalMode(defId, taskConfig) : renderWeekdayMode(defId, taskConfig)}
         </div>
       `;
     })
@@ -202,9 +211,14 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">每週安排</h3>
-          <span class="card-badge">每項可以各自設定</span>
+          <span class="card-badge">向左滑可以刪除</span>
         </div>
         <div class="routine-config-list">${rowsHtml}</div>
+        <form class="list-row routine-add-form" id="routine-add-form">
+          <input type="text" class="row-input routine-add-input" id="routine-add-input" placeholder="新增項目，例如：背單字" maxlength="30" required>
+          <button type="submit" class="section-action">加入</button>
+        </form>
+        ${hasRemovedDefaultTasks() ? '<button type="button" class="section-action list-footnote" id="routine-restore-btn">還原刪掉的預設項目</button>' : ''}
       </div>
 
       <div class="card">
@@ -266,6 +280,32 @@ export function renderSettingsView() {
       </div>
     </main>
   `;
+
+  enableSwipeRows(container);
+
+  container.querySelectorAll('[data-action="delete-routine"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      removeRoutineTask(btn.dataset.def);
+      renderSettingsView();
+    });
+  });
+
+  const routineAddForm = document.getElementById('routine-add-form');
+  if (routineAddForm) {
+    routineAddForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      addCustomTask(document.getElementById('routine-add-input').value);
+      renderSettingsView();
+    });
+  }
+
+  const restoreBtn = document.getElementById('routine-restore-btn');
+  if (restoreBtn) {
+    restoreBtn.addEventListener('click', () => {
+      restoreDefaultTasks();
+      renderSettingsView();
+    });
+  }
 
   container.querySelectorAll('[data-action="set-theme"]').forEach((btn) => {
     btn.addEventListener('click', () => {

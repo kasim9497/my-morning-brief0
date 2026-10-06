@@ -7,17 +7,18 @@
 const STORAGE_KEY = 'morningBrief.taskEngine.v1';
 
 // 星期固定任務範本（0=週日 ... 6=週六，對齊 Date.getDay()）
+// icon 是 js/taskIcons.js 裡的圖示名稱，tint 是 styles.css 的 .tint-xxx 顏色
 export const TASK_DEFS = {
-  supplement: { label: '吃保健食品', icon: '💊' },
-  watch: { label: '追劇：至少看完一集', icon: '📺' },
-  exercise_run_strength: { label: '運動：跑步 2km + 重訓', icon: '🏃' },
-  exercise_strength: { label: '運動：重訓', icon: '🏋️' },
-  veggie_day: { label: '蔬果日：記得吃夠蔬果', icon: '🥦' },
-  post_short: { label: 'PO 文：簡短更新', icon: '📝' },
-  post_weekly_review: { label: 'PO 文：一週回顧整理', icon: '🗒️' },
-  laundry_shopping: { label: '洗衣打掃 + 採買下週蔬果', icon: '🧺' },
-  monthly_maintenance: { label: '居家用品檢查（濾心／除溼袋／馬桶殺菌球）', icon: '🔧' },
-  monthly_trip_planning: { label: '旅遊規劃（20–30 分鐘）', icon: '🗺️' },
+  supplement: { label: '吃保健食品', icon: 'pill', tint: 'red' },
+  watch: { label: '追劇：至少看完一集', icon: 'tv', tint: 'purple' },
+  exercise_run_strength: { label: '運動：跑步 2km + 重訓', icon: 'pulse', tint: 'orange' },
+  exercise_strength: { label: '運動：重訓', icon: 'dumbbell', tint: 'orange' },
+  veggie_day: { label: '蔬果日：記得吃夠蔬果', icon: 'leaf', tint: 'green' },
+  post_short: { label: 'PO 文：簡短更新', icon: 'pencil', tint: 'blue' },
+  post_weekly_review: { label: 'PO 文：一週回顧整理', icon: 'note', tint: 'blue' },
+  laundry_shopping: { label: '洗衣打掃 + 採買下週蔬果', icon: 'basket', tint: 'teal' },
+  monthly_maintenance: { label: '居家用品檢查（濾心／除溼袋／馬桶殺菌球）', icon: 'wrench', tint: 'indigo' },
+  monthly_trip_planning: { label: '旅遊規劃（20–30 分鐘）', icon: 'map', tint: 'teal' },
 };
 
 // 每天都會出現、不開放調整的固定任務
@@ -133,16 +134,20 @@ function isTaskActiveOnDate(config, dateStr, weekday) {
 function loadStore() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG } };
+    if (!raw) return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [] };
     const parsed = JSON.parse(raw);
     return {
       days: parsed.days || {},
       skipWeekUntil: parsed.skipWeekUntil || {},
       routineConfig: normalizeRoutineConfig(parsed.routineConfig),
+      // 使用者自己加的作息項目：{ id: { label } }
+      customTasks: parsed.customTasks || {},
+      // 使用者刪掉的內建作息項目（內建的定義拿不掉，所以記「不要顯示」）
+      removedTaskIds: parsed.removedTaskIds || [],
     };
   } catch (e) {
     console.warn('[taskEngine] localStorage 讀取失敗，使用空白狀態：', e);
-    return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG } };
+    return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [] };
   }
 }
 
@@ -161,7 +166,7 @@ let store = loadStore();
 function getTemplateIdsForDate(dateStr) {
   const weekday = parseDate(dateStr).getDay();
   const ids = [...ALWAYS_DAILY_TASK_IDS];
-  for (const defId of CONFIGURABLE_TASK_IDS) {
+  for (const defId of getConfigurableTaskIds()) {
     if (isTaskActiveOnDate(store.routineConfig[defId], dateStr, weekday)) ids.push(defId);
   }
   if (isFirstSundayOfMonth(dateStr)) {
@@ -175,8 +180,59 @@ function getTemplateIdsForDate(dateStr) {
 
 // ── 作息設定（給 SettingsView.js 用）───────────────────────────────────
 
+/** 「設定」頁可以調整的作息項目：沒被刪掉的內建項目 + 使用者自己加的 */
 export function getConfigurableTaskIds() {
-  return [...CONFIGURABLE_TASK_IDS];
+  return [
+    ...CONFIGURABLE_TASK_IDS.filter((defId) => !store.removedTaskIds.includes(defId)),
+    ...Object.keys(store.customTasks),
+  ];
+}
+
+/** 任務的名稱和圖示。內建的查 TASK_DEFS，自訂的查使用者存的名稱 */
+export function getTaskDef(defId) {
+  if (TASK_DEFS[defId]) return TASK_DEFS[defId];
+  const custom = store.customTasks[defId];
+  return { label: custom ? custom.label : '已刪除的項目', icon: 'check', tint: 'blue' };
+}
+
+/** 新增一個自訂作息項目，一開始不排在任何一天，回傳它的 id */
+export function addCustomTask(label) {
+  const trimmed = String(label || '').trim();
+  if (!trimmed) return null;
+  const defId = `custom_${Date.now().toString(36)}`;
+  store.customTasks[defId] = { label: trimmed };
+  store.routineConfig[defId] = { mode: 'weekday', days: [] };
+  saveStore(store);
+  return defId;
+}
+
+/** 刪除一個作息項目。今天和之後還沒做的那幾筆一起拿掉，過去的紀錄留著 */
+export function removeRoutineTask(defId) {
+  if (!getConfigurableTaskIds().includes(defId)) return;
+  if (store.customTasks[defId]) {
+    delete store.customTasks[defId];
+    delete store.routineConfig[defId];
+  } else {
+    store.removedTaskIds.push(defId);
+  }
+  const today = getTodayStr();
+  for (const [dateStr, entries] of Object.entries(store.days)) {
+    if (dateStr < today) continue;
+    for (const [instanceId, entry] of Object.entries(entries)) {
+      if (entry.defId === defId && entry.status === 'pending') delete entries[instanceId];
+    }
+  }
+  saveStore(store);
+}
+
+export function hasRemovedDefaultTasks() {
+  return store.removedTaskIds.length > 0;
+}
+
+/** 把刪掉的內建項目全部加回來（排程設定還留著） */
+export function restoreDefaultTasks() {
+  store.removedTaskIds = [];
+  saveStore(store);
 }
 
 /** 回傳目前每個可調整任務的排程設定：{ mode: 'weekday', days } 或 { mode: 'interval', everyNDays, anchorDate } */
@@ -185,14 +241,14 @@ export function getRoutineConfig() {
 }
 
 export function setTaskWeekdaySchedule(defId, weekdays) {
-  if (!CONFIGURABLE_TASK_IDS.includes(defId)) return;
+  if (!getConfigurableTaskIds().includes(defId)) return;
   store.routineConfig[defId] = { mode: 'weekday', days: [...new Set(weekdays)].sort((a, b) => a - b) };
   saveStore(store);
 }
 
 /** anchorDate 預設今天：從設定的當下開始算「每 N 天」，不回頭補算過去 */
 export function setTaskIntervalSchedule(defId, everyNDays, anchorDate = getTodayStr()) {
-  if (!CONFIGURABLE_TASK_IDS.includes(defId)) return;
+  if (!getConfigurableTaskIds().includes(defId)) return;
   const n = Math.max(1, Math.round(Number(everyNDays) || 1));
   store.routineConfig[defId] = { mode: 'interval', everyNDays: n, anchorDate };
   saveStore(store);
@@ -218,12 +274,13 @@ export function getTasksForDate(dateStr) {
 
   const dayEntries = store.days[dateStr] || {};
   return Object.entries(dayEntries).map(([instanceId, entry]) => {
-    const def = TASK_DEFS[entry.defId] || { label: entry.defId, icon: '•' };
+    const def = getTaskDef(entry.defId);
     return {
       instanceId,
       defId: entry.defId,
       label: def.label,
       icon: def.icon,
+      tint: def.tint,
       status: entry.status,
       carriedFrom: entry.carriedFrom || null,
     };

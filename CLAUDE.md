@@ -92,6 +92,12 @@
   - **原本那 8 題整個換掉了**：它們是四個選項（A–D）還附解析，官方題庫是三個選項而且沒有解析，所以那 8 題不是照官方檔案來的
   - 題目格式：選項 key 是 `"1"`／`"2"`／`"3"`（跟官方一樣），**沒有 `category` 和 `explanation` 欄位**，前端在沒有這兩個欄位時不顯示分類標籤和解析那一行。**不要幫題目補寫解析**，官方沒給，自己寫等於編內容
   - 之後公路局更新題庫時，重新解析的腳本邏輯：逐頁 `find_tables()`，題號欄是數字就開新題，答案欄和題目欄可能落在後面幾列（跨頁、跨列都有），所以要把同一題的列累加起來；驗證每題剛好一個答案，可以確認答案沒有整排錯位
+- **作息可以自己新增、向左滑刪除；任務圖示換掉表情符號（2026-10-06）**：
+  - **自訂作息**：`taskEngine.js` 的 store 多了 `customTasks`（`{ id: { label } }`，id 是 `custom_xxx`）和 `removedTaskIds`（被刪掉的內建項目，內建定義拿不掉所以記「不要顯示」）。`getConfigurableTaskIds()` 回傳「沒被刪的內建 + 自訂」，`getTaskDef(defId)` 統一查名稱和圖示（**外面不要再直接讀 `TASK_DEFS[defId]`**，自訂項目不在裡面）。`removeRoutineTask()` 會把今天和之後還沒做的那幾筆一起拿掉，過去的紀錄留著；`restoreDefaultTasks()` 把刪掉的內建項目加回來。新增的自訂項目一開始不排在任何一天，要自己點星期
+  - **向左滑刪除**：`js/swipeRow.js` 的 `enableSwipeRows(container)`，列的結構是 `.swipe-row > .swipe-delete + .swipe-content`。只有設定頁的「每週安排」用到。為了讓列能滑到卡片邊緣，`.routine-config-list` 用負邊距吃掉卡片內距
+  - **任務圖示**：使用者說整體要成熟、不要像半成品，表情符號（💊📺🏃…）是最明顯的來源，所以**之前「任務類型的表情符號保留」那個決定作廢**。現在是彩色圓角方塊配白色線條圖示（`js/taskIcons.js` 的 `renderTaskIcon(icon, tint)`），`TASK_DEFS` 每項有 `icon`（圖示名稱）和 `tint`。幸運色也不再要模型附表情符號
+  - **同一天的星座運勢固定用一份**：使用者發現同一天重新產生後內容不一樣，覺得不準。原因是每次 push 都會重跑、模型每次寫的都不同。`generate_brief.py` 的 `load_published_horoscope()` 會去抓線上那份 `today.json`，如果是今天產生的而且 `horoscope.source == "ai"` 就沿用；`source` 是 `fallback`（模型沒回應用了樣板）時不沿用，讓模型再試。**這只保證同一天不變，運勢本身還是模型根據命盤摘要寫的文字，不是天文計算**
+  - **還沒解決**：使用者說淺色模式下螢幕最上面有一塊顏色不對（先說黑、後來說白），iOS 系統切到淺色也還在，不是「系統深色＋App 手動淺色」造成的。這邊無法重現，已請使用者截圖
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

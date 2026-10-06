@@ -368,7 +368,7 @@ def synthesize_with_openrouter(weather, exchange_rate, rss_items, openrouter_api
     "wealth": "根據命盤裡財務相關特質寫的一句話，資料薄弱就寫得保守一點，不要硬掰",
     "health": "根據命盤裡身心相關特質（例如不安於現狀的衝動、自我懷疑傾向）寫的一句話"
   }},
-  "horoscopeLuckyColor": "一個顏色 + 一個表情符號，例如 寶藍色 🟦",
+  "horoscopeLuckyColor": "一個顏色名稱，例如 寶藍色（只要文字，不要表情符號）",
   "horoscopeLuckyNumber": "一個 1-99 的數字字串",
   "horoscopeRating": "今天的整體運勢評分，1.0-5.0 之間可以有小數的數字",
   "horoscopeTransitAlert": "只有在確定知道今天附近有廣為人知的重大天象事件時才填字串提醒；不確定或沒有就填 null",
@@ -477,6 +477,8 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
 
     weather_rain_str = weather.get('rainChance', 'N/A')
     return {
+        # 標記這份是離線樣板，main() 用它判斷今天的運勢是不是 AI 寫的
+        "_offline": True,
         "weatherTip": f"天氣狀態：{weather.get('condition', '多雲')}，出門請注意天候變化。",
         # OpenRouter 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
         # 只是沒辦法每天換說法
@@ -488,7 +490,7 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
             "wealth": "命盤裡財務相關的依據較薄弱，維持穩定記帳習慣即可，不用過度解讀。",
             "health": "內心比外表更容易自我懷疑，留一點時間讓自己喘口氣，別一直往前衝。"
         },
-        "horoscopeLuckyColor": "寶藍色 🟦",
+        "horoscopeLuckyColor": "寶藍色",
         "horoscopeLuckyNumber": "7",
         "horoscopeRating": 4.0,
         # 離線 fallback 不確定當下真的有沒有天象事件，寧可不提也不要編
@@ -502,6 +504,29 @@ def generate_offline_synthesis(weather, exchange_rate, rss_items):
             ]
         }
     }
+
+PUBLISHED_TODAY_URL = os.environ.get(
+    "PUBLISHED_TODAY_URL", "https://kasim9497.github.io/my-morning-brief0/data/today.json"
+)
+
+
+def load_published_horoscope(today_key):
+    """線上那份 today.json 如果是今天產生的、而且運勢是 AI 寫的，就回傳那份運勢；否則回傳 None。
+
+    只沿用 AI 寫的：早上那次如果模型沒回應用了樣板，之後重跑時要讓模型再試一次。
+    """
+    try:
+        req = urllib.request.Request(PUBLISHED_TODAY_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            published = json.loads(resp.read().decode('utf-8'))
+        generated_at = (published.get("briefMeta") or {}).get("generatedAt", "")
+        horoscope = published.get("horoscope") or {}
+        if generated_at.startswith(today_key) and horoscope.get("source") == "ai":
+            return horoscope
+    except Exception as e:
+        print(f"Could not read the published today.json ({e}); generating a fresh horoscope.")
+    return None
+
 
 def main():
     print("=== Starting Chenxu Generation Pipeline ===")
@@ -551,10 +576,12 @@ def main():
             "details": ai_synthesis.get("horoscopeDetails", {
                 "overall": "", "love": "", "work": "", "wealth": "", "health": ""
             }),
-            "luckyColor": ai_synthesis.get("horoscopeLuckyColor", "寶藍色 🟦"),
+            "luckyColor": ai_synthesis.get("horoscopeLuckyColor", "寶藍色"),
             "luckyNumber": ai_synthesis.get("horoscopeLuckyNumber", "7"),
             "aiSummary": ai_synthesis.get("horoscopeSummary", ""),
-            "transitAlert": ai_synthesis.get("horoscopeTransitAlert") or None
+            "transitAlert": ai_synthesis.get("horoscopeTransitAlert") or None,
+            # "ai" = 模型寫的；"fallback" = 模型沒回應時的固定樣板
+            "source": "fallback" if ai_synthesis.get("_offline") else "ai"
         },
         "exchangeRate": exchange_rate,
         "drivingQuiz": driving_quiz,
@@ -562,6 +589,13 @@ def main():
         "dailyAdvice": ai_synthesis.get("dailyAdvice", {}),
         "dailyQuote": get_daily_quote(now_tw)
     }
+
+    # 同一天只用一份運勢：這支腳本每次 push 都會重跑，模型每次寫出來的內容都不一樣，
+    # 使用者會看到同一天的運勢前後不同。今天已經發布過 AI 寫的運勢就沿用那一份。
+    published = load_published_horoscope(now_tw.strftime("%Y-%m-%d"))
+    if published:
+        print("Reusing the horoscope already published today.")
+        brief_data["horoscope"] = published
 
     # Ensure data directory exists
     os.makedirs("data", exist_ok=True)

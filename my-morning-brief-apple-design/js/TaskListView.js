@@ -11,6 +11,7 @@ import {
   postponeTask,
   getPostponeOptions,
 } from './taskEngine.js';
+import { renderTaskIcon } from './taskIcons.js';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -66,7 +67,7 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
             ${isDone ? '✓' : ''}
           </button>
           <div class="task-label">
-            <span class="task-icon">${t.icon}</span>
+            ${renderTaskIcon(t.icon, t.tint)}
             <span class="task-text">${escapeHtml(t.label)}</span>
             ${carriedTag}
             ${statusTag}

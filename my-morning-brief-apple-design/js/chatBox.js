@@ -23,7 +23,7 @@ import {
   getRoutineConfig,
   setTaskWeekdaySchedule,
   setTaskIntervalSchedule,
-  TASK_DEFS,
+  getTaskDef,
 } from './taskEngine.js';
 
 import { getCountdowns, addCountdown, removeCountdown } from './countdown.js';
@@ -55,7 +55,7 @@ async function buildAppStateContext() {
   }));
   const configurableTasks = getConfigurableTaskIds().map((defId) => ({
     defId,
-    label: TASK_DEFS[defId]?.label || defId,
+    label: getTaskDef(defId).label,
     schedule: getRoutineConfig()[defId],
   }));
   const countdowns = getCountdowns().map((c) => ({ id: c.id, label: c.label, targetDate: c.targetDate }));
