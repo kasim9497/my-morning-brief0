@@ -119,6 +119,12 @@
   - **錯題本的 key 改用題庫編號**：看圖題的題目文字會重複（例如兩題都叫「自行車騎士手勢預告即將」但圖不同），所以 `generate_brief.py` 把題庫原本的編號留在 `qid`，`quizMistakes.js` 的 `mistakeKey(q)` 用 `qid`，沒有 `qid` 的舊資料才退回用題目文字。`resolveMistake()` 現在收整個題目物件，不是題目文字
   - **作息的刪除入口**：「每週安排」卡片右上角多了「編輯／完成」，按了每一列都滑開露出刪除鈕（`.is-editing`）。向左滑還是可以用。使用者要求拿掉「向左滑可以刪除」的提示字之後，這是唯一看得到的線索，不要拿掉
   - **聊天 Worker 的防護**：只接受 `Origin` 是 `https://kasim9497.github.io` 或本機（localhost／127.0.0.1）的請求，其他回 403；同一個 IP 10 分鐘內最多 20 次，超過回 429（計數在記憶體裡，Worker 重啟就歸零，只擋一口氣狂打）；請求本體、每則訊息、歷史則數都有上限。**用 curl 測 Worker 時要自己帶 `-H "Origin: https://kasim9497.github.io"`，不然會拿到 403**。Origin 可以用工具偽造，真正的上限還是 OpenRouter 那把 key 的花費額度（使用者已設 2 美元）。**如果之後換網址或綁自訂網域，要把新網域加進 `ALLOWED_ORIGINS`，不然聊天框會整個不能用**
+- **iOS App 外殼，雲端打包成功（2026-10-06）**：roadmap 第 5 步開始做了。使用者沒有 Mac、不想付 99 美元，所以走「GitHub 的 macOS 機器不簽名編譯 → 使用者在 Windows 用自己的免費 Apple ID 簽名安裝」。免費簽名 7 天過期要重簽，這是使用者知道的代價
+  - `ios-shell/` 是 Capacitor 7 專案，**App 只是外殼**：`capacitor.config.json` 的 `server.url` 指向 GitHub Pages，打開就載入線上網站，所以平常改網站照舊 push 就好，不用重新打包。`ios/`（Xcode 專案）不進版控，每次由 workflow 用 `npx cap add ios` 重新產生
+  - `.github/workflows/ios_build.yml`：`ios-shell/**` 或這個檔有變動時自動跑，也能手動觸發。產出 `chenxu-unsigned.ipa`（約 0.6 MB），在那次執行頁面的 Artifacts。第一次就全部步驟通過（2026-10-06，run 37441164259）。**這條流程沒辦法在本機測**（沒有 Mac），改了只能推上去看結果；沒登入 `gh` 時只看得到哪一步失敗，看不到錯誤內容
+  - workflow 裡用 PlistBuddy 把 `UIUserInterfaceStyle` 設成 Light：網站只有淺色，鎖定之後系統開深色模式時狀態列的字才不會變白
+  - 網頁的來源仍然是 `https://kasim9497.github.io`，所以聊天 Worker 的來源檢查不用改
+  - **還沒做／還沒確認**：使用者還沒實際簽名安裝，App 在真機上能不能開、狀態列對不對都還不知道。就寢提醒的背景通知還沒接（要加 `@capacitor/local-notifications`，並且在網頁端判斷是不是在 App 裡執行）
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題
