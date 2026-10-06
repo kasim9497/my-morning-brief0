@@ -475,9 +475,9 @@ function renderDrivingQuiz() {
         </div>
         ${isReview && isCorrect ? '<div>這題已經從錯題本移除。</div>' : ''}
         ${!isCorrect ? '<div>這題已經存進錯題本。</div>' : ''}
-        <div><strong>官方解析：</strong>${currentQ.explanation}</div>
+        ${currentQ.explanation ? `<div><strong>解析：</strong>${currentQ.explanation}</div>` : ''}
         <div style="font-size: var(--text-caption); color: var(--text-muted); margin-top: 0.35rem;">
-          來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener" style="color: var(--text-muted);">${currentQ.source || '交通部公路局機車筆試題庫'}</a> (更新日期: ${currentQ.updated_at || '2026-06-02'})
+          來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener" style="color: var(--text-muted);">${currentQ.source || '交通部公路局機車筆試題庫'}</a>${currentQ.updated_at ? `（${currentQ.updated_at} 版）` : ''}
         </div>
       </div>
     `;
@@ -498,7 +498,7 @@ function renderDrivingQuiz() {
 
     <div class="quiz-body">
       <div class="quiz-question-box">
-        <span class="quiz-cat-tag">${currentQ.category}</span>
+        ${currentQ.category ? `<span class="quiz-cat-tag">${currentQ.category}</span>` : ''}
         <div class="quiz-q-title">${currIdx + 1}. ${currentQ.question}</div>
       </div>
 
