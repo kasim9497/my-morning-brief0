@@ -1,0 +1,66 @@
+name: Build iOS App (unsigned)
+
+# 把 ios-shell/ 包成一個沒有簽名的 .ipa。說明見 ios-shell/README.md。
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios-shell/**'
+      - '.github/workflows/ios_build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios-shell
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Capacitor
+        run: npm install
+
+      # ios/ 不進版控，每次都重新產生
+      - name: Create the Xcode Project
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Set the App Icon and Light Appearance
+        run: |
+          cp icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+          # 網站只有淺色一種外觀，鎖定淺色，系統開深色模式時狀態列的字才不會變成白的
+          /usr/libexec/PlistBuddy -c "Add :UIUserInterfaceStyle string Light" ios/App/App/Info.plist
+
+      - name: Build Without Signing
+        run: |
+          set -o pipefail
+          cd ios/App
+          if [ -d App.xcworkspace ]; then TARGET="-workspace App.xcworkspace"; else TARGET="-project App.xcodeproj"; fi
+          xcodebuild $TARGET -scheme App -configuration Release -sdk iphoneos \
+            -archivePath "$PWD/build/App.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -60
+
+      - name: Package the .ipa
+        run: |
+          cd ios/App/build
+          mkdir Payload
+          cp -R App.xcarchive/Products/Applications/App.app Payload/
+          zip -qr chenxu-unsigned.ipa Payload
+          ls -la chenxu-unsigned.ipa
+
+      - name: Upload the .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: chenxu-unsigned-ipa
+          path: ios-shell/ios/App/build/chenxu-unsigned.ipa

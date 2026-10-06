@@ -1,0 +1,13 @@
+{
+  "appId": "io.github.kasim9497.chenxu",
+  "appName": "晨序",
+  "webDir": "www",
+  "server": {
+    "url": "https://kasim9497.github.io/my-morning-brief0/",
+    "allowNavigation": ["kasim9497.github.io"]
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f2f2f7"
+  }
+}

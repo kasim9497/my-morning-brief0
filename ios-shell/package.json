@@ -1,0 +1,10 @@
+{
+  "name": "chenxu-ios-shell",
+  "private": true,
+  "description": "晨序的 iOS 外殼：一個只負責打開線上網站的原生 App",
+  "dependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  }
+}
