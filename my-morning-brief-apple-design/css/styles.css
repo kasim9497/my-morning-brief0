@@ -1090,6 +1090,8 @@ body {
   min-height: 1.2em;
 }
 
+.cal-week-progress.is-done { color: var(--apple-green-text); }
+
 .cal-month-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));

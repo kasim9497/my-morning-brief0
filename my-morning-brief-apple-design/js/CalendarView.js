@@ -8,6 +8,9 @@ import { slideIn } from './motion.js';
 import { renderTaskListInto } from './TaskListView.js';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+// 月曆的格子是從週一排到週日，表頭要用同樣的順序。
+// 之前直接拿上面那組（週日開頭）當表頭，整個月的日期都對到錯的星期（差一天）
+const MONTH_HEADER_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 const state = {
   mode: 'week', // 'week' | 'month'
@@ -103,6 +106,12 @@ function renderModeSwitch() {
   `;
 }
 
+// 每一格日期下面那行小字。不要寫成「0/2」：放在日期正下方會被看成「0 月 2 日」
+function progressLabel(total, done) {
+  if (total === 0) return '';
+  return done === total ? '完成' : `剩 ${total - done}`;
+}
+
 function renderWeekGrid() {
   const days = getWeekDays(state.anchorDate);
   const today = getTodayStr();
@@ -119,7 +128,7 @@ function renderWeekGrid() {
         <button class="${cellClass}" data-cal-date="${dateStr}">
           <span class="cal-week-day">${WEEKDAY_LABELS[getWeekday(dateStr)]}</span>
           <span class="cal-week-date">${Number(dateStr.split('-')[2])}</span>
-          <span class="cal-week-progress">${total > 0 ? `${done}/${total}` : ''}</span>
+          <span class="cal-week-progress ${total > 0 && done === total ? 'is-done' : ''}">${progressLabel(total, done)}</span>
         </button>
       `;
     })
@@ -157,7 +166,7 @@ function renderMonthGrid() {
 
   return `
     <div class="cal-month-weekdays">
-      ${WEEKDAY_LABELS.map((w) => `<span>${w}</span>`).join('')}
+      ${MONTH_HEADER_LABELS.map((w) => `<span>${w}</span>`).join('')}
     </div>
     <div class="cal-month-grid">${cellsHtml}</div>
   `;
