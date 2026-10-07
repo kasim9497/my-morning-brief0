@@ -10,6 +10,7 @@ Clean Single Repository Root Architecture:
 
 import os
 import json
+import math
 import gzip
 import random
 import urllib.request
@@ -25,6 +26,47 @@ try:
     _S2TW = OpenCC('s2twp')
 except Exception:
     _S2TW = None
+
+
+# 今天實際的天象（太陽、月亮、行星在哪個星座、有沒有逆行、月相），用天文套件 ephem 算。
+# 運勢文字還是模型寫的，但逆行、新月滿月這些「事實」不再讓模型自己猜。沒裝 ephem 時回傳 None。
+try:
+    import ephem
+except Exception:
+    ephem = None
+
+ZODIAC = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女", "天秤", "天蠍", "射手", "摩羯", "水瓶", "雙魚"]
+
+
+def get_sky_facts(now):
+    if ephem is None:
+        return None
+
+    def longitude(body, when):
+        body.compute(when)
+        # epoch 用當天：星座是照當天的春分點算的，用預設的 J2000 會差零點幾度，剛好換座那天會算錯
+        return math.degrees(ephem.Ecliptic(body, epoch=when).lon) % 360
+
+    when = ephem.Date(now.astimezone(timezone.utc).replace(tzinfo=None))
+    bodies = [("太陽", ephem.Sun()), ("月亮", ephem.Moon()), ("水星", ephem.Mercury()), ("金星", ephem.Venus()),
+              ("火星", ephem.Mars()), ("木星", ephem.Jupiter()), ("土星", ephem.Saturn())]
+    positions, retrograde = [], []
+    for name, body in bodies:
+        lon = longitude(body, when)
+        positions.append(f"{name}在{ZODIAC[int(lon // 30)]}座")
+        if name not in ("太陽", "月亮"):
+            # 一天後的黃經比今天小（考慮 360 度繞回）就是逆行
+            if (longitude(body, when + 1) - lon + 540) % 360 - 180 < 0:
+                retrograde.append(name)
+
+    elongation = (longitude(ephem.Moon(), when) - longitude(ephem.Sun(), when)) % 360
+    if elongation < 12 or elongation > 348:
+        phase = "新月"
+    elif abs(elongation - 180) < 12:
+        phase = "滿月"
+    else:
+        phase = "月亮漸盈" if elongation < 180 else "月亮漸虧"
+    return {"positions": positions, "retrograde": retrograde, "moonPhase": phase}
 
 
 def to_traditional(value):
@@ -139,21 +181,34 @@ FALLBACK_QUOTE = {"text": "工欲善其事，必先利其器。", "author": "孔
 def load_quotes():
     try:
         with open(QUOTES_FILE, 'r', encoding='utf-8') as f:
-            rows = json.load(f).get("quotes", [])
-        return [{"text": r[0], "author": r[1], "source": r[2]} for r in rows if len(r) == 3 and r[0]]
+            data = json.load(f)
+        featured_authors = set(data.get("featured_authors", []))
+        return [
+            {"text": r[0], "author": r[1], "source": r[2], "featured": r[1] in featured_authors}
+            for r in data.get("quotes", []) if len(r) == 3 and r[0]
+        ]
     except Exception as e:
         print(f"Failed to read quotes file ({e}), using fallback quote.")
         return []
 
 def get_daily_quote(now_tw):
     """每天固定一條，不呼叫 AI（避免語錄被幻覺捏造）。
-    檔案裡是照出處分組排的，直接照順序會連續兩個月都是《論語》，
-    所以先用固定種子洗牌一次；用日期序數取餘數，全部輪完才會重複。"""
+
+    使用者要的是日本職人、做事態度那一類，所以三天裡有兩天從 featured（quotes.json 的
+    featured_authors）那一池出，第三天才從其他（中國古籍、西方）那一池出。
+    兩池各自用固定種子洗牌一次、照順序輪，輪完才會重複。"""
     quotes = load_quotes()
     if not quotes:
         return FALLBACK_QUOTE
     random.Random(20261003).shuffle(quotes)
-    return quotes[now_tw.date().toordinal() % len(quotes)]
+    featured = [q for q in quotes if q["featured"]]
+    others = [q for q in quotes if not q["featured"]]
+    day = now_tw.date().toordinal()
+    if featured and (day % 3 != 0 or not others):
+        pick = featured[(day // 3 * 2 + day % 3 - 1) % len(featured)]
+    else:
+        pick = others[(day // 3) % len(others)]
+    return {"text": pick["text"], "author": pick["author"], "source": pick["source"]}
 
 def rating_to_stars(rating):
     """把 1-5 的數字評分轉成星星字串，取代原本寫死的 ★★★★☆"""
@@ -278,21 +333,31 @@ def load_quiz_questions():
 
     return []
 
-def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key):
+def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key, sky=None):
     if not openrouter_api_key:
         print("OPENROUTER_API_KEY not provided. Using offline smart synthesis template.")
         return generate_offline_synthesis(weather, "OPENROUTER_API_KEY not provided")
 
     print("Calling OpenRouter (deepseek/deepseek-chat-v3.1) for AI Synthesis...")
+    if sky:
+        sky_text = "、".join(sky["positions"]) + f"；月相：{sky['moonPhase']}；逆行中的行星：" + ("、".join(sky["retrograde"]) or "無")
+    else:
+        sky_text = "（今天沒有天象資料，horoscopeTransitAlert 一律填 null）"
     prompt_text = f"""
-你是一位專業的個人 AI 助理。請根據以下事實資料，為使用者 (Kasim，處女座，目前在南京交換，正在準備機車筆試與規劃 AI PM 職涯) 生成每日晨報摘要。
+你是報紙星座專欄的作者，同時負責一句天氣提醒。請根據下面的資料寫今天的內容。
 
-【重要準則】：
-1. 運勢部分要根據下方【真實命盤重點】寫，不要套處女座罐頭文字（例如不要只寫「處女座今天適合整理」這種任何處女座都適用的話）。這份命盤摘要是穩定的個性特質，不是每日星象演算，所以每天的用詞、角度可以不同，但內容要合理對應到命盤裡實際存在的特質，不能無中生有編一個命盤沒有的說法。
-2. 如果你確實知道今天日期附近有正在發生、廣為人知的重大天象事件（例如水星逆行、土星逆行、其他行星逆行區間、日食／月食等），要在 horoscopeTransitAlert 欄位提醒一句這對這份命盤的意義；但如果不確定精確日期或根本不知道，horoscopeTransitAlert 就填 null，絕對不要編造一個聽起來合理但其實不確定的天象事件。這個欄位是獨立的提醒區塊，不要跟 horoscopeSummary 的內容重複。
+【運勢怎麼寫】：
+1. 寫成報紙上「處女座今日運勢」的口吻：對象是所有處女座讀者，不是特定某個人。可以用「處女座」當主詞，或直接省略主詞。
+2. 絕對不要提到任何個人資訊：不要提考試、駕照、機車、職涯規劃、AI、產品經理、交換、南京、姓名。也不要出現「你的命盤」「官祿宮」「第二宮」「上升」「八字」「紫微」這類命盤術語。
+3. 下面的【命盤重點】和【今日天象】是你下筆的依據：命盤重點用來決定哪些面向該多著墨（例如務實、容易自我懷疑、重視成就感），今日天象用來決定今天的氣氛。兩者都只能轉化成一般性的描述，不能直接講出來源。
+4. 每天的角度和用詞要有變化，內容要具體（例如「把拖著的小事清掉」），不要空泛的吉祥話。
+5. horoscopeTransitAlert：只有【今日天象】列出有行星逆行，或今天是新月／滿月時才寫，用一句話說這段時間對處女座的一般性提醒；都沒有就填 null。不可以提【今日天象】沒有列出的天象。
 
-【真實命盤重點】:
+【命盤重點】（只當作依據，不要直接引用）:
 {BIRTH_CHART_SUMMARY}
+
+【今日天象】（天文計算結果）:
+{sky_text}
 
 【已知事實資料】:
 - 今日地點：{weather['location']}，天氣狀況：{weather['condition']}，溫度：{weather['tempMin']}~{weather['tempMax']}，降雨機率：{weather['rainChance']}
@@ -301,18 +366,18 @@ def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key):
 【請輸出嚴格的 JSON 格式】:
 {{
   "weatherTip": "針對溫差與降雨的一句話實用出門提醒",
-  "horoscopeSummary": "根據上方真實命盤重點寫 2-3 句今天的解讀，可以結合今天日期/星期幾發揮，但論點要能對應到命盤裡的具體特質",
+  "horoscopeSummary": "2-3 句處女座今日整體運勢，報紙專欄口吻",
   "horoscopeDetails": {{
-    "overall": "根據命盤整體特質寫的一句話，跟今天有點關聯",
-    "love": "根據命盤裡感情相關特質（例如上升對沖凱龍、月金木三合等）寫的一句話",
-    "work": "根據命盤裡事業/成就相關特質（例如官祿宮太陽、太陽第二宮等）寫的一句話",
-    "wealth": "根據命盤裡財務相關特質寫的一句話，資料薄弱就寫得保守一點，不要硬掰",
-    "health": "根據命盤裡身心相關特質（例如不安於現狀的衝動、自我懷疑傾向）寫的一句話"
+    "overall": "一句話，處女座今天的整體運",
+    "love": "一句話，處女座今天的感情運",
+    "work": "一句話，處女座今天的工作運",
+    "wealth": "一句話，處女座今天的財運",
+    "health": "一句話，處女座今天的健康運"
   }},
   "horoscopeLuckyColor": "一個顏色名稱，例如 寶藍色（只要文字，不要表情符號）",
   "horoscopeLuckyNumber": "一個 1-99 的數字字串",
   "horoscopeRating": "今天的整體運勢評分，1.0-5.0 之間可以有小數的數字",
-  "horoscopeTransitAlert": "只有在確定知道今天附近有廣為人知的重大天象事件時才填字串提醒；不確定或沒有就填 null"
+  "horoscopeTransitAlert": "依準則 5，有逆行或新月滿月才寫一句，否則填 null"
 }}
 """
     payload = {
@@ -362,13 +427,13 @@ def generate_offline_synthesis(weather, error):
         "weatherTip": f"天氣狀態：{weather.get('condition', '多雲')}，出門請注意天候變化。",
         # OpenRouter 不可用時的離線 fallback，還是根據真實命盤寫（不是處女座罐頭文字），
         # 只是沒辦法每天換說法
-        "horoscopeSummary": "你的命盤裡不安於現狀的衝動跟渴望被認可的成就感，是長期主題，不是今天限定。與其等心情對了才動手，不如挑一件具體小事先做完，落地的產出比想清楚更能安你的心。",
+        "horoscopeSummary": "處女座今天適合從小處著手。與其等狀態對了才開始，不如先把一件具體的小事做完，有成果在手，心就定了。",
         "horoscopeDetails": {
-            "overall": "命宮空宮、性格隨環境調整，今天狀態會跟著周遭步調走，不用強求跟昨天一樣。",
-            "love": "親密關係是這輩子要花力氣練習的課題，今天如果有摩擦，先別急著下定論。",
-            "work": "官祿宮太陽坐鎮，成就感是你的核心動力，挑一件能被看見的事先做完。",
-            "wealth": "命盤裡財務相關的依據較薄弱，維持穩定記帳習慣即可，不用過度解讀。",
-            "health": "內心比外表更容易自我懷疑，留一點時間讓自己喘口氣，別一直往前衝。"
+            "overall": "步調容易跟著周遭走，不必強求跟昨天一樣。",
+            "love": "有摩擦時先別急著下定論，把話聽完再說。",
+            "work": "挑一件看得到成果的事先完成，會帶動後面的節奏。",
+            "wealth": "維持平常的收支習慣即可，不宜衝動決定。",
+            "health": "留一點時間喘口氣，別一直往前衝。"
         },
         "horoscopeLuckyColor": "寶藍色",
         "horoscopeLuckyNumber": "7",
@@ -376,6 +441,8 @@ def generate_offline_synthesis(weather, error):
         # 離線 fallback 不確定當下真的有沒有天象事件，寧可不提也不要編
         "horoscopeTransitAlert": None,
     }
+
+HOROSCOPE_STYLE = 2
 
 PUBLISHED_TODAY_URL = os.environ.get(
     "PUBLISHED_TODAY_URL", "https://kasim9497.github.io/my-morning-brief0/data/today.json"
@@ -393,7 +460,7 @@ def load_published_horoscope(today_key):
             published = json.loads(resp.read().decode('utf-8'))
         generated_at = (published.get("briefMeta") or {}).get("generatedAt", "")
         horoscope = published.get("horoscope") or {}
-        if generated_at.startswith(today_key) and horoscope.get("source") == "ai":
+        if generated_at.startswith(today_key) and horoscope.get("source") == "ai" and horoscope.get("style") == HOROSCOPE_STYLE:
             return horoscope
     except Exception as e:
         print(f"Could not read the published today.json ({e}); generating a fresh horoscope.")
@@ -422,7 +489,8 @@ def main():
     exchange_rate = fetch_exchange_rate()
     driving_quiz = load_quiz_questions()
 
-    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, openrouter_key))
+    sky = get_sky_facts(now_tw)
+    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, openrouter_key, sky))
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 
@@ -452,7 +520,10 @@ def main():
             "aiSummary": ai_synthesis.get("horoscopeSummary", ""),
             "transitAlert": ai_synthesis.get("horoscopeTransitAlert") or None,
             # "ai" = 模型寫的；"fallback" = 模型沒回應時的固定樣板
-            "source": "fallback" if ai_synthesis.get("_offline") else "ai"
+            "source": "fallback" if ai_synthesis.get("_offline") else "ai",
+            # 寫法的版本：2 = 報紙專欄口吻、不提個人資訊。改寫法時加一，當天已發布的舊寫法就不會被沿用
+            "style": HOROSCOPE_STYLE,
+            "sky": sky
         },
         "exchangeRate": exchange_rate,
         "drivingQuiz": driving_quiz,

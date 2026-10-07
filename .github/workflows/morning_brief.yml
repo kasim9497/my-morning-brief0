@@ -63,9 +63,10 @@ jobs:
       - name: Run Logic Tests
         run: cd my-morning-brief-apple-design && node --test
 
-      # 簡轉繁用（generate_brief.py 的 to_traditional），沒裝的話 AI 內容會維持模型回的簡體字
+      # opencc：簡轉繁（to_traditional），沒裝的話 AI 內容會維持模型回的簡體字
+      # ephem：算今天行星的位置、逆行和月相（get_sky_facts），沒裝的話運勢就沒有天象依據
       - name: Install Python Dependencies
-        run: pip install opencc-python-reimplemented
+        run: pip install opencc-python-reimplemented ephem
 
       - name: Run Daily Briefing Generation Script
         env:

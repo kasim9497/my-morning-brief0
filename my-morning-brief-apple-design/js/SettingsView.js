@@ -29,6 +29,7 @@ import { exportBackup, importBackup, daysSinceBackup } from './backup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
 import { getFixedSchedule, setFixedTime } from './fixedSchedule.js';
+import { buildWeeklyReport } from './weeklyReport.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 
@@ -243,6 +244,15 @@ export function renderSettingsView() {
       </div>
 
       <div class="section-head">
+        <h2 class="section-title">本週摘要</h2>
+      </div>
+      <div class="card">
+        <textarea class="countdown-input weekly-note" id="weekly-health-note" rows="3" placeholder="想一起分析的健康數據（選填）。例如：平均步數 8,200、平均睡眠 6.5 小時"></textarea>
+        <button type="button" class="btn-action btn-primary btn-block" id="weekly-share-btn">整理這一週，交給 Claude</button>
+        <p class="list-footnote" id="weekly-status">會把最近 7 天的任務、追劇讀書進度和錯題整理成一段文字。iPhone「健康」App 的數字要自己看了填在上面。</p>
+      </div>
+
+      <div class="section-head">
         <h2 class="section-title">資料</h2>
       </div>
       <div class="card">
@@ -369,6 +379,26 @@ export function renderSettingsView() {
       renderSettingsView();
     });
   }
+
+  document.getElementById('weekly-share-btn').addEventListener('click', async () => {
+    const text = buildWeeklyReport(document.getElementById('weekly-health-note').value);
+    const status = document.getElementById('weekly-status');
+    // 手機上跳出系統的分享選單，可以直接選 Claude；不支援分享的瀏覽器就複製到剪貼簿
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // 使用者自己關掉分享選單
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      status.textContent = '已經複製。打開 Claude，貼上就可以了。';
+    } catch (e) {
+      status.textContent = '這個瀏覽器不讓網頁複製文字，換一個瀏覽器再試。';
+    }
+  });
 
   const importInput = document.getElementById('backup-import-input');
   document.getElementById('backup-export-btn').addEventListener('click', () => {

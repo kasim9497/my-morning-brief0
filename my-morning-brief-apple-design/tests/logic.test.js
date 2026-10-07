@@ -21,6 +21,7 @@ const sleep = await import('../js/sleepCalculator.js');
 const tasks = await import('../js/taskEngine.js');
 const media = await import('../js/mediaTracker.js');
 const countdown = await import('../js/countdown.js');
+const weekly = await import('../js/weeklyReport.js');
 
 const defIds = (dateStr) => tasks.getTasksForDate(dateStr).map((t) => t.defId);
 
@@ -196,4 +197,17 @@ test('倒數：剩餘天數算對，而且越快到的排越前面', () => {
   assert.equal(list.find((c) => c.label === '昨天的事').daysLeft, -1);
   const days = list.map((c) => c.daysLeft);
   assert.deepEqual(days, [...days].sort((a, b) => a - b));
+});
+
+// ── 本週摘要 ────────────────────────────────────────────────
+
+test('本週摘要：涵蓋七天、列出每天和每項任務的完成數，有填健康備註才附上', () => {
+  tasks.getTasksForDate('2027-03-10');
+  tasks.toggleDone('2027-03-10', 'supplement');
+  const report = weekly.buildWeeklyReport('平均步數 8000', '2027-03-10');
+  assert.ok(report.includes('3/4（四）') && report.includes('3/10（三）'));
+  assert.ok(report.includes('- 3/10（三） 完成 1/'));
+  assert.ok(report.includes('- 吃保健食品：1/7'));
+  assert.ok(report.includes('平均步數 8000'));
+  assert.ok(!weekly.buildWeeklyReport('', '2027-03-10').includes('健康」App 補充'));
 });

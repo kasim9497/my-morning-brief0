@@ -19,6 +19,8 @@ import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
 // mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
 let quizState = {
   mode: 'daily',
+  finished: false, // 今天的題目（和接著的錯題）都跑完了
+  dailyScore: 0,
   dailyQuestions: [],
   questions: [],
   currentIndex: 0,
@@ -157,6 +159,8 @@ async function loadAllBriefData() {
 
     const quizData = await dataService.getDrivingQuiz();
     quizState.mode = 'daily';
+    quizState.finished = false;
+    quizState.dailyScore = 0;
     quizState.dailyQuestions = quizData;
     quizState.questions = quizData;
     quizState.currentIndex = 0;
@@ -440,6 +444,23 @@ function renderDrivingQuiz() {
 
   const isReview = quizState.mode === 'review';
   const mistakeCount = getMistakeCount();
+  const dailyTotal = quizState.dailyQuestions.length;
+  document.getElementById('quiz-card-badge').textContent = `每日 ${dailyTotal} 題`;
+
+  // 跑完了：顯示今天的成績，不會自己從第一題重來
+  if (quizState.finished) {
+    container.innerHTML = `
+      <div class="metric">
+        <span class="metric-value">${quizState.dailyScore}</span>
+        <span class="metric-unit">/ ${dailyTotal} 題答對</span>
+      </div>
+      <p class="list-footnote">今天的題目做完了。${mistakeCount > 0 ? `錯題本還有 ${mistakeCount} 題。` : '錯題本是空的。'}</p>
+      ${mistakeCount > 0 ? '<button type="button" class="btn-action btn-block" id="btn-quiz-review">再做一次錯題</button>' : ''}
+    `;
+    const again = document.getElementById('btn-quiz-review');
+    if (again) again.addEventListener('click', () => startQuiz('review'));
+    return;
+  }
 
   if (!currentQ) {
     container.innerHTML = '<div class="countdown-empty">今天的題目暫時載入不了</div>';
@@ -447,7 +468,6 @@ function renderDrivingQuiz() {
   }
 
   const scoreText = `答對 ${quizState.score} / ${total}`;
-  document.getElementById('quiz-card-badge').textContent = isReview ? '錯題複習' : `每日 ${total} 題`;
 
   const dotsHtml = quizState.questions.map((q, idx) => {
     let dotClass = 'quiz-dot';
@@ -485,7 +505,7 @@ function renderDrivingQuiz() {
     const isCorrect = answeredOption === currentQ.answer;
     explanationHtml = `
       <div class="quiz-explanation">
-        <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green)' : 'var(--apple-red)'};">
+        <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green-text)' : 'var(--apple-red-text)'};">
           ${isCorrect ? '答對了' : `答錯了，正確答案是 (${currentQ.answer})`}
         </div>
         ${isReview && isCorrect ? '<div>這題已經從錯題本移除。</div>' : ''}
@@ -528,8 +548,8 @@ function renderDrivingQuiz() {
         上一題
       </button>
       ${isLast ? `
-        <button class="btn-action btn-primary" id="btn-quiz-reset">
-          ${isReview ? '回到今日題目' : '重新練習'}
+        <button class="btn-action btn-primary" id="btn-quiz-finish">
+          ${!isReview && mistakeCount > 0 ? '下一題' : '完成'}
         </button>
       ` : `
         <button class="btn-action btn-primary" id="btn-quiz-next">
@@ -538,12 +558,7 @@ function renderDrivingQuiz() {
       `}
     </div>
 
-    <div class="quiz-footer">
-      <span>${isReview ? '複習時答對，那一題就會從錯題本移除' : `錯題本目前有 ${mistakeCount} 題`}</span>
-      ${isReview
-        ? '<button type="button" class="section-action card-link" id="btn-quiz-daily">回到今日題目</button>'
-        : (mistakeCount > 0 ? '<button type="button" class="section-action card-link" id="btn-quiz-review">複習錯題</button>' : '')}
-    </div>
+    ${mistakeCount > 0 ? `<div class="quiz-footer"><span>${isReview ? '答對的題目會從錯題本移除' : `錯題本有 ${mistakeCount} 題，今天的題目做完後會接著出`}</span></div>` : ''}
   `;
 
   container.querySelectorAll('.option-btn').forEach(btn => {
@@ -576,21 +591,28 @@ function renderDrivingQuiz() {
     });
   }
 
-  const resetBtn = document.getElementById('btn-quiz-reset');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => startQuiz('daily'));
+  // 最後一題的按鈕：今天的題目做完就接著做錯題本裡的題目，錯題也做完（或本來就沒有）才算結束
+  const finishBtn = document.getElementById('btn-quiz-finish');
+  if (finishBtn) {
+    finishBtn.addEventListener('click', () => {
+      if (!isReview) {
+        quizState.dailyScore = quizState.score;
+        if (getMistakeCount() > 0) {
+          startQuiz('review');
+          slideIn(container.querySelector('.quiz-body'), 1);
+          return;
+        }
+      }
+      quizState.finished = true;
+      renderDrivingQuiz();
+    });
   }
-
-  const reviewBtn = document.getElementById('btn-quiz-review');
-  if (reviewBtn) reviewBtn.addEventListener('click', () => startQuiz('review'));
-
-  const dailyBtn = document.getElementById('btn-quiz-daily');
-  if (dailyBtn) dailyBtn.addEventListener('click', () => startQuiz('daily'));
 }
 
-/** 從第一題重新開始：'daily' 是今天的題目，'review' 是錯題本裡的題目 */
+/** 從第一題開始：'daily' 是今天的題目，'review' 是錯題本裡的題目 */
 function startQuiz(mode) {
   quizState.mode = mode;
+  quizState.finished = false;
   quizState.questions = mode === 'review'
     ? getMistakes().map((m, idx) => ({ ...m, id: `m_${idx + 1}` }))
     : quizState.dailyQuestions;
