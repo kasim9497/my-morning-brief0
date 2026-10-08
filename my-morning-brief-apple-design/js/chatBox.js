@@ -39,8 +39,9 @@ import {
 import { getSleepReminderConfig, setSleepReminderConfig } from './sleepReminder.js';
 
 import { dataService } from './services/dataService.js';
+import { WORKER_URL } from './config.js';
 
-const CHAT_WORKER_URL = 'https://my-morning-brief-chat-proxy.loverinline520.workers.dev/';
+const CHAT_WORKER_URL = WORKER_URL;
 
 const VALID_POSTPONE_OPTIONS = ['plus1', 'plus2', 'plus3', 'nextWeek', 'skipWeek'];
 

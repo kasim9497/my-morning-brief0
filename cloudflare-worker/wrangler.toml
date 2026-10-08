@@ -6,3 +6,11 @@ compatibility_date = "2025-01-01"
 # chat-proxy.js 先用它，失敗才試 OpenRouter。
 [ai]
 binding = "AI"
+
+# 作息時間的推播提醒（push.js）：KV 存「哪支手機、幾點要提醒」，排程每分鐘檢查一次。
+# KV 沒有寫 id：部署時 wrangler 會自動建立並綁定。
+[[kv_namespaces]]
+binding = "PUSH_KV"
+
+[triggers]
+crons = ["* * * * *"]

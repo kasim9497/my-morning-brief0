@@ -41,3 +41,24 @@
 ## 免費額度夠用嗎
 
 Cloudflare Workers 免費方案是每天 10 萬次請求，這個 App 一天頂多用個位數次，完全用不完，不會產生費用。
+
+
+## 作息時間的推播提醒（push.js）
+
+晨序把「幾點、星期幾要提醒」傳給這個 Worker，Worker 每分鐘檢查一次，時間到了就推播到手機。
+
+需要兩樣設定：
+
+1. **KV 儲存空間 `PUSH_KV`**：寫在 `wrangler.toml`，部署時自動建立，不用手動做。
+2. **Secret `VAPID_PRIVATE_JWK`**：一把只有你有的私鑰，推播服務靠它確認推播是你送的。
+   在自己的電腦上產生（需要 Node）：
+
+   ```bash
+   node -e "crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign']).then(k=>crypto.subtle.exportKey('jwk',k.privateKey)).then(j=>console.log(JSON.stringify(j)))"
+   ```
+
+   把印出來的那一整行（從 `{` 到 `}`）貼到 Cloudflare 後台：這個 Worker → Settings →
+   Variables and Secrets → Add → Type 選 **Secret**、名稱 `VAPID_PRIVATE_JWK`。
+   **不要把它貼到別的地方，也不要放進 repo。**
+
+換掉這把金鑰之後，手機上原本的訂閱會失效：要把主畫面的晨序刪掉重加，再打開一次提醒開關。

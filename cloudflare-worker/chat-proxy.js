@@ -12,6 +12,8 @@
 // 只接受從晨序網站（和本機開發）送來的請求。瀏覽器會自動帶 Origin，別的網站沒辦法冒用；
 // 用 curl 之類的工具還是可以自己填這個標頭，所以這只擋「別的網頁偷用」，
 // 真正的上限是 OpenRouter 那把 key 的花費額度。
+import { handlePushRequest, sendDuePushes } from './push.js';
+
 const ALLOWED_ORIGINS = ['https://kasim9497.github.io'];
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
@@ -143,6 +145,11 @@ async function callModel(env, messages, maxTokens = 500) {
 }
 
 export default {
+  // 每分鐘一次（wrangler.toml 的 crons）：作息時間到了就推播提醒
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendDuePushes(env));
+  },
+
   async fetch(request, env) {
     const origin = request.headers.get('Origin');
     const json = (payload, status = 200) => new Response(JSON.stringify(payload), {
@@ -166,10 +173,6 @@ export default {
       return new Response('Method Not Allowed', { status: 405, headers: corsHeaders(origin) });
     }
 
-    if (!env.AI && !env.OPENROUTER_API_KEY) {
-      return json({ reply: '後端沒有可用的 AI 模型。', action: null }, 500);
-    }
-
     let body;
     try {
       const raw = await request.text();
@@ -180,6 +183,16 @@ export default {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
       });
+    }
+
+    // 作息時間的推播提醒：取公鑰、存訂閱和時間表（cloudflare-worker/push.js）
+    if (body.mode === 'push-key' || body.mode === 'push-sync') {
+      const result = await handlePushRequest(body, env);
+      return json(result.payload, result.status);
+    }
+
+    if (!env.AI && !env.OPENROUTER_API_KEY) {
+      return json({ reply: '後端沒有可用的 AI 模型。', action: null }, 500);
     }
 
     // 另一種用法：每日資料流程（generate_brief.py）送一段完整的提示詞過來，這裡只負責叫模型、把它回的 JSON 原樣轉回去。

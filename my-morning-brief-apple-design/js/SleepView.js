@@ -8,7 +8,8 @@ import {
   getSleepReminderConfig,
   setSleepReminderConfig,
   requestNotificationPermission,
-  isNativeApp,
+  permissionHelp,
+  canRemindInBackground,
 } from './sleepReminder.js';
 
 function escapeHtml(str) {
@@ -136,7 +137,7 @@ function renderReminderCard() {
         <span>${escapeHtml(reminderConfig.label)}</span>
         <input type="time" class="countdown-input" id="sleep-reminder-time" value="${escapeHtml(reminderConfig.bedTime)}">
       </label>
-      <p class="list-footnote">和「設定」裡作息時間的「${escapeHtml(reminderConfig.label)}」是同一個，改這裡那邊也會跟著變。${isNativeApp() ? '' : '網頁版只有晨序開著的時候才會提醒。'}</p>
+      <p class="list-footnote">和「設定」裡作息時間的「${escapeHtml(reminderConfig.label)}」是同一個，改這裡那邊也會跟著變。${canRemindInBackground() ? '' : 'iPhone 要先把晨序「加入主畫面」才收得到提醒。'}</p>
     </div>
   `;
 }
@@ -256,7 +257,7 @@ function bindEvents(container) {
         const permission = await requestNotificationPermission();
         if (permission !== 'granted') {
           reminderToggle.checked = false;
-          window.alert(permission === 'unsupported' ? '這個瀏覽器不支援通知。iPhone 要裝成 App 之後才能提醒。' : '要先允許通知，提醒才會響。');
+          window.alert(permissionHelp(permission));
           return;
         }
       }

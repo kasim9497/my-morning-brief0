@@ -25,6 +25,7 @@ const weekly = await import('../js/weeklyReport.js');
 const mistakes = await import('../js/quizMistakes.js');
 const fixed = await import('../js/fixedSchedule.js');
 const reminder = await import('../js/sleepReminder.js');
+const push = await import('../../cloudflare-worker/push.js');
 
 const defIds = (dateStr) => tasks.getTasksForDate(dateStr).map((t) => t.defId);
 
@@ -288,4 +289,42 @@ test('睡眠：指定之後才上床的時間，起床時間照那個時間推�
   const four = result.options.find((o) => o.cycles === 4);
   assert.equal(four.time, '07:15');
   assert.equal(four.label, '明天');
+});
+
+test('推播後端：時間到了才推，照手機的時區和星期算', () => {
+  const sub = { tz: 'Asia/Shanghai', items: [{ time: '23:00', weekdays: null }, { time: '01:20', weekdays: [2, 3, 4] }] };
+  // 2026-10-08 15:00 UTC = 南京 23:00（週四）
+  assert.equal(push.isDue(sub, new Date(Date.UTC(2026, 9, 8, 15, 0, 20))), true);
+  assert.equal(push.isDue(sub, new Date(Date.UTC(2026, 9, 8, 15, 1, 0))), false);
+  // 2026-10-12 17:20 UTC = 南京週二 01:20，在清單裡；前一天（週一 01:20）不在
+  assert.equal(push.isDue(sub, new Date(Date.UTC(2026, 9, 12, 17, 20))), true);
+  assert.equal(push.isDue(sub, new Date(Date.UTC(2026, 9, 11, 17, 20))), false);
+  assert.equal(push.isDue({ tz: '亂寫的時區', items: sub.items }, new Date()), false);
+});
+
+test('推播後端：只收真的推播服務的網址，時間格式不對的項目丟掉', () => {
+  const ok = push.cleanSubscription({
+    subscription: { endpoint: 'https://web.push.apple.com/abc' },
+    tz: 'Asia/Taipei',
+    items: [{ time: '09:00', weekdays: [1, 9, 'x'] }, { time: '9點' }],
+  });
+  assert.deepEqual(ok.items, [{ time: '09:00', weekdays: [1] }]);
+  assert.equal(push.cleanSubscription({ subscription: { endpoint: 'https://evil.example.com/x' }, items: [] }), null);
+  assert.equal(push.cleanSubscription({ subscription: { endpoint: 'http://web.push.apple.com/x' }, items: [] }), null);
+  assert.equal(push.cleanSubscription({}), null);
+});
+
+test('推播後端：簽章用公鑰驗得過，而且寫明是給哪個推播服務的', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const jwk = await crypto.subtle.exportKey('jwk', pair.privateKey);
+  const header = await push.vapidAuthorization(jwk, 'https://web.push.apple.com/abc', 1000);
+  const [, token, key] = header.match(/^vapid t=([^,]+), k=(.+)$/);
+  assert.equal(key, push.publicKeyOf(jwk));
+  const [h, c, sig] = token.split('.');
+  const decode = (t) => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0));
+  const claims = JSON.parse(new TextDecoder().decode(decode(c)));
+  assert.equal(claims.aud, 'https://web.push.apple.com');
+  assert.equal(claims.exp, 1000 + 12 * 3600);
+  const valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey, decode(sig), new TextEncoder().encode(`${h}.${c}`));
+  assert.equal(valid, true);
 });

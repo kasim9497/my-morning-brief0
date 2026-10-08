@@ -30,7 +30,7 @@ import { exportBackup, importBackup, daysSinceBackup } from './backup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
 import { getFixedSchedule, updateFixedItem, addFixedItem, removeFixedItem } from './fixedSchedule.js';
-import { scheduleReminderIfEnabled, requestNotificationPermission, isNativeApp } from './sleepReminder.js';
+import { scheduleReminderIfEnabled, requestNotificationPermission, permissionHelp, canRemindInBackground, isPushSyncPending } from './sleepReminder.js';
 import { buildWeeklyReport } from './weeklyReport.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
@@ -128,6 +128,21 @@ function renderMediaItem(item) {
   `;
 }
 
+function reminderFootnote() {
+  if (isPushSyncPending()) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。在傳上去之前，提醒會照舊的時間響。連上後再打開晨序會自動重試。';
+  return canRemindInBackground()
+    ? '打開右邊的開關，時間到會跳通知，晨序關著也會。'
+    : '打開右邊的開關，時間到會提醒。iPhone 要先把晨序「加入主畫面」，從主畫面打開才收得到。';
+}
+
+// 提醒的時間有沒有成功傳到後端，是之後才知道的事；知道了就更新那行說明
+if (typeof window !== 'undefined') {
+  window.addEventListener('chenxu:reminder-sync', () => {
+    const el = document.getElementById('reminder-footnote');
+    if (el) el.textContent = reminderFootnote();
+  });
+}
+
 export function renderSettingsView() {
   const container = document.getElementById('view-settings');
   if (!container) return;
@@ -222,7 +237,7 @@ export function renderSettingsView() {
           <input type="time" class="countdown-input" id="fixed-add-time" required aria-label="時間">
           <button type="submit" class="section-action">加入</button>
         </form>
-        <p class="list-footnote">打開右邊的開關，時間到會提醒。${isNativeApp() ? '' : '網頁版只有晨序開著的時候才會響，iPhone 要裝成 App 才收得到。'}</p>
+        <p class="list-footnote" id="reminder-footnote">${reminderFootnote()}</p>
       </div>
 
       <div class="section-head">
@@ -310,7 +325,7 @@ export function renderSettingsView() {
         const permission = await requestNotificationPermission();
         if (permission !== 'granted') {
           toggle.checked = false;
-          window.alert(permission === 'unsupported' ? '這個瀏覽器不支援通知。iPhone 要裝成 App 之後才能提醒。' : '要先允許通知，提醒才會響。');
+          window.alert(permissionHelp(permission));
           return;
         }
       }
