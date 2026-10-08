@@ -39,7 +39,8 @@ const APP_VERSION = '1.0.0';
 
 const ABOUT_ROWS = [
   { label: '版本', value: APP_VERSION },
-  { label: '資料儲存', value: '只存在這台裝置，不會上傳' },
+  { label: '資料儲存', value: '紀錄只存在這台裝置' },
+  { label: '提醒', value: '開了提醒的時間會傳到後端，名稱不會' },
   { label: '天氣', value: '和風天氣' },
   { label: '匯率', value: 'ExchangeRate-API' },
   { label: '題庫', value: '交通部公路局機車筆試題庫' },

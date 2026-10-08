@@ -21,9 +21,12 @@ function dayStr(date, offsetDays = 0) {
 
 // ponytail: 一次性清空。使用者在 2026-10-08 測試時亂答，要求把錯題本整個重來；
 // 每支裝置只會清一次（靠下面這個旗標），之後答錯的照常累積。
-const RESET_FLAG = 'morningBrief.quizMistakes.reset20261008';
+// 旗標刻意不用 morningBrief. 開頭：還原備份會先清掉所有 morningBrief. 的資料，
+// 旗標跟著不見的話，下次載入會把剛還原回來的錯題本又清空一次。
+const RESET_FLAG = 'chenxu.quizMistakesReset20261008';
+const OLD_RESET_FLAG = 'morningBrief.quizMistakes.reset20261008'; // 第一版用的名字，已經清過的裝置認這個
 if (!localStorage.getItem(RESET_FLAG)) {
-  localStorage.removeItem(STORAGE_KEY);
+  if (!localStorage.getItem(OLD_RESET_FLAG)) localStorage.removeItem(STORAGE_KEY);
   localStorage.setItem(RESET_FLAG, '1');
 }
 

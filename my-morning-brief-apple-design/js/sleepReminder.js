@@ -48,7 +48,7 @@ export function isPushSyncPending() {
 /** 睡眠頁和 AI 助理用的：今晚那一項就寢時間和它的提醒開關 */
 export function getSleepReminderConfig() {
   const bed = getBedItem();
-  return { enabled: !!(bed && bed.remind), bedTime: bed ? bed.time : '23:30', label: bed ? bed.label : '就寢' };
+  return { exists: !!bed, enabled: !!(bed && bed.remind), bedTime: bed ? bed.time : '23:30', label: bed ? bed.label : '就寢' };
 }
 
 export function setSleepReminderConfig(enabled, bedTime) {

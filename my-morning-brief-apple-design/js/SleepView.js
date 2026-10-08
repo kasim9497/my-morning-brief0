@@ -124,6 +124,16 @@ function renderResultsPanel() {
 
 function renderReminderCard() {
   const reminderConfig = getSleepReminderConfig();
+  if (!reminderConfig.exists) {
+    return `
+    <div class="section-head">
+      <h2 class="section-title">就寢提醒</h2>
+    </div>
+    <div class="card">
+      <p class="list-footnote">「設定」的作息時間裡沒有就寢的項目。新增一項名稱裡有「就寢」的時間，這裡就能設提醒。</p>
+    </div>
+  `;
+  }
   return `
     <div class="section-head">
       <h2 class="section-title">就寢提醒</h2>

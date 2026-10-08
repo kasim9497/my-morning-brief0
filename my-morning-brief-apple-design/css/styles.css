@@ -2456,3 +2456,20 @@ button, select, [role="button"] {
 /* 手機上一列要放名稱、時間、開關三樣：備註換到名稱下面一行，名稱才不會被擠成直的 */
 .fixed-row .row-note { display: block; margin-left: 0; }
 .fixed-row > span:first-child { white-space: nowrap; }
+
+/* ── 收尾檢查修的幾處（2026-10-08）── */
+
+/* 「每週安排」按了編輯：原本把整列往左推 88px 露出刪除鈕，手機上列的左邊（圖示、名稱開頭、
+   星期日那顆）會被推出卡片外。改成列不動、右邊讓出刪除鈕的位置，並把排程的控制項收起來，
+   編輯時只做兩件事：改名、刪除。 */
+.is-editing .swipe-content { transform: none !important; margin-right: 88px; }
+.is-editing .routine-mode-switch,
+.is-editing .weekday-toggle-group,
+.is-editing .interval-config { display: none; }
+
+/* 清單列裡的無框輸入框：原本只有文字那麼高（25px），手指不好點；也補上鍵盤操作時看得到的焦點 */
+.row-input { min-height: 36px; }
+.row-input:focus-visible { box-shadow: inset 0 -2px 0 var(--apple-blue); }
+
+/* 「編輯」「加入」這類文字按鈕只有兩個字寬，點擊範圍補到 44px */
+.section-action { min-width: 44px; }
