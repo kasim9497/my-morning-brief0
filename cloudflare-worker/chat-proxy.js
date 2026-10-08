@@ -13,6 +13,7 @@
 // 用 curl 之類的工具還是可以自己填這個標頭，所以這只擋「別的網頁偷用」，
 // 真正的上限是 OpenRouter 那把 key 的花費額度。
 import { handlePushRequest, sendDuePushes } from './push.js';
+import { handleBackupRequest, MAX_BACKUP_CHARS } from './backup.js';
 
 const ALLOWED_ORIGINS = ['https://kasim9497.github.io'];
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
@@ -176,13 +177,21 @@ export default {
     let body;
     try {
       const raw = await request.text();
-      if (raw.length > MAX_BODY_CHARS) return json({ reply: '這次的內容太長了。', action: null }, 413);
+      // 雲端備份整包資料比一則聊天大得多，上限分開算
+      if (raw.length > MAX_BACKUP_CHARS + 2000) return json({ reply: '這次的內容太長了。', action: null }, 413);
       body = JSON.parse(raw);
+      if (body.mode !== 'backup-put' && raw.length > MAX_BODY_CHARS) return json({ reply: '這次的內容太長了。', action: null }, 413);
     } catch (e) {
       return new Response(JSON.stringify({ reply: '請求格式錯誤。', action: null }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
       });
+    }
+
+    // 雲端自動備份：存、取使用者的紀錄（cloudflare-worker/backup.js）
+    if (body.mode === 'backup-put' || body.mode === 'backup-get') {
+      const result = await handleBackupRequest(body, env);
+      return json(result.payload, result.status);
     }
 
     // 作息時間的推播提醒：取公鑰、存訂閱和時間表（cloudflare-worker/push.js）

@@ -3,7 +3,7 @@
  * 任務資料一律透過 taskEngine.js 讀寫，這裡只負責日期計算跟畫面
  */
 
-import { getTasksForDate, getTodayStr, addDays, getWeekday } from './taskEngine.js';
+import { getTasksForDate, getTodayStr, addDays, getWeekday, summarizeTasks } from './taskEngine.js';
 import { slideIn } from './motion.js';
 import { renderTaskListInto } from './TaskListView.js';
 
@@ -82,9 +82,9 @@ function detailTitle(dateStr) {
 }
 
 function getDayStatus(dateStr) {
-  const tasks = getTasksForDate(dateStr);
-  const doneCount = tasks.filter((t) => t.status === 'done').length;
-  return { total: tasks.length, done: doneCount };
+  // 跟今日頁同一套算法：跳過和延後的不算在應做的裡面
+  const { total, done } = summarizeTasks(getTasksForDate(dateStr));
+  return { total, done };
 }
 
 function dotClassFor(dateStr) {

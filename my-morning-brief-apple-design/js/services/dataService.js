@@ -69,6 +69,7 @@ export const dataService = {
         meta: {
           ...live.briefMeta,
           lastUpdated: live.briefMeta.time,
+          generatedAt: live.briefMeta.generatedAt || (live.buildInfo || {}).generatedAt || '',
           isStale: false
         }
       };

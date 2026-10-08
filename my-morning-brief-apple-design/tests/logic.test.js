@@ -15,6 +15,8 @@ globalThis.localStorage = {
   getItem: (key) => (fakeStorage.has(key) ? fakeStorage.get(key) : null),
   setItem: (key, value) => fakeStorage.set(key, String(value)),
   removeItem: (key) => fakeStorage.delete(key),
+  key: (index) => [...fakeStorage.keys()][index] ?? null,
+  get length() { return fakeStorage.size; },
 };
 
 const sleep = await import('../js/sleepCalculator.js');
@@ -339,4 +341,88 @@ test('推播後端：金鑰貼進後台時頭尾少了字也讀得出來，缺�
     await push.vapidAuthorization(jwk, 'https://web.push.apple.com/abc');
   }
   assert.throws(() => push.parseJwk('{"x":"abc"}'), (e) => !e.message.includes('abc'));
+});
+
+test('復原：延後的拿回來（延過去那筆消失），跳過的拿回來', () => {
+  const day = localDateStr(40);
+  const [a, b] = tasks.getTasksForDate(day);
+  assert.ok(a && b, '這一天至少要有兩項固定作息');
+  tasks.postponeTask(day, a.instanceId, 'plus1');
+  const moved = tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId);
+  assert.equal(moved.status, 'postponed');
+  assert.equal(moved.movedTo, localDateStr(41));
+  assert.equal(moved.canUndo, true);
+  assert.equal(tasks.undoTaskAction(day, a.instanceId), true);
+  assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId).status, 'pending');
+  assert.equal(tasks.getTasksForDate(localDateStr(41)).some((t) => t.carriedFrom === day), false);
+
+  tasks.skipTask(day, b.instanceId);
+  assert.equal(tasks.undoTaskAction(day, b.instanceId), true);
+  assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === b.instanceId).status, 'pending');
+});
+
+test('復原：延過去那筆已經做完就不能拿回來', () => {
+  const day = localDateStr(50);
+  const [a] = tasks.getTasksForDate(day);
+  tasks.postponeTask(day, a.instanceId, 'plus1');
+  const carried = tasks.getTasksForDate(localDateStr(51)).find((t) => t.carriedFrom === day);
+  tasks.toggleDone(localDateStr(51), carried.instanceId);
+  assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId).canUndo, false);
+  assert.equal(tasks.undoTaskAction(day, a.instanceId), false);
+});
+
+test('完成數：跳過和延後的不算在應做的裡面，所以那天還是能顯示全部做完', () => {
+  const list = [{ status: 'done' }, { status: 'skipped' }, { status: 'postponed' }, { status: 'pending' }];
+  assert.deepEqual(tasks.summarizeTasks(list), { done: 1, total: 2, remaining: 1, setAside: 2 });
+  assert.equal(tasks.summarizeTasks([{ status: 'done' }, { status: 'skipped' }]).remaining, 0);
+});
+
+
+test('雲端備份：開啟會上傳；換一支手機用同一組密語能還原；不會默默蓋掉對方的資料', async () => {
+  const backend = await import('../../cloudflare-worker/backup.js');
+  const kv = new Map();
+  const env = { PUSH_KV: {
+    get: async (key, type) => (kv.has(key) ? (type === 'json' ? JSON.parse(kv.get(key)) : kv.get(key)) : null),
+    put: async (key, value) => { kv.set(key, value); },
+  } };
+  globalThis.fetch = async (url, init) => {
+    const result = await backend.handleBackupRequest(JSON.parse(init.body), env);
+    return { ok: result.status < 400, status: result.status, json: async () => result.payload };
+  };
+  const cloud = await import('../js/cloudBackup.js');
+  const clearSync = () => [...fakeStorage.keys()].filter((k) => k.startsWith('chenxu.cloudBackup.')).forEach((k) => fakeStorage.delete(k));
+
+  assert.match(await cloud.turnOnCloudBackup('太短'), /至少/);
+  localStorage.setItem('morningBrief.note', 'A 手機的資料');
+  assert.equal(await cloud.turnOnCloudBackup('correct horse battery'), null);
+  assert.ok(cloud.getCloudBackupState().savedAt, '開啟後馬上傳一份');
+  assert.ok(![...kv.values()].some((v) => v.includes('correct horse')), '後端看不到密語');
+
+  // 資料變了就再傳；沒變就不傳
+  const before = cloud.getCloudBackupState().savedAt;
+  await cloud.uploadNow();
+  assert.equal(cloud.getCloudBackupState().savedAt, before);
+  localStorage.setItem('morningBrief.note', 'A 手機的新資料');
+  await new Promise((r) => setTimeout(r, 5));
+  await cloud.uploadNow();
+  assert.notEqual(cloud.getCloudBackupState().savedAt, before);
+
+  // 「另一支手機」：同步狀態是空的、資料不一樣。開啟時不會自己蓋掉雲端，自動上傳也會停住
+  clearSync();
+  localStorage.setItem('morningBrief.note', 'B 手機的資料');
+  assert.equal(await cloud.turnOnCloudBackup('correct horse battery'), null);
+  assert.ok(cloud.getCloudBackupState().conflictSavedAt, '發現雲端已經有一份');
+  await cloud.uploadNow();
+  assert.ok([...kv.values()].some((v) => v.includes('A 手機的新資料')), '雲端那份沒有被蓋掉');
+
+  // 選「用雲端那一份」
+  assert.equal(await cloud.restoreFromCloud(), null);
+  assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
+
+  // 密語不對拿不到別人的資料
+  clearSync();
+  cloud.turnOffCloudBackup();
+  assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: 'a'.repeat(64) }, env)).payload.exists, false);
+  assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: '不是雜湊' }, env)).status, 400);
+  fakeStorage.delete('morningBrief.note');
 });

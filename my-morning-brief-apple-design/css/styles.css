@@ -909,9 +909,15 @@ body {
   padding-bottom: 0;
 }
 
-.task-row.is-inactive {
-  opacity: 0.55;
+/* 跳過或延後的列：名稱變淡，但右邊寫去向的標籤和復原選單維持原樣，
+   不然整列一起變淡，標籤的對比不夠、選單看起來也像不能按 */
+.task-row.is-inactive .task-text,
+.task-row.is-inactive .task-glyph,
+.task-row.is-inactive .task-check {
+  opacity: 0.45;
 }
+
+.task-row.is-inactive .task-check { border-style: dashed; }
 
 .task-check {
   appearance: none;
@@ -935,6 +941,8 @@ body {
   background: var(--apple-green);
   border-color: var(--apple-green);
 }
+
+.task-check svg { width: 20px; height: 20px; }
 
 .task-check:active:not(:disabled),
 .task-check.is-pressing:not(:disabled) {
@@ -2473,3 +2481,15 @@ button, select, [role="button"] {
 
 /* 「編輯」「加入」這類文字按鈕只有兩個字寬，點擊範圍補到 44px */
 .section-action { min-width: 44px; }
+
+/* ── 今日頁重排（2026-10-08，設計評審後）── */
+
+/* 大標題下面那一行：「10月8日 星期四 · 還剩 3 項」；全部做完時變綠 */
+.page-subtitle.is-all-done { color: var(--apple-green-text); font-weight: 600; }
+
+/* 抓不到今天的資料時，需要資料的區塊整個收起來 */
+[data-needs-data][hidden] { display: none !important; }
+
+/* 運勢：星等和一句話之外的東西收在「看分項」裡 */
+.horoscope-more { margin-top: 0.5rem; }
+.horoscope-more .horoscope-meta { margin: 0.25rem 0 0.75rem; }

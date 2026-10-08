@@ -14,6 +14,7 @@ import { renderSleepView } from './SleepView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 import { daysSinceBackup, exportBackup, BACKUP_REMINDER_DAYS } from './backup.js';
+import { startCloudBackup } from './cloudBackup.js';
 
 // Global Quiz State
 // mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
@@ -43,6 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSettingsView();
   renderSleepView();
   scheduleReminderIfEnabled();
+  startCloudBackup();
+  // 雲端備份成功後，今日頁那張「還沒備份」的提醒就不用再出現
+  window.addEventListener('chenxu:cloud-backup', renderBackupReminder);
   setupCalendarTabRefresh();
   await loadAllBriefData();
   setupEventListeners();
@@ -145,22 +149,53 @@ function setupScrollShadow() {
 /**
  * Load and render all morning brief components
  */
+/**
+ * 資料是哪一天產生的。今天的回傳 null；不是今天的回傳要標在卡片上的字。
+ * 資料檔只要抓得到就會顯示，所以每日更新失敗時畫面上其實是昨天的天氣和匯率，要講清楚。
+ */
+function staleLabelFor(generatedAt) {
+  const made = new Date(generatedAt);
+  if (Number.isNaN(made.getTime())) return null;
+  const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(new Date()) - startOf(made)) / 86400000);
+  if (days <= 0) return null;
+  return days === 1 ? '昨天的資料' : `${made.getMonth() + 1}月${made.getDate()}日的資料`;
+}
+
+// 一張卡片的資料壞掉，不要連累後面的卡片一起空白
+async function renderSafely(name, load, render) {
+  try {
+    render(await load());
+  } catch (err) {
+    console.error(`[brief] ${name} 畫不出來：`, err);
+  }
+}
+
 async function loadAllBriefData() {
   try {
     const headerData = await dataService.getHeaderInfo();
     renderHeader(headerData);
 
-    const weatherData = await dataService.getWeather();
-    renderWeather(weatherData);
+    // 抓不到今天的資料檔：需要資料的區塊整個收起來，只留一列說明和重試，不拿範例內容充數
+    const offline = !!headerData.meta.isStale;
+    document.getElementById('stale-notice').hidden = !offline;
+    document.querySelectorAll('[data-needs-data]').forEach((el) => { el.hidden = offline; });
+    if (offline) return;
 
-    const horoscopeData = await dataService.getHoroscope();
-    renderHoroscope(horoscopeData);
+    const staleLabel = staleLabelFor(headerData.meta.generatedAt);
 
-    const rateData = await dataService.getExchangeRate();
-    renderExchangeRate(rateData);
-
-    const quoteData = await dataService.getDailyQuote();
-    renderDailyQuote(quoteData);
+    await renderSafely('天氣', () => dataService.getWeather(), (w) => {
+      renderWeather(w);
+      if (staleLabel) document.getElementById('weather-card-badge').textContent = staleLabel;
+    });
+    // 昨天的運勢今天沒有用，直接不顯示
+    document.getElementById('horoscope-card').hidden = !!staleLabel;
+    if (!staleLabel) await renderSafely('運勢', () => dataService.getHoroscope(), renderHoroscope);
+    await renderSafely('匯率', () => dataService.getExchangeRate(), (r) => {
+      renderExchangeRate(r);
+      document.getElementById('rate-card-badge').textContent = staleLabel || '1 人民幣兌新台幣';
+    });
+    await renderSafely('語錄', () => dataService.getDailyQuote(), renderDailyQuote);
 
     const quizData = await dataService.getDrivingQuiz();
     quizState.mode = 'daily';
@@ -222,20 +257,11 @@ function escapeHtml(str) {
  * Render Header & Greeting
  */
 function renderHeader({ user, meta }) {
-  // 日期和問候語用手機當下的時間算，不用資料檔裡的（資料是早上產生的，下午打開還寫「早安」很怪）
-  const now = new Date();
-  const dateEl = document.getElementById('header-date');
-  if (dateEl) {
-    dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${'日一二三四五六'[now.getDay()]}`;
-  }
-
-  // 「今日」頁的大標題就是問候語
-  const hour = now.getHours();
+  // 問候語用手機當下的時間算，不用資料檔裡的（資料是早上產生的，下午打開還寫「早安」很怪）。
+  // 大標題下面那一行（日期 · 還剩幾項）由 TaskListView.js 的 renderTaskList 負責
+  const hour = new Date().getHours();
   const hello = hour < 5 ? '夜深了' : hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
   setTodayTitle(`${hello}，${user.name}`);
-
-  const staleEl = document.getElementById('stale-notice');
-  if (staleEl) staleEl.hidden = !meta.isStale;
 }
 
 /**
@@ -325,23 +351,25 @@ function renderHoroscope(h) {
   const now = new Date();
   document.getElementById('horoscope-card-badge').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
 
+  const details = h.details || {};
+  const catRows = [['整體', details.overall], ['工作', details.work], ['感情', details.love], ['財運', details.wealth], ['健康', details.health]]
+    .filter(([, text]) => text)
+    .map(([name, text]) => `<div class="cat-item"><span class="cat-name">${name}</span><span>${escapeHtml(text)}</span></div>`)
+    .join('');
+
+  // 平常只看星等和一句話；幸運色和五個分項是「有空再看」的，收在下面點了才展開
   container.innerHTML = `
-    <div class="horoscope-header">
-      <div class="stars">${escapeHtml(h.ratingStars)}</div>
-      <div class="horoscope-meta">幸運色 ${escapeHtml(h.luckyColor)} · 幸運數字 ${escapeHtml(h.luckyNumber)}</div>
-    </div>
+    <div class="stars" role="img" aria-label="今天的運勢 ${escapeHtml(h.ratingStars)}">${escapeHtml(h.ratingStars)}</div>
 
     ${transitAlertHtml}
 
     <div class="horoscope-summary">${escapeHtml(h.aiSummary)}</div>
 
-    <div class="horoscope-categories">
-      <div class="cat-item"><span class="cat-name">整體</span><span>${escapeHtml(h.details.overall)}</span></div>
-      <div class="cat-item"><span class="cat-name">工作</span><span>${escapeHtml(h.details.work)}</span></div>
-      <div class="cat-item"><span class="cat-name">感情</span><span>${escapeHtml(h.details.love)}</span></div>
-      <div class="cat-item"><span class="cat-name">財運</span><span>${escapeHtml(h.details.wealth)}</span></div>
-      <div class="cat-item"><span class="cat-name">健康</span><span>${escapeHtml(h.details.health)}</span></div>
-    </div>
+    <details class="add-details horoscope-more">
+      <summary class="section-action">看分項</summary>
+      <div class="horoscope-meta">幸運色 ${escapeHtml(h.luckyColor)} · 幸運數字 ${escapeHtml(h.luckyNumber)}</div>
+      <div class="horoscope-categories">${catRows}</div>
+    </details>
   `;
 }
 
@@ -888,6 +916,10 @@ function setupEventListeners() {
       refreshBtn.classList.remove('is-loading');
     });
   }
+
+  // 「今天的資料還沒更新」那一列的重試，就是按一次右上角的重新整理
+  const retryBtn = document.getElementById('stale-retry-btn');
+  if (retryBtn && refreshBtn) retryBtn.addEventListener('click', () => refreshBtn.click());
 
   const chatFab = document.getElementById('btn-open-chat');
   const chatOverlay = document.getElementById('modal-chat');

@@ -65,7 +65,7 @@ const POSTPONE_OPTIONS = [
   { value: 'plus2', label: '延 2 天' },
   { value: 'plus3', label: '延 3 天' },
   { value: 'nextWeek', label: '延到下週同一天' },
-  { value: 'skipWeek', label: '這件事跳過這週' },
+  { value: 'skipWeek', label: '這週都不做' },
 ];
 
 export function getPostponeOptions() {
@@ -297,8 +297,66 @@ export function getTasksForDate(dateStr) {
       tint: def.tint,
       status: entry.status,
       carriedFrom: entry.carriedFrom || null,
+      // 延後的那筆去了哪一天；跳過的是只跳今天還是整週
+      movedTo: entry.status === 'postponed' ? findMovedTo(dateStr, entry) : null,
+      skippedWeek: entry.status === 'skipped' && !!entry.skipWeek,
+      canUndo: canUndo(dateStr, entry),
     };
   });
+}
+
+/** 延後的任務去了哪一天。舊資料沒有記 movedTo，用延過去那筆的 key 找 */
+function findMovedTo(dateStr, entry) {
+  if (entry.movedTo) return entry.movedTo;
+  const targetId = `${entry.defId}__from_${dateStr}`;
+  return Object.keys(store.days).find((d) => store.days[d][targetId]) || null;
+}
+
+function canUndo(dateStr, entry) {
+  if (entry.status === 'skipped') return true;
+  if (entry.status !== 'postponed') return false;
+  // 延過去的那筆如果已經做完、或又被延走了，就不能把這筆拿回來（會變成同一件事算兩次）
+  const movedTo = findMovedTo(dateStr, entry);
+  const target = movedTo && store.days[movedTo][`${entry.defId}__from_${dateStr}`];
+  return !target || target.status === 'pending';
+}
+
+/**
+ * 一天做完幾項。跳過和延後的不算在應做的裡面——決定今天不做是正當的選擇，
+ * 不該讓那一天永遠顯示「沒做完」。
+ */
+export function summarizeTasks(tasks) {
+  const active = tasks.filter((t) => t.status === 'pending' || t.status === 'done');
+  const done = active.filter((t) => t.status === 'done').length;
+  return { done, total: active.length, remaining: active.length - done, setAside: tasks.length - active.length };
+}
+
+/** 把跳過或延後的任務拿回來。回傳有沒有成功 */
+export function undoTaskAction(dateStr, instanceId) {
+  const entry = store.days[dateStr]?.[instanceId];
+  if (!entry || !canUndo(dateStr, entry)) return false;
+
+  if (entry.status === 'postponed') {
+    const movedTo = findMovedTo(dateStr, entry);
+    if (movedTo) delete store.days[movedTo][`${entry.defId}__from_${dateStr}`];
+    delete entry.movedTo;
+  } else if (entry.skipWeek) {
+    // 「這週都不做」：這週之後幾天被一起標成跳過的也拿回來
+    const weekEnd = getWeekEndStr(dateStr);
+    if (store.skipWeekUntil[entry.defId] === weekEnd) delete store.skipWeekUntil[entry.defId];
+    for (const [otherDateStr, entries] of Object.entries(store.days)) {
+      if (otherDateStr <= dateStr || otherDateStr > weekEnd) continue;
+      const other = entries[entry.defId];
+      if (other && other.status === 'skipped' && other.skipWeek) {
+        other.status = 'pending';
+        delete other.skipWeek;
+      }
+    }
+    delete entry.skipWeek;
+  }
+  entry.status = 'pending';
+  saveStore(store);
+  return true;
 }
 
 // ── 狀態變更 ────────────────────────────────────────────────────────
@@ -334,6 +392,7 @@ export function postponeTask(dateStr, instanceId, option) {
 
   if (option === 'skipWeek') {
     entry.status = 'skipped';
+    entry.skipWeek = true;
     const weekEnd = getWeekEndStr(dateStr);
     const existing = store.skipWeekUntil[entry.defId];
     if (!existing || weekEnd > existing) {
@@ -343,7 +402,10 @@ export function postponeTask(dateStr, instanceId, option) {
     for (const [otherDateStr, entries] of Object.entries(store.days)) {
       if (otherDateStr <= dateStr || otherDateStr > weekEnd) continue;
       const other = entries[entry.defId];
-      if (other && other.status === 'pending') other.status = 'skipped';
+      if (other && other.status === 'pending') {
+        other.status = 'skipped';
+        other.skipWeek = true;
+      }
     }
     saveStore(store);
     return;
@@ -355,6 +417,7 @@ export function postponeTask(dateStr, instanceId, option) {
 
   const targetDateStr = addDays(dateStr, offset);
   entry.status = 'postponed';
+  entry.movedTo = targetDateStr;
 
   ensureDateInitialized(targetDateStr);
   const targetInstanceId = `${entry.defId}__from_${dateStr}`;

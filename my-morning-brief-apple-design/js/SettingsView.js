@@ -27,6 +27,7 @@ import {
 } from './mediaTracker.js';
 
 import { exportBackup, importBackup, daysSinceBackup } from './backup.js';
+import { getCloudBackupState, turnOnCloudBackup, turnOffCloudBackup, restoreFromCloud, uploadNow, MIN_PASSPHRASE_LENGTH } from './cloudBackup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
 import { getFixedSchedule, updateFixedItem, addFixedItem, removeFixedItem } from './fixedSchedule.js';
@@ -39,7 +40,7 @@ const APP_VERSION = '1.0.0';
 
 const ABOUT_ROWS = [
   { label: '版本', value: APP_VERSION },
-  { label: '資料儲存', value: '紀錄只存在這台裝置' },
+  { label: '資料儲存', value: '這台裝置；開了雲端備份會多存一份在後端' },
   { label: '提醒', value: '開了提醒的時間會傳到後端，名稱不會' },
   { label: '天氣', value: '和風天氣' },
   { label: '匯率', value: 'ExchangeRate-API' },
@@ -129,6 +130,41 @@ function renderMediaItem(item) {
   `;
 }
 
+const whenText = (iso) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+/** 備份卡片裡「雲端自動備份」那一段。三種狀態：沒開、開著、雲端有另一份要使用者選 */
+function renderCloudBackup() {
+  const state = getCloudBackupState();
+  if (!state.on) {
+    return `
+      <p class="list-footnote backup-explain">設一組通關密語（至少 ${MIN_PASSPHRASE_LENGTH} 個字），之後資料有變動會自動存一份到雲端，不用再記得按。換手機時輸入同一組密語就拿得回來。密語忘了就拿不回雲端那一份，請記好。</p>
+      <form class="list-row routine-add-form" id="cloud-on-form">
+        <input type="password" class="row-input routine-add-input" id="cloud-passphrase" placeholder="通關密語" minlength="${MIN_PASSPHRASE_LENGTH}" autocomplete="new-password" required aria-label="通關密語">
+        <button type="submit" class="section-action">開啟</button>
+      </form>
+    `;
+  }
+  if (state.conflictSavedAt) {
+    return `
+      <p class="list-footnote backup-explain">雲端已經有一份 ${whenText(state.conflictSavedAt)} 存的備份，跟這支手機上的不一樣。要用哪一份？選了之後另一份會被蓋掉。</p>
+      <button type="button" class="btn-action btn-primary btn-block" id="cloud-use-cloud">用雲端那一份（取代這支手機的資料）</button>
+      <button type="button" class="btn-action btn-block" id="cloud-use-local">用這支手機的（蓋掉雲端那一份）</button>
+      <button type="button" class="section-action" id="cloud-off-btn">先關閉雲端備份</button>
+    `;
+  }
+  return `
+    <div class="list-row">
+      <span>自動備份中<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}</small></span>
+      <button type="button" class="section-action" id="cloud-off-btn">關閉</button>
+    </div>
+    ${state.error ? `<p class="list-footnote backup-explain">上次沒傳成功（${escapeHtml(state.error)}）。連得上的時候會自動再試。</p>` : ''}
+    <button type="button" class="section-action" id="cloud-restore-btn">用雲端那一份還原這支手機</button>
+  `;
+}
+
 function reminderFootnote() {
   if (isPushSyncPending()) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。在傳上去之前，提醒會照舊的時間響。連上後再打開晨序會自動重試。';
   return canRemindInBackground()
@@ -142,6 +178,41 @@ if (typeof window !== 'undefined') {
     const el = document.getElementById('reminder-footnote');
     if (el) el.textContent = reminderFootnote();
   });
+}
+
+// 雲端備份的狀態是之後才知道的（傳成功、傳失敗、發現雲端有另一份），知道了就重畫那一段
+function refreshCloudBackup() {
+  const el = document.getElementById('cloud-backup-content');
+  if (!el) return;
+  el.innerHTML = renderCloudBackup();
+  bindCloudBackup();
+}
+if (typeof window !== 'undefined') window.addEventListener('chenxu:cloud-backup', refreshCloudBackup);
+
+function bindCloudBackup() {
+  const on = (id, handler) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(el.tagName === 'FORM' ? 'submit' : 'click', handler);
+  };
+  on('cloud-on-form', async (e) => {
+    e.preventDefault();
+    const button = e.target.querySelector('button');
+    button.disabled = true;
+    const error = await turnOnCloudBackup(document.getElementById('cloud-passphrase').value);
+    if (error) window.alert(error);
+    refreshCloudBackup();
+  });
+  on('cloud-off-btn', () => {
+    if (window.confirm('關閉後這支手機不會再自動備份。雲端已經存的那一份會留著。')) turnOffCloudBackup();
+  });
+  on('cloud-use-local', () => uploadNow({ force: true }));
+  const restore = async () => {
+    if (!window.confirm('這支手機現在的資料會被雲端那一份取代，確定嗎？')) return;
+    const error = await restoreFromCloud();
+    if (error) window.alert(error);
+  };
+  on('cloud-use-cloud', restore);
+  on('cloud-restore-btn', restore);
 }
 
 export function renderSettingsView() {
@@ -300,6 +371,13 @@ export function renderSettingsView() {
         <p class="list-footnote backup-explain">換了手機，或資料不見了，才需要下面這個。它會用檔案裡的內容蓋掉現在的資料。</p>
         <button type="button" class="btn-action btn-block" id="backup-import-btn">用之前存的檔案還原</button>
         <input type="file" id="backup-import-input" accept="application/json,.json" hidden>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">雲端自動備份</h3>
+        </div>
+        <div id="cloud-backup-content">${renderCloudBackup()}</div>
       </div>
 
       <div class="card">
@@ -482,6 +560,8 @@ export function renderSettingsView() {
       status.textContent = '這個瀏覽器不讓網頁複製文字，換一個瀏覽器再試。';
     }
   });
+
+  bindCloudBackup();
 
   const importInput = document.getElementById('backup-import-input');
   document.getElementById('backup-export-btn').addEventListener('click', () => {

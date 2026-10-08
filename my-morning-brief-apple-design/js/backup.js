@@ -10,19 +10,39 @@ const LAST_BACKUP_KEY = 'morningBrief.lastBackupAt';
 /** 超過這麼多天沒匯出備份，今日頁會提醒 */
 export const BACKUP_REMINDER_DAYS = 7;
 
-/** 距離上次匯出備份幾天；從來沒匯出過回傳 null */
+// 雲端自動備份上次成功的時間（js/cloudBackup.js 寫的）
+const CLOUD_SAVED_AT_KEY = 'chenxu.cloudBackup.savedAt';
+
+/** 距離上次備份幾天，手動存檔和雲端自動備份取比較近的那個；從來沒備份過回傳 null */
 export function daysSinceBackup() {
-  const last = Date.parse(localStorage.getItem(LAST_BACKUP_KEY));
-  return Number.isNaN(last) ? null : Math.floor((Date.now() - last) / 86400000);
+  const times = [LAST_BACKUP_KEY, CLOUD_SAVED_AT_KEY]
+    .map((key) => Date.parse(localStorage.getItem(key)))
+    .filter((t) => !Number.isNaN(t));
+  return times.length ? Math.floor((Date.now() - Math.max(...times)) / 86400000) : null;
 }
 
-export function exportBackup() {
-  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+/** 所有要備份的資料：morningBrief. 開頭的每一筆 */
+export function collectBackupData() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key.startsWith(KEY_PREFIX)) data[key] = localStorage.getItem(key);
   }
+  return data;
+}
+
+/** 用一份備份取代現在的資料。呼叫的人要自己重新載入頁面 */
+export function applyBackupData(data) {
+  // 先清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
+  Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
+  for (const [key, value] of Object.entries(data)) {
+    if (key.startsWith(KEY_PREFIX) && typeof value === 'string') localStorage.setItem(key, value);
+  }
+}
+
+export function exportBackup() {
+  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+  const data = collectBackupData();
 
   const today = new Date().toISOString().slice(0, 10);
   const blob = new Blob([JSON.stringify({ app: APP_ID, exportedAt: new Date().toISOString(), data }, null, 2)], {
@@ -56,11 +76,7 @@ export async function importBackup(file) {
     return null;
   }
 
-  // 先清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
-  Object.keys(localStorage)
-    .filter((key) => key.startsWith(KEY_PREFIX))
-    .forEach((key) => localStorage.removeItem(key));
-  for (const [key, value] of entries) localStorage.setItem(key, value);
+  applyBackupData(Object.fromEntries(entries));
   window.location.reload();
   return null;
 }

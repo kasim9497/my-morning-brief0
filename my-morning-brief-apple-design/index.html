@@ -24,7 +24,7 @@
     <div class="container masthead-inner">
       <span class="navbar-title" id="navbar-title" aria-hidden="true">今日</span>
       <div class="header-actions">
-        <button class="nav-btn" id="btn-refresh-brief" aria-label="重新整理晨報">
+        <button class="nav-btn" id="btn-refresh-brief" aria-label="重新整理">
           <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,4 3,9 8,9"/><polyline points="21,20 21,15 16,15"/><path d="M3.5 15a8.5 8.5 0 0 0 14.8 3.5M20.5 9A8.5 8.5 0 0 0 5.7 5.5"/></svg>
         </button>
         <button class="nav-btn nav-btn-accent" id="btn-open-chat" aria-label="開啟 AI 助理">
@@ -34,7 +34,7 @@
     </div>
   </header>
 
-  <!-- 日期小字 + 大標題，跟著內容一起捲走；標題文字由 js/tabs.js 依分頁切換 -->
+  <!-- 大標題和它下面那一行，跟著內容一起捲走；標題文字由 js/tabs.js 依分頁切換。今日頁的那一行是「日期 · 還剩幾項」 -->
   <div class="container page-head">
     <h1 class="large-title" id="page-title">今日</h1>
     <p class="page-subtitle" id="header-date"></p>
@@ -47,18 +47,21 @@
   <section id="view-today" class="view active">
 
   <main class="container">
-    <!-- 只有連不上最新資料時才顯示 -->
-    <p class="today-intro" id="stale-notice" hidden>連不上最新資料，目前顯示的是內建的範例內容</p>
-
-    <!-- 排序依「今天早上該先看什麼」：語錄（一句話）→ 待辦（任務、倒數）→ 重點（天氣、星座、匯率）→ 練習（題庫） -->
+    <!-- 排序依「今天早上該先看什麼」：待辦（任務、倒數）→ 重點（天氣、星座、匯率）→ 練習（題庫）→ 語錄 -->
     <div class="dashboard-grid">
 
-      <!-- 今日語錄：職人精神/執行力主題，固定輪替，不是 AI 生成（避免捏造語錄） -->
-      <article class="card col-span-2 tint-indigo">
-        <div class="card-header">
-          <h3 class="card-title">每日語錄</h3>
+
+
+      <div class="section-head">
+        <h2 class="section-title">待辦</h2>
+        <button type="button" class="section-action" data-goto="settings">編輯</button>
+      </div>
+
+      <!-- 沒有標題列：完成數在大標題下面那一行（TaskListView.js 的 renderTaskList），卡片裡只有清單 -->
+      <article class="card col-span-2 tint-orange">
+        <div id="tasklist-widget-content">
+          <!-- Rendered dynamically -->
         </div>
-        <div id="quote-banner-content"></div>
       </article>
 
       <!-- 太久沒備份才會出現（js/app.js 的 renderBackupReminder） -->
@@ -66,21 +69,6 @@
         <div class="list-row backup-reminder-row">
           <span id="backup-reminder-text"></span>
           <button type="button" class="section-action" id="backup-now-btn">現在備份</button>
-        </div>
-      </article>
-
-      <div class="section-head">
-        <h2 class="section-title">待辦</h2>
-        <button type="button" class="section-action" data-goto="settings">編輯</button>
-      </div>
-
-      <article class="card col-span-2 tint-orange">
-        <div class="card-header">
-          <h3 class="card-title">今日任務</h3>
-          <span class="card-badge">依作息表產生</span>
-        </div>
-        <div id="tasklist-widget-content">
-          <!-- Rendered dynamically -->
         </div>
       </article>
 
@@ -95,11 +83,19 @@
         </div>
       </article>
 
-      <div class="section-head">
+      <!-- 抓不到今天的資料時只顯示這一列；下面標了 data-needs-data 的區塊整個收起來，不拿範例內容充數 -->
+      <article class="card col-span-2" id="stale-notice" hidden>
+        <div class="list-row backup-reminder-row">
+          <span>今天的天氣、匯率和題目還沒更新</span>
+          <button type="button" class="section-action" id="stale-retry-btn">重試</button>
+        </div>
+      </article>
+
+      <div class="section-head" data-needs-data>
         <h2 class="section-title">重點</h2>
       </div>
 
-      <article class="card col-span-2 tint-teal">
+      <article class="card col-span-2 tint-teal" data-needs-data>
         <div class="card-header">
           <h3 class="card-title">天氣</h3>
           <span class="card-badge" id="weather-card-badge">南京市栖霞區</span>
@@ -109,7 +105,7 @@
         </div>
       </article>
 
-      <article class="card tint-purple">
+      <article class="card tint-purple" data-needs-data id="horoscope-card">
         <div class="card-header">
           <h3 class="card-title">處女座運勢</h3>
           <span class="card-badge" id="horoscope-card-badge"></span>
@@ -119,21 +115,21 @@
         </div>
       </article>
 
-      <article class="card tint-green">
+      <article class="card tint-green" data-needs-data>
         <div class="card-header">
           <h3 class="card-title">人民幣匯率</h3>
-          <span class="card-badge">1 人民幣兌新台幣</span>
+          <span class="card-badge" id="rate-card-badge">1 人民幣兌新台幣</span>
         </div>
         <div id="rate-widget-content">
           <!-- Rendered dynamically -->
         </div>
       </article>
 
-      <div class="section-head">
+      <div class="section-head" data-needs-data>
         <h2 class="section-title">練習</h2>
       </div>
 
-      <article class="card quiz-card col-span-2 tint-blue">
+      <article class="card quiz-card col-span-2 tint-blue" data-needs-data>
         <div class="card-header">
           <h3 class="card-title">機車駕照筆試</h3>
           <span class="card-badge" id="quiz-card-badge"></span>
@@ -141,6 +137,14 @@
         <div id="quiz-widget-content">
           <!-- Rendered dynamically -->
         </div>
+      </article>
+
+      <!-- 今日語錄（放在最後，有空再看）：職人精神/執行力主題，固定輪替，不是 AI 生成（避免捏造語錄） -->
+      <article class="card col-span-2 tint-indigo" data-needs-data>
+        <div class="card-header">
+          <h3 class="card-title">每日語錄</h3>
+        </div>
+        <div id="quote-banner-content"></div>
       </article>
 
     </div>
