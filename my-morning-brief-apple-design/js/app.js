@@ -5,7 +5,7 @@
 import { dataService } from './services/dataService.js';
 import { initTabs, switchTab, setTodayTitle } from './tabs.js';
 import { slideIn } from './motion.js';
-import { recordMistake, resolveMistake, getMistakes, getMistakeCount } from './quizMistakes.js';
+import { recordMistake, resolveMistake, getDueMistakes, getMistakeCount, REVIEW_GAPS } from './quizMistakes.js';
 import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
@@ -444,6 +444,7 @@ function renderDrivingQuiz() {
 
   const isReview = quizState.mode === 'review';
   const mistakeCount = getMistakeCount();
+  const dueCount = getDueMistakes().length;
   const dailyTotal = quizState.dailyQuestions.length;
   document.getElementById('quiz-card-badge').textContent = `每日 ${dailyTotal} 題`;
 
@@ -454,8 +455,8 @@ function renderDrivingQuiz() {
         <span class="metric-value">${quizState.dailyScore}</span>
         <span class="metric-unit">/ ${dailyTotal} 題答對</span>
       </div>
-      <p class="list-footnote">今天的題目做完了。${mistakeCount > 0 ? `錯題本還有 ${mistakeCount} 題。` : '錯題本是空的。'}</p>
-      ${mistakeCount > 0 ? '<button type="button" class="btn-action btn-block" id="btn-quiz-review">再做一次錯題</button>' : ''}
+      <p class="list-footnote">今天的題目做完了。${mistakeCount > 0 ? `錯題本還有 ${mistakeCount} 題${dueCount < mistakeCount ? `，其中 ${mistakeCount - dueCount} 題過幾天會再出` : ''}。` : '錯題本是空的。'}</p>
+      ${dueCount > 0 ? '<button type="button" class="btn-action btn-block" id="btn-quiz-review">再做一次錯題</button>' : ''}
     `;
     const again = document.getElementById('btn-quiz-review');
     if (again) again.addEventListener('click', () => startQuiz('review'));
@@ -508,7 +509,7 @@ function renderDrivingQuiz() {
         <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green-text)' : 'var(--apple-red-text)'};">
           ${isCorrect ? '答對了' : `答錯了，正確答案是 (${currentQ.answer})`}
         </div>
-        ${isReview && isCorrect ? '<div>這題已經從錯題本移除。</div>' : ''}
+        ${isReview && isCorrect ? `<div>${(currentQ.streak || 0) >= REVIEW_GAPS.length ? '連續答對三次，這題從錯題本移除了。' : `這題 ${REVIEW_GAPS[currentQ.streak || 0]} 天後會再出一次。`}</div>` : ''}
         ${!isCorrect ? '<div>這題已經存進錯題本。</div>' : ''}
         ${currentQ.explanation ? `<div><strong>解析：</strong>${currentQ.explanation}</div>` : ''}
         <div style="font-size: var(--text-caption); color: var(--text-muted); margin-top: 0.35rem;">
@@ -549,7 +550,7 @@ function renderDrivingQuiz() {
       </button>
       ${isLast ? `
         <button class="btn-action btn-primary" id="btn-quiz-finish">
-          ${!isReview && mistakeCount > 0 ? '下一題' : '完成'}
+          ${!isReview && dueCount > 0 ? '下一題' : '完成'}
         </button>
       ` : `
         <button class="btn-action btn-primary" id="btn-quiz-next">
@@ -558,7 +559,7 @@ function renderDrivingQuiz() {
       `}
     </div>
 
-    ${mistakeCount > 0 ? `<div class="quiz-footer"><span>${isReview ? '答對的題目會從錯題本移除' : `錯題本有 ${mistakeCount} 題，今天的題目做完後會接著出`}</span></div>` : ''}
+    ${dueCount > 0 || (isReview && mistakeCount > 0) ? `<div class="quiz-footer"><span>${isReview ? '答對的題目過幾天會再出一次，連續答對三次才移除' : `今天有 ${dueCount} 題錯題要複習，做完後會接著出`}</span></div>` : ''}
   `;
 
   container.querySelectorAll('.option-btn').forEach(btn => {
@@ -597,7 +598,7 @@ function renderDrivingQuiz() {
     finishBtn.addEventListener('click', () => {
       if (!isReview) {
         quizState.dailyScore = quizState.score;
-        if (getMistakeCount() > 0) {
+        if (getDueMistakes().length > 0) {
           startQuiz('review');
           slideIn(container.querySelector('.quiz-body'), 1);
           return;
@@ -614,7 +615,7 @@ function startQuiz(mode) {
   quizState.mode = mode;
   quizState.finished = false;
   quizState.questions = mode === 'review'
-    ? getMistakes().map((m, idx) => ({ ...m, id: `m_${idx + 1}` }))
+    ? getDueMistakes().map((m, idx) => ({ ...m, id: `m_${idx + 1}` }))
     : quizState.dailyQuestions;
   quizState.currentIndex = 0;
   quizState.userAnswers = {};

@@ -7,6 +7,18 @@
 
 const STORAGE_KEY = 'morningBrief.quizMistakes.v1';
 
+/**
+ * 複習時答對後，隔幾天再出一次：第一次答對隔 2 天，第二次隔 5 天，第三次答對才移除。
+ * 只答對一次就移除的話，當下記得、過幾天又忘的題目會漏掉。
+ */
+export const REVIEW_GAPS = [2, 5];
+
+function dayStr(date, offsetDays = 0) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function loadStore() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -42,15 +54,33 @@ export function recordMistake(q) {
     updated_at: q.updated_at,
     wrongCount: (existing ? existing.wrongCount : 0) + 1,
     lastWrongAt: new Date().toISOString(),
+    // 又答錯：連續答對次數歸零，馬上可以再複習
+    streak: 0,
+    dueDate: dayStr(new Date()),
   };
   saveStore(store);
 }
 
-/** 複習時答對了：從錯題本移除 */
-export function resolveMistake(q) {
+/** 複習時答對了：排到幾天後再出一次；連續答對超過 REVIEW_GAPS 的次數才移除 */
+export function resolveMistake(q, now = new Date()) {
   const store = loadStore();
-  delete store[mistakeKey(q)];
+  const key = mistakeKey(q);
+  const item = store[key];
+  if (!item) return;
+  const streak = (item.streak || 0) + 1;
+  if (streak > REVIEW_GAPS.length) {
+    delete store[key];
+  } else {
+    item.streak = streak;
+    item.dueDate = dayStr(now, REVIEW_GAPS[streak - 1]);
+  }
   saveStore(store);
+}
+
+/** 今天該複習的錯題（還沒到日子的不出）。舊資料沒有 dueDate，當作今天就該複習 */
+export function getDueMistakes(now = new Date()) {
+  const today = dayStr(now);
+  return getMistakes().filter((m) => !m.dueDate || m.dueDate <= today);
 }
 
 /** 最近答錯的排前面 */

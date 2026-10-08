@@ -22,6 +22,7 @@ const tasks = await import('../js/taskEngine.js');
 const media = await import('../js/mediaTracker.js');
 const countdown = await import('../js/countdown.js');
 const weekly = await import('../js/weeklyReport.js');
+const mistakes = await import('../js/quizMistakes.js');
 
 const defIds = (dateStr) => tasks.getTasksForDate(dateStr).map((t) => t.defId);
 
@@ -210,4 +211,28 @@ test('本週摘要：涵蓋七天、列出每天和每項任務的完成數，�
   assert.ok(report.includes('- 吃保健食品：1/7'));
   assert.ok(report.includes('平均步數 8000'));
   assert.ok(!weekly.buildWeeklyReport('', '2027-03-10').includes('健康」App 補充'));
+});
+
+test('錯題本：複習答對後隔 2 天、5 天再出，第三次答對才移除；中途答錯就重來', () => {
+  const q = { qid: 'thb_test', question: '測試題', options: { 1: 'a', 2: 'b', 3: 'c' }, answer: '1' };
+  const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+  const isDue = (n) => mistakes.getDueMistakes(day(n)).some((m) => m.qid === q.qid);
+
+  mistakes.recordMistake(q);
+  assert.equal(isDue(0), true, '剛答錯，今天就要複習');
+
+  mistakes.resolveMistake(q, day(0));
+  assert.equal(isDue(1), false);
+  assert.equal(isDue(2), true);
+
+  mistakes.resolveMistake(q, day(2));
+  assert.equal(isDue(6), false);
+  assert.equal(isDue(7), true);
+
+  mistakes.recordMistake(q);
+  assert.equal(isDue(0), true, '又答錯：回到今天就要複習');
+  mistakes.resolveMistake(q, day(0));
+  mistakes.resolveMistake(q, day(2));
+  mistakes.resolveMistake(q, day(7));
+  assert.equal(mistakes.getMistakeCount(), 0, '連續答對三次後移除');
 });
