@@ -333,7 +333,7 @@ def load_quiz_questions():
 
     return []
 
-def synthesize_with_ai(weather, exchange_rate, openrouter_api_key, sky=None, github_token=None):
+def synthesize_with_ai(weather, exchange_rate, openrouter_api_key, sky=None):
     print("Calling an AI model for synthesis...")
     if sky:
         sky_text = "、".join(sky["positions"]) + f"；月相：{sky['moonPhase']}；逆行中的行星：" + ("、".join(sky["retrograde"]) or "無")
@@ -376,47 +376,63 @@ def synthesize_with_ai(weather, exchange_rate, openrouter_api_key, sky=None, git
   "horoscopeTransitAlert": "依準則 5，有逆行或新月滿月才寫一句，否則填 null"
 }}
 """
-    # 依序試這幾家，第一家成功就用它。
-    # 1. GitHub Models：GitHub Actions 內建的 GITHUB_TOKEN 就能呼叫，免費（有每日次數上限，這裡一天只用幾次）。
-    #    workflow 要有 `models: read` 權限。本機沒有這個 token，會直接跳過。
-    # 2. OpenRouter：付費的 deepseek。2026-10-08 起帳戶餘額是負的、使用者不打算再儲值，
+    # 依序試這兩家，第一家成功就用它。
+    # 1. 自己的 Cloudflare Worker（cloudflare-worker/chat-proxy.js 的 brief 模式）：它用 Cloudflare 內建的
+    #    Workers AI，帳號每天有免費額度，不需要任何金鑰。Worker 只認晨序網站的來源，所以這裡帶同一個 Origin。
+    # 2. OpenRouter：付費的 deepseek。2026-10-08 那把金鑰的額度用完、使用者不打算再儲值，
     #    留著只是萬一之後又有額度；沒額度時會回 402，然後落到離線樣板。
-    providers = []
-    if github_token:
-        providers.append(("GitHub Models", "https://models.github.ai/inference/chat/completions", github_token, "openai/gpt-4o-mini"))
+    # （試過 GitHub Models：端點對任何請求都只回兩個字 "OK"，連 GitHub 官方的 actions/ai-inference 也一樣，所以沒用它。）
+    attempts = [("Cloudflare Workers AI", lambda: call_worker_brief(prompt_text))]
     if openrouter_api_key:
-        providers.append(("OpenRouter", "https://openrouter.ai/api/v1/chat/completions", openrouter_api_key, "deepseek/deepseek-chat-v3.1"))
+        attempts.append(("OpenRouter", lambda: call_openrouter(prompt_text, openrouter_api_key)))
 
-    last_error = "沒有可用的模型金鑰"
-    for name, url, token, model in providers:
-        data_bytes = json.dumps({
-            "model": model,
-            "messages": [{"role": "user", "content": prompt_text}],
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"}
-        }).encode('utf-8')
+    last_error = "沒有可用的模型"
+    for name, call in attempts:
         # 每一家試兩次：實測過模型偶爾會吐出格式壞掉的 JSON，重跑一次通常就好
         for attempt in range(2):
             try:
-                req = urllib.request.Request(url, data=data_bytes, headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {token}'
-                })
-                body = ""
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    body = resp.read().decode('utf-8')
-                parsed_json = json.loads(json.loads(body)['choices'][0]['message']['content'])
-                print(f"AI synthesis succeeded with {name} ({model}).")
+                parsed_json = call()
+                if not isinstance(parsed_json, dict) or "horoscopeSummary" not in parsed_json:
+                    raise ValueError(f"回傳的內容缺少必要欄位：{str(parsed_json)[:200]}")
+                print(f"AI synthesis succeeded with {name}.")
                 return parsed_json
             except Exception as e:
-                # 4xx／5xx 的說明在回應本體裡，一起印出來才看得出是權限、額度還是格式問題
-                if isinstance(e, urllib.error.HTTPError):
-                    body = e.read().decode('utf-8', 'replace')
+                detail = e.read().decode('utf-8', 'replace')[:300] if isinstance(e, urllib.error.HTTPError) else ""
                 last_error = f"{name}: {e}"
-                print(f"{name} call failed on attempt {attempt + 1} ({e}). Response starts with: {body[:300]!r}")
+                print(f"{name} call failed on attempt {attempt + 1} ({e}). {detail}")
 
     print(f"All AI providers failed ({last_error}). Falling back to smart template synthesis.")
     return generate_offline_synthesis(weather, str(last_error)[:200])
+
+
+BRIEF_WORKER_URL = "https://my-morning-brief-chat-proxy.loverinline520.workers.dev/"
+
+
+def _post_json(url, payload, headers):
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'),
+                                 headers={'Content-Type': 'application/json', **headers})
+    with urllib.request.urlopen(req, timeout=45) as resp:
+        return json.loads(resp.read().decode('utf-8'))
+
+
+def call_worker_brief(prompt_text):
+    # User-Agent 要自己給：Cloudflare 會擋掉 urllib 預設的那個
+    data = _post_json(BRIEF_WORKER_URL, {"mode": "brief", "prompt": prompt_text},
+                      {'Origin': 'https://kasim9497.github.io', 'User-Agent': 'chenxu-brief/1.0'})
+    return data["result"]
+
+
+def call_openrouter(prompt_text, api_key):
+    data = _post_json("https://openrouter.ai/api/v1/chat/completions", {
+        "model": "deepseek/deepseek-chat-v3.1",
+        "messages": [{"role": "user", "content": prompt_text}],
+        "temperature": 0.2,
+        # 不給上限的話 OpenRouter 會用模型的最大值去估費用，金鑰額度快用完時會直接被拒絕
+        "max_tokens": 1500,
+        "response_format": {"type": "json_object"}
+    }, {'Authorization': f'Bearer {api_key}'})
+    return json.loads(data['choices'][0]['message']['content'])
+
 
 def generate_offline_synthesis(weather, error):
     return {
@@ -490,7 +506,7 @@ def main():
     driving_quiz = load_quiz_questions()
 
     sky = get_sky_facts(now_tw)
-    ai_synthesis = to_traditional(synthesize_with_ai(weather, exchange_rate, openrouter_key, sky, os.environ.get("GITHUB_MODELS_TOKEN")))
+    ai_synthesis = to_traditional(synthesize_with_ai(weather, exchange_rate, openrouter_key, sky))
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 

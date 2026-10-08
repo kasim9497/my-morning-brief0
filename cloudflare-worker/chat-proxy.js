@@ -89,11 +89,11 @@ function corsHeaders(origin) {
   };
 }
 
-async function callWorkersAI(ai, messages) {
+async function callWorkersAI(ai, messages, maxTokens) {
   const out = await ai.run(WORKERS_AI_MODEL, {
     messages,
     temperature: 0.3,
-    max_tokens: 500,
+    max_tokens: maxTokens,
     response_format: { type: 'json_object' },
   });
   // 開了 JSON 模式時 response 有時已經是物件，有時是字串
@@ -102,7 +102,7 @@ async function callWorkersAI(ai, messages) {
   return typeof content === 'string' ? JSON.parse(content) : content;
 }
 
-async function callOpenRouter(apiKey, messages) {
+async function callOpenRouter(apiKey, messages, maxTokens) {
   const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -113,7 +113,7 @@ async function callOpenRouter(apiKey, messages) {
       model: MODEL,
       messages,
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: maxTokens,
       response_format: { type: 'json_object' },
       // 同一個模型在 OpenRouter 有好幾家供應商，速度差很多；指定挑回應最快的那一家
       provider: { sort: 'latency' },
@@ -131,15 +131,15 @@ async function callOpenRouter(apiKey, messages) {
 }
 
 // 先用免費的 Workers AI；它失敗（例如當天額度用完）而且有 OpenRouter 金鑰時才改用 OpenRouter
-async function callModel(env, messages) {
+async function callModel(env, messages, maxTokens = 500) {
   if (env.AI) {
     try {
-      return await callWorkersAI(env.AI, messages);
+      return await callWorkersAI(env.AI, messages, maxTokens);
     } catch (e) {
       if (!env.OPENROUTER_API_KEY) throw e;
     }
   }
-  return callOpenRouter(env.OPENROUTER_API_KEY, messages);
+  return callOpenRouter(env.OPENROUTER_API_KEY, messages, maxTokens);
 }
 
 export default {
@@ -180,6 +180,21 @@ export default {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
       });
+    }
+
+    // 另一種用法：每日資料流程（generate_brief.py）送一段完整的提示詞過來，這裡只負責叫模型、把它回的 JSON 原樣轉回去。
+    // 這樣每日的運勢和出門提醒也能用免費的 Workers AI，不用另外的金鑰。
+    if (body.mode === 'brief') {
+      if (typeof body.prompt !== 'string' || !body.prompt) return json({ error: 'prompt 不能是空的' }, 400);
+      let lastBriefError = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          return json({ result: await callModel(env, [{ role: 'user', content: body.prompt }], 1200) });
+        } catch (e) {
+          lastBriefError = e;
+        }
+      }
+      return json({ error: lastBriefError?.message || '未知錯誤' }, 502);
     }
 
     const history = (Array.isArray(body.history) ? body.history : [])
