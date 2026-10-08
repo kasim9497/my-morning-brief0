@@ -23,6 +23,8 @@ const media = await import('../js/mediaTracker.js');
 const countdown = await import('../js/countdown.js');
 const weekly = await import('../js/weeklyReport.js');
 const mistakes = await import('../js/quizMistakes.js');
+const fixed = await import('../js/fixedSchedule.js');
+const reminder = await import('../js/sleepReminder.js');
 
 const defIds = (dateStr) => tasks.getTasksForDate(dateStr).map((t) => t.defId);
 
@@ -235,4 +237,55 @@ test('錯題本：複習答對後隔 2 天、5 天再出，第三次答對才移
   mistakes.resolveMistake(q, day(2));
   mistakes.resolveMistake(q, day(7));
   assert.equal(mistakes.getMistakeCount(), 0, '連續答對三次後移除');
+});
+
+test('作息時間：可以新增、改名、刪除；舊格式（只存時間）讀得回來', () => {
+  localStorage.setItem('morningBrief.fixedSchedule.v1', JSON.stringify({ shower: '22:00' }));
+  assert.equal(fixed.getFixedSchedule().find((i) => i.id === 'shower').time, '22:00');
+
+  fixed.addFixedItem('吃藥', '09:00');
+  const added = fixed.getFixedSchedule().find((i) => i.label === '吃藥');
+  assert.ok(added);
+  fixed.updateFixedItem(added.id, { label: '吃維他命', time: '亂填' });
+  const renamed = fixed.getFixedSchedule().find((i) => i.id === added.id);
+  assert.equal(renamed.label, '吃維他命');
+  assert.equal(renamed.time, '09:00', '不合格的時間不會被存進去');
+  fixed.removeFixedItem(added.id);
+  assert.equal(fixed.getFixedSchedule().some((i) => i.id === added.id), false);
+});
+
+test('提醒：挑最近的一項；凌晨的就寢時間算前一晚，所以「週一至週三」是週二到週四凌晨響', () => {
+  const items = [
+    { id: 'weekdayBed', label: '平日就寢', time: '01:20', days: [1, 2, 3], remind: true },
+    { id: 'shower', label: '洗澡', time: '23:30', remind: true },
+    { id: 'off', label: '沒開', time: '12:00', remind: false },
+  ];
+  // 2026-10-11 是週日 20:00：最近的是當晚 23:30 洗澡
+  let next = reminder.nextReminder(items, new Date(2026, 9, 11, 20, 0));
+  assert.equal(next.item.id, 'shower');
+  // 只看就寢：週日晚上之後，第一次響是週二（10/13）01:20，不是週一凌晨
+  next = reminder.nextReminder([items[0]], new Date(2026, 9, 11, 20, 0));
+  assert.equal(next.at.getDate(), 13);
+  assert.equal(next.at.getHours(), 1);
+  assert.equal(reminder.nextReminder([items[2]], new Date()), null);
+});
+
+test('作息改名：內建和自訂的項目都能改，空白的名稱不收', () => {
+  tasks.renameRoutineTask('veggie_day', '水果日');
+  assert.equal(tasks.getTaskDef('veggie_day').label, '水果日');
+  tasks.renameRoutineTask('veggie_day', '   ');
+  assert.equal(tasks.getTaskDef('veggie_day').label, '水果日');
+  const id = tasks.addCustomTask('背單字');
+  tasks.renameRoutineTask(id, '背 20 個單字');
+  assert.equal(tasks.getTaskDef(id).label, '背 20 個單字');
+  tasks.removeRoutineTask(id);
+});
+
+test('睡眠：指定之後才上床的時間，起床時間照那個時間推，「明天」照現在標', () => {
+  const now = new Date(2026, 9, 8, 22, 0);
+  const bed = new Date(2026, 9, 9, 1, 0);
+  const result = sleep.calcFromNow(bed, now);
+  const four = result.options.find((o) => o.cycles === 4);
+  assert.equal(four.time, '07:15');
+  assert.equal(four.label, '明天');
 });

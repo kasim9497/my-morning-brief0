@@ -2433,3 +2433,26 @@ button, select, [role="button"] {
   flex: 1 1 8em;
   min-width: 0;
 }
+
+/* 作息時間的一列：名稱｜時間｜提醒開關。名稱吃掉剩下的寬度，時間和開關靠右 */
+.fixed-row > span:first-child { flex: 1; min-width: 0; }
+
+/* 編輯狀態下可以直接改的名稱 */
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.backup-explain { margin: 0.5rem 0; }
+
+.quiz-unsure-btn {
+  display: block;
+  margin: 0.75rem auto 0;
+  min-height: 44px;
+}
+
+/* 手機上一列要放名稱、時間、開關三樣：備註換到名稱下面一行，名稱才不會被擠成直的 */
+.fixed-row .row-note { display: block; margin-left: 0; }
+.fixed-row > span:first-child { white-space: nowrap; }

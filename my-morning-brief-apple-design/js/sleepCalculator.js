@@ -38,12 +38,15 @@ function buildOptions(pickTime) {
   return options;
 }
 
-/** 「我現在要睡」：現在時間 + 15 分鐘入睡緩衝，往後推算各週期數對應的起床時間 */
-export function calcFromNow(now = new Date()) {
+/**
+ * 「我現在要睡」：上床時間 + 15 分鐘入睡緩衝，往後推算各週期數對應的起床時間。
+ * now 也可以是之後才要上床的時間；這時候把真正的現在傳給 reference，「明天」才標得對
+ */
+export function calcFromNow(now = new Date(), reference = now) {
   const sleepTime = new Date(now.getTime() + FALL_ASLEEP_MIN * 60000);
   const options = buildOptions((cycles) => {
     const wakeTime = new Date(sleepTime.getTime() + cycles * SLEEP_CYCLE_MIN * 60000);
-    return { time: formatTime(wakeTime), label: dayLabel(wakeTime, now) };
+    return { time: formatTime(wakeTime), label: dayLabel(wakeTime, reference) };
   });
   return { now, sleepTime, options };
 }

@@ -19,6 +19,14 @@ function dayStr(date, offsetDays = 0) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// ponytail: 一次性清空。使用者在 2026-10-08 測試時亂答，要求把錯題本整個重來；
+// 每支裝置只會清一次（靠下面這個旗標），之後答錯的照常累積。
+const RESET_FLAG = 'morningBrief.quizMistakes.reset20261008';
+if (!localStorage.getItem(RESET_FLAG)) {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.setItem(RESET_FLAG, '1');
+}
+
 function loadStore() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};

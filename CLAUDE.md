@@ -156,6 +156,16 @@
 - **錯題隔幾天再出、備份提醒改 7 天（2026-10-08）**：
   - **錯題本**：原本複習時答對一次就移除。現在 `quizMistakes.js` 每題多了 `streak`（連續答對幾次）和 `dueDate`：第一次答對 2 天後再出、第二次 5 天後再出（`REVIEW_GAPS = [2, 5]`），第三次答對才移除；中途答錯就歸零、當天可再複習。今天的題目做完後接著出的只有 `getDueMistakes()`（到期的），不是整本。舊資料沒有 `dueDate`，當作今天到期。測試檔有對應的一項（共 23 項）
   - **備份提醒**：`BACKUP_REMINDER_DAYS` 14 → 7。理由是資料只在手機瀏覽器裡，iOS 對久沒開的網站會清資料
+- **使用者實機回饋後的一輪修正（2026-10-08）**：
+  - **「每週安排」向左滑後按刪除沒反應（會彈回去）**：`swipeRow.js` 的 `pointerdown` 會把「不是正在按的那一列」收回去，但刪除鈕不在 `.swipe-content` 裡面，所以按刪除鈕時連自己那一列也被收回；收回後刪除鈕變成 `visibility: hidden`，手指放開時 click 就落空。現在按的是 `.swipe-delete` 就不收。**之後在滑開的列裡加別的按鈕，要注意同一件事**
+  - **作息可以改名**：按「編輯」後名稱變成輸入框。`taskEngine.js` 的 `renameRoutineTask()`；內建項目的新名稱存在 `labelOverrides`，自訂的直接改 `customTasks`
+  - **作息時間可以新增、刪除、改名，每一項有提醒開關**：`fixedSchedule.js` 的儲存格式從 `{ id: 時間 }` 改成 `{ items: [...] }`（舊格式讀得回來）。內建項目有 `days`（屬於星期幾）；凌晨 5 點前的時間算前一晚，所以「週一至週三 01:20」是週二到週四凌晨響（`fireWeekdays()`）
+  - **提醒只有一套**：`sleepReminder.js` 現在是所有作息時間的提醒，睡眠頁的「就寢提醒」就是今晚適用的那一項就寢時間（`getBedItem()`），不再另外存一份；舊的 `morningBrief.sleepReminder.v1` 不用了。`getSleepReminderConfig()`／`setSleepReminderConfig()` 的介面沒變，AI 助理那邊不用改
+  - **提醒的兩條路**：在 iOS App 外殼裡用 `@capacitor/local-notifications`（`ios-shell/package.json` 加了，App 關著也會響，免費簽名也能用）；網頁用瀏覽器通知，只有開著時會響，而且 **iPhone 的瀏覽器根本沒有這個功能**，開關會打不開並跳說明。**原生那條路沒有在真機上跑過**，是照文件寫的，使用者裝好 App 後要先測
+  - **睡眠頁「我現在要睡」可以改上床時間**：預設是現在，改成別的時間就照那個時間推起床時間（`calcFromNow(bed, now)` 第二個參數是用來標「明天」的基準）
+  - **備份說明改白話**：今日頁的提醒卡片按鈕直接備份（原本是跳去設定頁，使用者到了不知道按哪個）；設定頁兩顆按鈕改成「現在備份（存成一個檔案）」「用之前存的檔案還原」，各有一行說明什麼時候用
+  - **題庫「不確定，看答案」**：直接公布答案，當作答錯存進錯題本（`UNSURE`）
+  - **錯題本清空一次**：使用者測試時亂答，要求重來。`quizMistakes.js` 載入時看旗標 `morningBrief.quizMistakes.reset20261008`，沒有就清空並設旗標，每支裝置只清一次。**之後不要再用這種方式清資料，除非使用者要求**
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題

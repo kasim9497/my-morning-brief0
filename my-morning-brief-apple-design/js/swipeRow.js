@@ -26,6 +26,8 @@ export function enableSwipeRows(root) {
   let active = null;
 
   root.addEventListener('pointerdown', (e) => {
+    // 按的是刪除鈕：不要收回這一列。收回去刪除鈕會馬上隱藏，手指放開時就點不到了
+    if (e.target.closest('.swipe-delete')) return;
     const content = e.target.closest('.swipe-content');
     // 點別的地方時，把其他已經滑開的列收回去
     root.querySelectorAll('.swipe-content.is-open').forEach((el) => {

@@ -134,7 +134,7 @@ function isTaskActiveOnDate(config, dateStr, weekday) {
 function loadStore() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [] };
+    if (!raw) return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [], labelOverrides: {} };
     const parsed = JSON.parse(raw);
     return {
       days: parsed.days || {},
@@ -144,10 +144,12 @@ function loadStore() {
       customTasks: parsed.customTasks || {},
       // 使用者刪掉的內建作息項目（內建的定義拿不掉，所以記「不要顯示」）
       removedTaskIds: parsed.removedTaskIds || [],
+      // 使用者幫內建項目改的名稱：{ defId: 新名稱 }
+      labelOverrides: parsed.labelOverrides || {},
     };
   } catch (e) {
     console.warn('[taskEngine] localStorage 讀取失敗，使用空白狀態：', e);
-    return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [] };
+    return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [], labelOverrides: {} };
   }
 }
 
@@ -190,7 +192,10 @@ export function getConfigurableTaskIds() {
 
 /** 任務的名稱和圖示。內建的查 TASK_DEFS，自訂的查使用者存的名稱 */
 export function getTaskDef(defId) {
-  if (TASK_DEFS[defId]) return TASK_DEFS[defId];
+  if (TASK_DEFS[defId]) {
+    const renamed = store.labelOverrides[defId];
+    return renamed ? { ...TASK_DEFS[defId], label: renamed } : TASK_DEFS[defId];
+  }
   const custom = store.customTasks[defId];
   return { label: custom ? custom.label : '已刪除的項目', icon: 'check', tint: 'blue' };
 }
@@ -204,6 +209,15 @@ export function addCustomTask(label) {
   store.routineConfig[defId] = { mode: 'weekday', days: [] };
   saveStore(store);
   return defId;
+}
+
+/** 幫作息項目改名。內建和自訂的都可以；空白的名稱不收 */
+export function renameRoutineTask(defId, label) {
+  const trimmed = String(label || '').trim();
+  if (!trimmed || !getConfigurableTaskIds().includes(defId)) return;
+  if (store.customTasks[defId]) store.customTasks[defId].label = trimmed;
+  else store.labelOverrides[defId] = trimmed;
+  saveStore(store);
 }
 
 /** 刪除一個作息項目。今天和之後還沒做的那幾筆一起拿掉，過去的紀錄留著 */

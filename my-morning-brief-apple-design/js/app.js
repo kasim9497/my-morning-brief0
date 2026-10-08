@@ -13,7 +13,7 @@ import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView } from './SleepView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
-import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
+import { daysSinceBackup, exportBackup, BACKUP_REMINDER_DAYS } from './backup.js';
 
 // Global Quiz State
 // mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
@@ -111,8 +111,13 @@ function renderBackupReminder() {
   const days = daysSinceBackup();
   card.hidden = days !== null && days < BACKUP_REMINDER_DAYS;
   document.getElementById('backup-reminder-text').textContent = days === null
-    ? '還沒備份過。資料只存在這支手機裡'
+    ? '你的紀錄只存在這支手機裡，還沒存過備份'
     : `已經 ${days} 天沒備份了`;
+  // 直接在這裡備份，不用跳去設定頁再找按鈕
+  document.getElementById('backup-now-btn').onclick = () => {
+    exportBackup();
+    renderBackupReminder();
+  };
 }
 
 /**
@@ -507,7 +512,7 @@ function renderDrivingQuiz() {
     explanationHtml = `
       <div class="quiz-explanation">
         <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green-text)' : 'var(--apple-red-text)'};">
-          ${isCorrect ? '答對了' : `答錯了，正確答案是 (${currentQ.answer})`}
+          ${isCorrect ? '答對了' : `${answeredOption === UNSURE ? '' : '答錯了，'}正確答案是 (${currentQ.answer})`}
         </div>
         ${isReview && isCorrect ? `<div>${(currentQ.streak || 0) >= REVIEW_GAPS.length ? '連續答對三次，這題從錯題本移除了。' : `這題 ${REVIEW_GAPS[currentQ.streak || 0]} 天後會再出一次。`}</div>` : ''}
         ${!isCorrect ? '<div>這題已經存進錯題本。</div>' : ''}
@@ -540,6 +545,7 @@ function renderDrivingQuiz() {
       </div>
 
       <div class="quiz-options">${optionsHtml}</div>
+      ${answeredOption ? '' : '<button type="button" class="section-action quiz-unsure-btn" id="btn-quiz-unsure">不確定，看答案</button>'}
 
       ${explanationHtml}
     </div>
@@ -561,6 +567,10 @@ function renderDrivingQuiz() {
 
     ${dueCount > 0 || (isReview && mistakeCount > 0) ? `<div class="quiz-footer"><span>${isReview ? '答對的題目過幾天會再出一次，連續答對三次才移除' : `今天有 ${dueCount} 題錯題要複習，做完後會接著出`}</span></div>` : ''}
   `;
+
+  // 「不確定」：直接公布答案，當作答錯存進錯題本
+  const unsureBtn = document.getElementById('btn-quiz-unsure');
+  if (unsureBtn) unsureBtn.addEventListener('click', () => handleQuizAnswer(currentQ.id, UNSURE, null));
 
   container.querySelectorAll('.option-btn').forEach(btn => {
     // §1: Instant press via pointerdown (setupInstantPressListeners handles .is-pressing)
@@ -622,6 +632,9 @@ function startQuiz(mode) {
   quizState.score = 0;
   renderDrivingQuiz();
 }
+
+// 按了「不確定，看答案」時記在 userAnswers 裡的值（不會等於任何選項）
+const UNSURE = 'unsure';
 
 function handleQuizAnswer(qId, selectedKey, clickedBtn) {
   if (quizState.userAnswers[qId]) return;

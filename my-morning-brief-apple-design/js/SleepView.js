@@ -8,6 +8,7 @@ import {
   getSleepReminderConfig,
   setSleepReminderConfig,
   requestNotificationPermission,
+  isNativeApp,
 } from './sleepReminder.js';
 
 function escapeHtml(str) {
@@ -23,11 +24,17 @@ function escapeHtml(str) {
 let mode = null; // null = 選擇模式畫面；'now' | 'wake'
 let step = 'input'; // 'input' | 'results'
 let wakeTimeInput = '';
+let bedTimeInput = ''; // 「我現在要睡」可以改成別的上床時間；空的就是現在
 let calcResult = null;
 let selectedCycles = null;
 
 const ICON_MOON = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>';
 const ICON_SUN = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>';
+
+function addMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return formatTime(new Date(2000, 0, 1, h, m + minutes));
+}
 
 function renderModeSelector() {
   return `
@@ -35,7 +42,7 @@ function renderModeSelector() {
       <button type="button" class="sleep-mode-card tint-indigo" data-action="pick-mode" data-mode="now">
         <span class="sleep-mode-icon">${ICON_MOON}</span>
         <h4>我現在要睡</h4>
-        <p>算出適合的起床時間</p>
+        <p>或指定幾點睡，算出起床時間</p>
       </button>
       <button type="button" class="sleep-mode-card tint-orange" data-action="pick-mode" data-mode="wake">
         <span class="sleep-mode-icon">${ICON_SUN}</span>
@@ -48,21 +55,20 @@ function renderModeSelector() {
 
 function renderInputPanel() {
   if (mode === 'now') {
-    const now = new Date();
-    const sleepTime = new Date(now.getTime() + 15 * 60000);
+    const bedTime = bedTimeInput || formatTime(new Date());
     return `
       <div class="card tint-indigo">
         <div class="card-header">
           <h3 class="card-title">我現在要睡</h3>
           <button type="button" class="close-btn" data-action="back-to-select" aria-label="換一種方式">&times;</button>
         </div>
-        <div class="sleep-time-row">
-          <span>現在時間</span>
-          <time>${formatTime(now)}</time>
-        </div>
-        <div class="sleep-time-row">
+        <label class="list-row">
+          <span>上床時間<small class="row-note">預設是現在，可以改</small></span>
+          <input type="time" class="countdown-input" id="sleep-bed-time" value="${escapeHtml(bedTime)}">
+        </label>
+        <div class="list-row">
           <span>預估入睡時間</span>
-          <time>${formatTime(sleepTime)}</time>
+          <time id="sleep-asleep-time">${addMinutes(bedTime, 15)}</time>
         </div>
         <button type="button" class="btn-action btn-primary sleep-calc-btn" id="sleep-calc-btn">計算起床時間</button>
       </div>
@@ -108,7 +114,7 @@ function renderResultsPanel() {
         <h3 class="card-title">${subtitle}</h3>
         <span class="card-badge">每 90 分鐘一個週期</span>
       </div>
-      ${isWakeMode ? '<div class="sleep-results-subtitle">點一個時間，會直接設成就寢提醒</div>' : ''}
+      ${isWakeMode ? `<div class="sleep-results-subtitle">點一個時間，會設成「${escapeHtml(getSleepReminderConfig().label)}」的時間</div>` : ''}
       <div class="sleep-options">${cardsHtml}</div>
       <button type="button" class="btn-action sleep-recalc-btn" id="sleep-recalc-btn">重新計算</button>
     </div>
@@ -127,10 +133,10 @@ function renderReminderCard() {
         <input type="checkbox" class="ios-switch" id="sleep-reminder-toggle" ${reminderConfig.enabled ? 'checked' : ''}>
       </label>
       <label class="list-row">
-        <span>就寢時間</span>
+        <span>${escapeHtml(reminderConfig.label)}</span>
         <input type="time" class="countdown-input" id="sleep-reminder-time" value="${escapeHtml(reminderConfig.bedTime)}">
       </label>
-      <p class="list-footnote">時間到會跳瀏覽器通知。只有晨序開著的時候才會提醒，關掉就收不到。</p>
+      <p class="list-footnote">和「設定」裡作息時間的「${escapeHtml(reminderConfig.label)}」是同一個，改這裡那邊也會跟著變。${isNativeApp() ? '' : '網頁版只有晨序開著的時候才會提醒。'}</p>
     </div>
   `;
 }
@@ -165,6 +171,7 @@ function bindEvents(container) {
   container.querySelectorAll('[data-action="pick-mode"]').forEach((btn) => {
     btn.addEventListener('click', () => {
       mode = btn.dataset.mode;
+      bedTimeInput = '';
       step = 'input';
       calcResult = null;
       selectedCycles = null;
@@ -186,7 +193,19 @@ function bindEvents(container) {
   if (calcBtn) {
     calcBtn.addEventListener('click', () => {
       if (mode === 'now') {
-        calcResult = calcFromNow();
+        const now = new Date();
+        const value = document.getElementById('sleep-bed-time').value;
+        let bed = now;
+        // 改過時間：取下一次到那個時間的時刻（已經過了就算明天）
+        if (value && value !== formatTime(now)) {
+          const [h, m] = value.split(':').map(Number);
+          bed = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+          if (bed < now) bed.setDate(bed.getDate() + 1);
+          bedTimeInput = value;
+        } else {
+          bedTimeInput = '';
+        }
+        calcResult = calcFromNow(bed, now);
       } else {
         const input = document.getElementById('sleep-wake-time');
         if (!input.value) return;
@@ -196,6 +215,13 @@ function bindEvents(container) {
       selectedCycles = null;
       step = 'results';
       renderView();
+    });
+  }
+
+  const bedInput = document.getElementById('sleep-bed-time');
+  if (bedInput) {
+    bedInput.addEventListener('input', () => {
+      if (bedInput.value) document.getElementById('sleep-asleep-time').textContent = addMinutes(bedInput.value, 15);
     });
   }
 
@@ -230,7 +256,7 @@ function bindEvents(container) {
         const permission = await requestNotificationPermission();
         if (permission !== 'granted') {
           reminderToggle.checked = false;
-          window.alert('需要允許瀏覽器通知權限，提醒才能運作。');
+          window.alert(permission === 'unsupported' ? '這個瀏覽器不支援通知。iPhone 要裝成 App 之後才能提醒。' : '要先允許通知，提醒才會響。');
           return;
         }
       }
@@ -238,9 +264,7 @@ function bindEvents(container) {
     });
 
     reminderTimeInput.addEventListener('change', () => {
-      if (reminderToggle.checked) {
-        setSleepReminderConfig(true, reminderTimeInput.value);
-      }
+      setSleepReminderConfig(reminderToggle.checked, reminderTimeInput.value);
     });
   }
 }

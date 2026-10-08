@@ -7,6 +7,7 @@ import {
   getTaskDef,
   addCustomTask,
   removeRoutineTask,
+  renameRoutineTask,
   hasRemovedDefaultTasks,
   restoreDefaultTasks,
   getConfigurableTaskIds,
@@ -28,7 +29,8 @@ import {
 import { exportBackup, importBackup, daysSinceBackup } from './backup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
-import { getFixedSchedule, setFixedTime } from './fixedSchedule.js';
+import { getFixedSchedule, updateFixedItem, addFixedItem, removeFixedItem } from './fixedSchedule.js';
+import { scheduleReminderIfEnabled, requestNotificationPermission, isNativeApp } from './sleepReminder.js';
 import { buildWeeklyReport } from './weeklyReport.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
@@ -45,6 +47,7 @@ const ABOUT_ROWS = [
 
 // 「每週安排」是不是在編輯狀態（每一列都露出刪除鈕）。刪除後整頁會重畫，所以要記在這裡
 let editingRoutines = false;
+let editingFixed = false;
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -144,7 +147,9 @@ export function renderSettingsView() {
           <div class="swipe-content routine-row">
             <div class="routine-row-label">
               ${renderTaskIcon(def.icon, def.tint)}
-              <span>${escapeHtml(def.label)}</span>
+              ${editingRoutines
+                ? `<input type="text" class="row-input rename-input" data-action="rename-routine" data-def="${defId}" value="${escapeHtml(def.label)}" maxlength="30" aria-label="項目名稱">`
+                : `<span>${escapeHtml(def.label)}</span>`}
             </div>
             <div class="routine-mode-switch">
               <button type="button" class="mode-btn ${!isInterval ? 'is-active' : ''}" data-action="set-mode" data-def="${defId}" data-mode="weekday">星期幾</button>
@@ -157,13 +162,20 @@ export function renderSettingsView() {
     })
     .join('');
 
+  // 作息時間：平常是「名稱／時間／提醒開關」，按了編輯變成「可以改的名稱／刪除」
   const fixedHtml = getFixedSchedule().map(
-    (item) => `
-      <label class="list-row">
-        <span>${escapeHtml(item.label)}<small class="row-note">${escapeHtml(item.note)}</small></span>
-        <input type="time" class="countdown-input" data-action="fixed-time" data-id="${item.id}" value="${item.time}">
-      </label>
-    `
+    (item) => (editingFixed ? `
+      <div class="list-row">
+        <input type="text" class="row-input rename-input" data-action="fixed-label" data-id="${item.id}" value="${escapeHtml(item.label)}" maxlength="20" aria-label="名稱">
+        <button type="button" class="countdown-delete" data-action="fixed-delete" data-id="${item.id}" aria-label="刪除${escapeHtml(item.label)}">${ICON_TRASH}</button>
+      </div>
+    ` : `
+      <div class="list-row fixed-row">
+        <span>${escapeHtml(item.label)}<small class="row-note">${escapeHtml(item.note || '')}</small></span>
+        <input type="time" class="countdown-input" data-action="fixed-time" data-id="${item.id}" value="${item.time}" aria-label="${escapeHtml(item.label)}的時間">
+        <input type="checkbox" class="ios-switch" data-action="fixed-remind" data-id="${item.id}" ${item.remind ? 'checked' : ''} aria-label="${escapeHtml(item.label)}提醒">
+      </div>
+    `)
   ).join('');
 
   const aboutHtml = ABOUT_ROWS.map(
@@ -202,8 +214,15 @@ export function renderSettingsView() {
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">作息時間</h3>
+          <button type="button" class="section-action card-link" id="fixed-edit-btn">${editingFixed ? '完成' : '編輯'}</button>
         </div>
         ${fixedHtml}
+        <form class="list-row routine-add-form" id="fixed-add-form">
+          <input type="text" class="row-input routine-add-input" id="fixed-add-label" placeholder="新增時間，例如：吃藥" maxlength="20" required>
+          <input type="time" class="countdown-input" id="fixed-add-time" required aria-label="時間">
+          <button type="submit" class="section-action">加入</button>
+        </form>
+        <p class="list-footnote">打開右邊的開關，時間到會提醒。${isNativeApp() ? '' : '網頁版只有晨序開著的時候才會響，iPhone 要裝成 App 才收得到。'}</p>
       </div>
 
       <div class="section-head">
@@ -260,11 +279,11 @@ export function renderSettingsView() {
           <h3 class="card-title">備份</h3>
           <span class="card-badge">${backupLabel}</span>
         </div>
-        <div class="media-add-form">
-          <button type="button" class="btn-action btn-primary" id="backup-export-btn">匯出備份檔</button>
-          <button type="button" class="btn-action" id="backup-import-btn">從備份檔還原</button>
-          <input type="file" id="backup-import-input" accept="application/json,.json" hidden>
-        </div>
+        <p class="list-footnote backup-explain">你的紀錄只存在這支手機裡。定期存一份檔案，手機壞了或換手機才救得回來。</p>
+        <button type="button" class="btn-action btn-primary btn-block" id="backup-export-btn">現在備份（存成一個檔案）</button>
+        <p class="list-footnote backup-explain">換了手機，或資料不見了，才需要下面這個。它會用檔案裡的內容蓋掉現在的資料。</p>
+        <button type="button" class="btn-action btn-block" id="backup-import-btn">用之前存的檔案還原</button>
+        <input type="file" id="backup-import-input" accept="application/json,.json" hidden>
       </div>
 
       <div class="card">
@@ -279,7 +298,55 @@ export function renderSettingsView() {
   enableSwipeRows(container);
 
   container.querySelectorAll('[data-action="fixed-time"]').forEach((input) => {
-    input.addEventListener('change', () => setFixedTime(input.dataset.id, input.value));
+    input.addEventListener('change', () => {
+      updateFixedItem(input.dataset.id, { time: input.value });
+      scheduleReminderIfEnabled();
+    });
+  });
+
+  container.querySelectorAll('[data-action="fixed-remind"]').forEach((toggle) => {
+    toggle.addEventListener('change', async () => {
+      if (toggle.checked) {
+        const permission = await requestNotificationPermission();
+        if (permission !== 'granted') {
+          toggle.checked = false;
+          window.alert(permission === 'unsupported' ? '這個瀏覽器不支援通知。iPhone 要裝成 App 之後才能提醒。' : '要先允許通知，提醒才會響。');
+          return;
+        }
+      }
+      updateFixedItem(toggle.dataset.id, { remind: toggle.checked });
+      scheduleReminderIfEnabled();
+    });
+  });
+
+  container.querySelectorAll('[data-action="fixed-label"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      updateFixedItem(input.dataset.id, { label: input.value });
+      scheduleReminderIfEnabled();
+    });
+  });
+
+  container.querySelectorAll('[data-action="fixed-delete"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      removeFixedItem(btn.dataset.id);
+      scheduleReminderIfEnabled();
+      renderSettingsView();
+    });
+  });
+
+  document.getElementById('fixed-edit-btn').addEventListener('click', () => {
+    editingFixed = !editingFixed;
+    renderSettingsView();
+  });
+
+  document.getElementById('fixed-add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    addFixedItem(document.getElementById('fixed-add-label').value, document.getElementById('fixed-add-time').value);
+    renderSettingsView();
+  });
+
+  container.querySelectorAll('[data-action="rename-routine"]').forEach((input) => {
+    input.addEventListener('change', () => renameRoutineTask(input.dataset.def, input.value));
   });
 
   container.querySelectorAll('[data-action="delete-routine"]').forEach((btn) => {
