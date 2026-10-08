@@ -1,0 +1,207 @@
+{
+ "schemaVersion": 2,
+ "generatedAt": "2026-10-08T14:37:59.767730+00:00",
+ "title": "Design System: 晨序",
+ "extensions": {
+  "colorMeta": {
+   "action-blue": {
+    "role": "primary",
+    "displayName": "行動藍",
+    "canonical": "#007aff"
+   },
+   "system-gray-bg": {
+    "role": "neutral",
+    "displayName": "系統灰底",
+    "canonical": "#f2f2f7"
+   },
+   "card-white": {
+    "role": "neutral",
+    "displayName": "卡片白",
+    "canonical": "#ffffff"
+   },
+   "ink": {
+    "role": "neutral",
+    "displayName": "墨色",
+    "canonical": "#1c1c1e"
+   },
+   "done-green": {
+    "role": "secondary",
+    "displayName": "完成綠",
+    "canonical": "#34c759"
+   },
+   "alert-red": {
+    "role": "secondary",
+    "displayName": "警示紅",
+    "canonical": "#ff3b30"
+   },
+   "warn-orange": {
+    "role": "secondary",
+    "displayName": "提醒橘",
+    "canonical": "#ff9500"
+   }
+  },
+  "typographyMeta": {
+   "large-title": {
+    "displayName": "Large Title",
+    "purpose": "每頁一個的大標題"
+   },
+   "title1": {
+    "displayName": "Title 1",
+    "purpose": "卡片裡的大數字"
+   },
+   "title2": {
+    "displayName": "Title 2",
+    "purpose": "區塊標題"
+   },
+   "body": {
+    "displayName": "Body",
+    "purpose": "內文與清單列"
+   },
+   "footnote": {
+    "displayName": "Footnote",
+    "purpose": "說明文字"
+   }
+  },
+  "shadows": [
+   {
+    "name": "float",
+    "value": "0 8px 28px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06)",
+    "purpose": "底部選單"
+   },
+   {
+    "name": "modal",
+    "value": "0 32px 64px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.08)",
+    "purpose": "底部對話框"
+   }
+  ],
+  "motion": [
+   {
+    "name": "spring-press",
+    "value": "transform 0.09s cubic-bezier(0.2, 0.8, 0.2, 1)",
+    "purpose": "按下去縮小的回饋"
+   },
+   {
+    "name": "ease-out-smooth",
+    "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+    "purpose": "分頁和清單的滑入（0.28s）"
+   }
+  ],
+  "breakpoints": [
+   {
+    "name": "two-column",
+    "value": "768px"
+   }
+  ]
+ },
+ "components": [
+  {
+   "name": "主要按鈕",
+   "kind": "button",
+   "refersTo": "button-primary",
+   "description": "一張卡片最多一顆的主要動作。",
+   "html": "<button class=\"ds-btn-primary\">現在備份</button>",
+   "css": ".ds-btn-primary{background:#007aff;color:#fff;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1),opacity .2s}.ds-btn-primary:active{transform:scale(.97);opacity:.85}.ds-btn-primary:focus-visible{outline:2px solid #007aff;outline-offset:2px}"
+  },
+  {
+   "name": "次要按鈕",
+   "kind": "button",
+   "refersTo": "button-tinted",
+   "description": "淡藍底的次要動作。",
+   "html": "<button class=\"ds-btn-tinted\">延後 3 天</button>",
+   "css": ".ds-btn-tinted{background:rgba(0,122,255,.12);color:#0058c4;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1)}.ds-btn-tinted:active{transform:scale(.97)}.ds-btn-tinted:focus-visible{outline:2px solid #007aff;outline-offset:2px}"
+  },
+  {
+   "name": "卡片與清單列",
+   "kind": "card",
+   "refersTo": "card",
+   "description": "白卡、代表色標題、細線分隔的列。",
+   "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">作息時間</h3><div class=\"ds-row\"><span>洗澡<small>每天</small></span><span>23:30</span></div><div class=\"ds-row\"><span>手機宵禁<small>每天</small></span><span>23:00</span></div></div>",
+   "css": ".ds-card{background:#fff;border-radius:26px;padding:1rem 1.25rem;font-size:1.0625rem;color:#1c1c1e}.ds-card-title{margin:0 0 .5rem;font-size:1.0625rem;font-weight:600;color:#b85000}.ds-row{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:.25rem 0;border-bottom:1px solid rgba(60,60,67,.12)}.ds-row:last-child{border-bottom:none}.ds-row small{display:block;font-size:.8125rem;color:#8e8e93}"
+  },
+  {
+   "name": "輸入框",
+   "kind": "input",
+   "refersTo": "input",
+   "description": "淡填色底、沒有邊框。",
+   "html": "<input class=\"ds-input\" type=\"time\" value=\"23:30\">",
+   "css": ".ds-input{appearance:none;background:rgba(118,118,128,.10);border:1px solid transparent;border-radius:14px;padding:.6rem .85rem;font-size:1rem;color:#1c1c1e}.ds-input:focus-visible{outline:none;border-color:#007aff}"
+  },
+  {
+   "name": "分段控制",
+   "kind": "custom",
+   "refersTo": "",
+   "description": "兩三個互斥選項。",
+   "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn ds-on\">週</button><button class=\"ds-seg-btn\">月</button></div>",
+   "css": ".ds-seg{display:flex;gap:2px;padding:2px;background:rgba(118,118,128,.10);border-radius:10px}.ds-seg-btn{flex:1;background:transparent;border:none;border-radius:8px;min-height:40px;font-size:.8125rem;font-weight:500;color:#1c1c1e}.ds-seg-btn.ds-on{background:#fff;font-weight:600}.ds-seg-btn:focus-visible{outline:2px solid #007aff}"
+  }
+ ],
+ "narrative": {
+  "northStar": "健康 App 的摘要頁",
+  "overview": "**Creative North Star: \"健康 App 的摘要頁\"**\n\n晨序看起來要像 iPhone 內建的 App：系統灰的底、白色的卡片、粗體的大數字、細線分隔的清單。使用者每天早上和空檔打開它幾秒鐘，所以畫面的任務是「讓人不用讀就看懂」，不是讓人欣賞。熟悉感本身就是設計：使用者不該需要學任何新的操作方式。\n\n元件的手感是**紮實、明確**。能按的東西一眼看得出來能按，按下去有清楚的回饋（縮一下、變淡一下），不靠懸停、不靠猜。裝飾幾乎沒有；顏色只做兩件事——標出「這一區是什麼」（每個區塊一個代表色）和「這個可以按」（藍色）。\n\n只有淺色外觀。深色模式做過又拿掉了：加到主畫面後，系統畫的狀態列在深色下顏色對不上，網頁控制不了。",
+  "keyCharacteristics": [
+   "灰底白卡，卡片沒有邊框也沒有陰影。",
+   "卡片裡的明細是細線分隔的列，不再包一層有底色的小框。",
+   "一頁只有一個粗體大標題；卡片標題用代表色，不加圖示。",
+   "玻璃材質只給浮在內容上面的導覽層（頂端導覽列、底部選單、底部彈出的對話框）。",
+   "每一個可以點的東西至少 40–44px 高。"
+  ],
+  "rules": [
+   {
+    "name": "藍色只給能按的東西",
+    "body": "藍色不拿來裝飾、不拿來當標題色（題庫卡片的代表色是另一個比較深的藍）。",
+    "section": "colors"
+   },
+   {
+    "name": "彩色文字用文字版",
+    "body": "原始的飽和色（`#ff9500`、`#34c759`、`#ff3b30`）對比度不到 4.5:1，只能當圖示、開關、邊框的顏色，不能當文字。",
+    "section": "colors"
+   },
+   {
+    "name": "不要寫死色碼",
+    "body": "所有顏色走 `css/styles.css` 最上面 `:root` 的變數。",
+    "section": "colors"
+   },
+   {
+    "name": "九級規則",
+    "body": "字級只用這九個變數（`--text-large-title` 到 `--text-caption2`），不寫零散的數字。之前有三十多種字級，使用者看了說「怪怪的」。",
+    "section": "typography"
+   },
+   {
+    "name": "700 很貴",
+    "body": "粗體 700 只給頁面大標題、區塊標題、大數字。其他最多 600，內文 400。",
+    "section": "typography"
+   },
+   {
+    "name": "輸入框 16px 起跳",
+    "body": "手機上輸入框和選單的字級不能小於 16px，不然 iPhone 會自動放大頁面。",
+    "section": "typography"
+   },
+   {
+    "name": "玻璃只給導覽層",
+    "body": "毛玻璃（`backdrop-filter: blur`）只用在頂端導覽列、底部選單、底部對話框。卡片是內容，一律不透明。",
+    "section": "elevation"
+   }
+  ],
+  "dos": [
+   "Do 所有顏色、字級、圓角都用 `:root` 的變數。",
+   "Do 讓每個可以點的東西至少 40–44px 高。",
+   "Do 卡片裡的明細用細線分隔的列。",
+   "Do 彩色文字用加深的 `-text` 版本或 `tint-*`。",
+   "Do `:hover` 包在 `@media (hover: hover) and (pointer: fine)` 裡。",
+   "Do 按壓樣式同時寫 `:active` 和 `.is-pressing`，並把 class 加進 `app.js` 的 `PRESSABLE_SELECTOR`。",
+   "Do 用 `hidden` 屬性切換顯示時，如果那個 class 有設 `display`，另外補一條 `[hidden] { display: none }`。",
+   "Do 滑動才看得到的操作，另外給一個看得見的入口。"
+  ],
+  "donts": [
+   "Don't 在卡片上加陰影、邊框或毛玻璃。",
+   "Don't 在卡片裡再包一層有底色的小框。",
+   "Don't 在卡片標題前面加圖示，或用表情符號當圖示。",
+   "Don't 在頁面標題、卡片標題、卡片內容三層重複同一個詞。",
+   "Don't 用一顆顆圓形按鈕排成一排。",
+   "Don't 在日期旁邊放「數字/數字」的寫法（會被看成日期）。",
+   "Don't 加深色模式，除非狀態列的顏色能被控制。",
+   "Don't 在卡片或區塊上自己加上下邊距。",
+   "Don't 把系統字體（SF Pro、蘋方）的檔案放進專案，授權不允許。"
+  ]
+ }
+}

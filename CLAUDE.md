@@ -186,6 +186,11 @@
   - 刪了 `index_standalone.html`：很久沒維護的舊版單檔，卻一直被部署成公開網頁
   - **量版面位置時的陷阱**：預覽視窗沒在畫面上時動畫不會前進，剛切分頁量到的位置會偏 28px（滑入動畫的第一格）。量之前先 `document.getAnimations().forEach(a => a.finish())`
   - **檢查過、沒有動的**：`isChatConfigured`、`getCurrentTab`、`formatDate` 等幾個沒人用的 export 留著；`chatBox.js` 開頭的註解還在講 OpenRouter
+- **產品說明、設計規範、第一次設計評審（2026-10-08，用 impeccable 技能）**：
+  - `PRODUCT.md`：這個 App 給誰用、最重要的事是什麼、不可以做的事。使用者確認過三點：只有他自己用；早上起床後、白天空檔、收到提醒時打開；最重要的是「每天的作息和任務有沒有做到」
+  - `DESIGN.md` 和 `.impeccable/design.json`：現有樣式的規範。北極星是「健康 App 的摘要頁」，元件手感是「紮實、明確」（都是使用者選的）。**之後做新畫面先讀這份**，不用再從上面這一長串歷史裡找規則
+  - 今日頁的評審存在 `.impeccable/critique/`，22/40。三個 P1：任務清單不是第一個也不夠顯眼（語錄卡和備份提醒排在它上面）；舊資料或範例資料會被標成今天的；跳過和延後不能復原、完成數的分母沒扣掉它們。**這些還沒修**，等使用者決定
+  - 評審用的是本機的 `data/today.json`，那是 8 月的範例檔，所以天氣全是 N/A、題庫是舊格式；跟資料有關的觀察不算數
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題
