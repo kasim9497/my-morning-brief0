@@ -1,24 +1,24 @@
 /**
- * 資料備份：把所有 `morningBrief.` 開頭的 localStorage 資料匯出成一個 JSON 檔，或從檔案還原。
- * 還原後直接重新載入頁面——各模組載入時就把資料讀進記憶體了，只改 localStorage 它們不會知道。
+ * 備份用的共同部分：收集所有 `morningBrief.` 開頭的 localStorage 資料、或用一份備份取代它們。
+ * 實際存到哪裡在 js/cloudBackup.js（雲端）。以前還有「存成檔案／從檔案還原」，使用者要求拿掉了。
+ * 還原後要重新載入頁面——各模組載入時就把資料讀進記憶體了，只改 localStorage 它們不會知道。
  */
 
 const KEY_PREFIX = 'morningBrief.';
-const APP_ID = 'chenxu';
-const LAST_BACKUP_KEY = 'morningBrief.lastBackupAt';
 
-/** 超過這麼多天沒匯出備份，今日頁會提醒 */
+/** 超過這麼多天沒有成功備份，今日頁會提醒 */
 export const BACKUP_REMINDER_DAYS = 7;
 
 // 雲端自動備份上次成功的時間（js/cloudBackup.js 寫的）
 const CLOUD_SAVED_AT_KEY = 'chenxu.cloudBackup.savedAt';
 
-/** 距離上次備份幾天，手動存檔和雲端自動備份取比較近的那個；從來沒備份過回傳 null */
+/**
+ * 距離上次雲端備份成功幾天；沒開雲端備份、或從來沒成功過回傳 null。
+ * 以前手動存檔的時間不算：那個功能拿掉了，舊的時間戳會讓提醒以為還有備份。
+ */
 export function daysSinceBackup() {
-  const times = [LAST_BACKUP_KEY, CLOUD_SAVED_AT_KEY]
-    .map((key) => Date.parse(localStorage.getItem(key)))
-    .filter((t) => !Number.isNaN(t));
-  return times.length ? Math.floor((Date.now() - Math.max(...times)) / 86400000) : null;
+  const last = Date.parse(localStorage.getItem(CLOUD_SAVED_AT_KEY));
+  return Number.isNaN(last) ? null : Math.floor((Date.now() - last) / 86400000);
 }
 
 /** 所有要備份的資料：morningBrief. 開頭的每一筆 */
@@ -38,45 +38,4 @@ export function applyBackupData(data) {
   for (const [key, value] of Object.entries(data)) {
     if (key.startsWith(KEY_PREFIX) && typeof value === 'string') localStorage.setItem(key, value);
   }
-}
-
-export function exportBackup() {
-  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
-  const data = collectBackupData();
-
-  const today = new Date().toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify({ app: APP_ID, exportedAt: new Date().toISOString(), data }, null, 2)], {
-    type: 'application/json',
-  });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `chenxu-backup-${today}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-/** 回傳錯誤訊息字串；成功時會重新載入頁面，不會回傳 */
-export async function importBackup(file) {
-  let parsed;
-  try {
-    parsed = JSON.parse(await file.text());
-  } catch (e) {
-    return '這個檔案不是有效的 JSON。';
-  }
-  if (parsed?.app !== APP_ID || !parsed.data || typeof parsed.data !== 'object') {
-    return '這不是晨序的備份檔。';
-  }
-
-  const entries = Object.entries(parsed.data).filter(
-    ([key, value]) => key.startsWith(KEY_PREFIX) && typeof value === 'string'
-  );
-  if (entries.length === 0) return '備份檔裡沒有資料。';
-
-  if (!window.confirm(`要用這份備份（${String(parsed.exportedAt).slice(0, 10)}）覆蓋目前的資料嗎？目前的資料會被取代。`)) {
-    return null;
-  }
-
-  applyBackupData(Object.fromEntries(entries));
-  window.location.reload();
-  return null;
 }

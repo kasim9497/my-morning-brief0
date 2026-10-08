@@ -70,10 +70,16 @@ export function fireWeekdays(item) {
   return item.days.map((day) => (day + shift) % 7);
 }
 
-/** 今晚適用的那一項就寢時間（睡眠頁的就寢提醒用的就是它）。就寢項目都被刪掉時回傳 null */
+// 凌晨還沒睡的時候，「今晚」指的是昨天那一晚
+const nightOf = (now) => (now.getDay() + (now.getHours() < 5 ? 6 : 0)) % 7;
+const forNight = (items, night) => items.find((item) => !item.days || item.days.includes(night)) || items[0] || null;
+
+/** 今晚適用的那一項就寢時間（就寢提醒、睡眠計算機用的就是它）。就寢項目都被刪掉時回傳 null */
 export function getBedItem(now = new Date()) {
-  const beds = load().filter((item) => item.id.endsWith('Bed') || item.label.includes('就寢'));
-  // 凌晨還沒睡的時候，「今晚」指的是昨天那一晚
-  const night = (now.getDay() + (now.getHours() < 5 ? 6 : 0)) % 7;
-  return beds.find((item) => !item.days || item.days.includes(night)) || beds[0] || null;
+  return forNight(load().filter((item) => item.id.endsWith('Bed') || item.label.includes('就寢')), nightOf(now));
+}
+
+/** 今晚睡下去之後，隔天早上適用的那一項起床時間。沒有就回傳 null */
+export function getWakeItem(now = new Date()) {
+  return forNight(load().filter((item) => item.id.endsWith('Wake') || item.label.includes('起床')), nightOf(now));
 }

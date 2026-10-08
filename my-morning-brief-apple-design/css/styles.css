@@ -673,7 +673,10 @@ body {
 .quiz-dot.dot-pulse { animation: dotPulse 0.38s cubic-bezier(0.16, 1, 0.3, 1); }
 .quiz-dot.done-correct { background: var(--apple-green); }
 .quiz-dot.done-wrong   { background: var(--apple-red); }
-.quiz-dot.active       { background: var(--apple-orange); }
+.quiz-dot.active       { background: var(--text-main); }
+/* 目前這一題答過了就顯示對錯的顏色，不要被「目前」的顏色蓋掉 */
+.quiz-dot.active.done-correct { background: var(--apple-green); }
+.quiz-dot.active.done-wrong   { background: var(--apple-red); }
 
 .quiz-question-box { margin-bottom: 1.1rem; }
 
@@ -706,7 +709,7 @@ body {
   height: auto;
   margin: 0.875rem auto 0;
   padding: 0.5rem;
-  background: #ffffff;
+  background: var(--bg-card-solid);
   border-radius: var(--radius-md);
 }
 
@@ -2493,3 +2496,25 @@ button, select, [role="button"] {
 /* 運勢：星等和一句話之外的東西收在「看分項」裡 */
 .horoscope-more { margin-top: 0.5rem; }
 .horoscope-more .horoscope-meta { margin: 0.25rem 0 0.75rem; }
+
+/* ── 題庫和天氣精簡（2026-10-08，設計評審的兩個 P2）── */
+
+/* 答完之後的結果：細線下面的幾行字，不包有底色的框、不加色條 */
+.quiz-result {
+  margin: 1rem 0;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-subhead);
+  line-height: 1.55;
+  color: var(--text-main);
+}
+.quiz-result-title { font-weight: 600; margin-bottom: 0.25rem; }
+.quiz-result-title.is-correct { color: var(--apple-green-text); }
+.quiz-result-title.is-wrong { color: var(--apple-red-text); }
+.quiz-source { margin-top: 0.35rem; font-size: var(--text-caption); color: var(--text-muted); }
+.quiz-source a { color: inherit; }
+.quiz-controls { margin-top: 0.5rem; }
+
+/* 天氣：大數字下面一行最低最高和降雨，再一行出門提醒 */
+.weather-line { margin-top: 0.35rem; font-size: var(--text-body); color: var(--text-main); }
+.weather-tip { margin-top: 0.5rem; font-size: var(--text-subhead); line-height: 1.5; color: var(--text-muted); }

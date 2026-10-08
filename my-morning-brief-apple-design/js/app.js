@@ -13,8 +13,8 @@ import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView } from './SleepView.js';
 import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
-import { daysSinceBackup, exportBackup, BACKUP_REMINDER_DAYS } from './backup.js';
-import { startCloudBackup } from './cloudBackup.js';
+import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
+import { startCloudBackup, getCloudBackupState } from './cloudBackup.js';
 
 // Global Quiz State
 // mode：'daily' 是今天的題目，'review' 是從錯題本拿出來複習
@@ -114,14 +114,11 @@ function renderBackupReminder() {
   if (!card) return;
   const days = daysSinceBackup();
   card.hidden = days !== null && days < BACKUP_REMINDER_DAYS;
-  document.getElementById('backup-reminder-text').textContent = days === null
-    ? '你的紀錄只存在這支手機裡，還沒存過備份'
-    : `已經 ${days} 天沒備份了`;
-  // 直接在這裡備份，不用跳去設定頁再找按鈕
-  document.getElementById('backup-now-btn').onclick = () => {
-    exportBackup();
-    renderBackupReminder();
-  };
+  const cloudOn = getCloudBackupState().on;
+  document.getElementById('backup-reminder-text').textContent = !cloudOn
+    ? '你的紀錄只存在這支手機裡，還沒有備份'
+    : days === null ? '雲端備份還沒有成功過' : `雲端備份已經 ${days} 天沒成功了`;
+  document.getElementById('backup-now-btn').textContent = cloudOn ? '去看看' : '開啟雲端備份';
 }
 
 /**
@@ -241,7 +238,6 @@ function triggerCardStagger() {
 }
 
 // 小型行內 icon，取代散落各處的表情符號，統一用 currentColor 走版面配色
-const ICON_CLOUD_LG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:2.4rem;height:2.4rem;color:var(--tint);"><circle cx="9" cy="13" r="4"/><circle cx="14" cy="11" r="5"/><rect x="6" y="15" width="14" height="4" rx="2"/></svg>';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -269,52 +265,34 @@ function renderHeader({ user, meta }) {
  */
 function renderWeather(w) {
   const container = document.getElementById('weather-widget-content');
-  const safeCond = escapeHtml(w.condition || '多雲');
-  const safeTemp = escapeHtml(w.tempCurrent || 'N/A');
-  const safeMin = escapeHtml(w.tempMin || 'N/A');
-  const safeMax = escapeHtml(w.tempMax || 'N/A');
-  const safeRain = escapeHtml(w.rainChance || 'N/A');
-  const safeFeels = escapeHtml(w.feelsLike || 'N/A');
-  const safeUv = escapeHtml(w.uvIndex || 'N/A');
-  const safeTip = escapeHtml(w.aiTip || '提醒您注意天氣變化。');
+  const has = (value) => value && value !== 'N/A';
 
   // 地點放在卡片標題列右邊，卡片裡不再重複一次
   const badge = document.getElementById('weather-card-badge');
   if (badge) badge.textContent = w.location || '南京市栖霞區';
 
-  container.innerHTML = `
-    ${w.isFallback ? '<div style="font-size: var(--text-footnote); color: var(--apple-red); margin-bottom: 0.35rem;">資料暫時無法更新</div>' : ''}
-    <div class="weather-main">
-      <div>
-        <div class="weather-temp">${safeTemp}</div>
-        <div class="weather-condition">${safeCond}</div>
-      </div>
-      ${ICON_CLOUD_LG}
-    </div>
-    
-    <div class="weather-details">
-      <div class="weather-detail-item">
-        <span class="weather-detail-label">最低 / 最高</span>
-        <span class="weather-detail-val">${safeMin} ~ ${safeMax}</span>
-      </div>
-      <div class="weather-detail-item">
-        <span class="weather-detail-label">降雨機率</span>
-        <span class="weather-detail-val" style="color: var(--apple-blue);">${safeRain}</span>
-      </div>
-      <div class="weather-detail-item">
-        <span class="weather-detail-label">體感溫度</span>
-        <span class="weather-detail-val">${safeFeels}</span>
-      </div>
-      <div class="weather-detail-item">
-        <span class="weather-detail-label">紫外線指數</span>
-        <span class="weather-detail-val">${safeUv}</span>
-      </div>
-    </div>
+  // 天氣來源沒回應：只講一次，不要擺一排 N/A
+  if (w.isFallback || !has(w.tempCurrent)) {
+    container.innerHTML = '<div class="countdown-empty">今天的天氣還沒抓到</div>';
+    return;
+  }
 
-    <div class="ai-tip-box">
-      <div class="ai-tip-title">出門提醒</div>
-      <div>${safeTip}</div>
+  // 平常只看這兩行：現在幾度、什麼天氣；今天最低到最高、會不會下雨
+  const range = has(w.tempMin) && has(w.tempMax) ? `${escapeHtml(w.tempMin)} ~ ${escapeHtml(w.tempMax)}` : '';
+  const rain = has(w.rainChance) ? `降雨 ${escapeHtml(w.rainChance)}` : '';
+  const moreRows = [['體感溫度', w.feelsLike], ['紫外線指數', w.uvIndex]]
+    .filter(([, value]) => has(value))
+    .map(([label, value]) => `<div class="list-row"><span>${label}</span><span>${escapeHtml(value)}</span></div>`)
+    .join('');
+
+  container.innerHTML = `
+    <div class="metric">
+      <span class="metric-value">${escapeHtml(w.tempCurrent)}</span>
+      <span class="metric-unit">${escapeHtml(w.condition || '')}</span>
     </div>
+    <div class="weather-line">${[range, rain].filter(Boolean).join(' · ')}</div>
+    ${w.aiTip ? `<div class="weather-tip">${escapeHtml(w.aiTip)}</div>` : ''}
+    ${moreRows ? `<details class="add-details"><summary class="section-action">看更多</summary>${moreRows}</details>` : ''}
   `;
 }
 
@@ -501,8 +479,6 @@ function renderDrivingQuiz() {
     return;
   }
 
-  const scoreText = `答對 ${quizState.score} / ${total}`;
-
   const dotsHtml = quizState.questions.map((q, idx) => {
     let dotClass = 'quiz-dot';
     if (idx === currIdx) dotClass += ' active';
@@ -510,7 +486,7 @@ function renderDrivingQuiz() {
       const isCorrect = quizState.userAnswers[q.id] === q.answer;
       dotClass += isCorrect ? ' done-correct' : ' done-wrong';
     }
-    return `<div class="${dotClass}" title="Q${idx + 1}"></div>`;
+    return `<div class="${dotClass}"></div>`;
   }).join('');
 
   const answeredOption = quizState.userAnswers[currentQ.id];
@@ -534,66 +510,51 @@ function renderDrivingQuiz() {
     `;
   }).join('');
 
-  let explanationHtml = '';
+  const isFirst = currIdx === 0;
+  const isLast = currIdx === total - 1;
+  // 最後一題按下去是「接著做錯題」還是「結束」
+  const advanceLabel = !isLast || (!isReview && dueCount > 0) ? '下一題' : '完成';
+  const advanceId = isLast ? 'btn-quiz-finish' : 'btn-quiz-next';
+
+  // 答完之後：對錯一行字、該知道的一兩句、然後就是整列寬的「下一題」，不用往下捲去找
+  let resultHtml = '';
   if (answeredOption) {
     const isCorrect = answeredOption === currentQ.answer;
-    explanationHtml = `
-      <div class="quiz-explanation">
-        <div class="quiz-explanation-title" style="color: ${isCorrect ? 'var(--apple-green-text)' : 'var(--apple-red-text)'};">
-          ${isCorrect ? '答對了' : `${answeredOption === UNSURE ? '' : '答錯了，'}正確答案是 (${currentQ.answer})`}
-        </div>
-        ${isReview && isCorrect ? `<div>${(currentQ.streak || 0) >= REVIEW_GAPS.length ? '連續答對三次，這題從錯題本移除了。' : `這題 ${REVIEW_GAPS[currentQ.streak || 0]} 天後會再出一次。`}</div>` : ''}
-        ${!isCorrect ? '<div>這題已經存進錯題本。</div>' : ''}
-        ${currentQ.explanation ? `<div><strong>解析：</strong>${currentQ.explanation}</div>` : ''}
-        <div style="font-size: var(--text-caption); color: var(--text-muted); margin-top: 0.35rem;">
-          來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener" style="color: var(--text-muted);">${currentQ.source || '交通部公路局機車筆試題庫'}</a>${currentQ.updated_at ? `（${currentQ.updated_at} 版）` : ''}
-        </div>
+    const notes = [
+      isReview && isCorrect ? ((currentQ.streak || 0) >= REVIEW_GAPS.length ? '連續答對三次，這題從錯題本移除了。' : `這題 ${REVIEW_GAPS[currentQ.streak || 0]} 天後會再出一次。`) : '',
+      !isCorrect ? '已經存進錯題本。' : '',
+      currentQ.explanation ? `解析：${currentQ.explanation}` : '',
+    ].filter(Boolean);
+    resultHtml = `
+      <div class="quiz-result" role="status">
+        <div class="quiz-result-title ${isCorrect ? 'is-correct' : 'is-wrong'}">${isCorrect ? '答對了' : `${answeredOption === UNSURE ? '' : '答錯了，'}正確答案是 (${currentQ.answer})`}</div>
+        ${notes.map((note) => `<div>${note}</div>`).join('')}
+        <div class="quiz-source">來源：<a href="${currentQ.source_url || 'https://www.thb.gov.tw/'}" target="_blank" rel="noopener">${currentQ.source || '交通部公路局機車筆試題庫'}</a>${currentQ.updated_at ? `（${currentQ.updated_at} 版）` : ''}</div>
       </div>
+      <button type="button" class="btn-action btn-primary btn-block" id="${advanceId}">${advanceLabel}</button>
     `;
   }
 
-  const isFirst = currIdx === 0;
-  const isLast = currIdx === total - 1;
-
   container.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-      <span style="font-size: var(--text-subhead); font-weight: 600; color: var(--text-muted);">
-        第 ${currIdx + 1} / ${total} 題
-      </span>
-      <span class="quiz-score-badge">${scoreText}</span>
-    </div>
-
-    <div class="quiz-progress">${dotsHtml}</div>
+    <div class="quiz-progress" role="img" aria-label="第 ${currIdx + 1} 題，共 ${total} 題">${dotsHtml}</div>
 
     <div class="quiz-body">
       <div class="quiz-question-box">
         ${currentQ.category ? `<span class="quiz-cat-tag">${currentQ.category}</span>` : ''}
-        <div class="quiz-q-title">${currIdx + 1}. ${currentQ.question}</div>
+        <div class="quiz-q-title">${currentQ.question}</div>
         ${currentQ.image ? `<img class="quiz-image" src="${currentQ.image}" alt="這一題的圖">` : ''}
       </div>
 
       <div class="quiz-options">${optionsHtml}</div>
-      ${answeredOption ? '' : '<button type="button" class="section-action quiz-unsure-btn" id="btn-quiz-unsure">不確定，看答案</button>'}
-
-      ${explanationHtml}
+      ${answeredOption ? resultHtml : '<button type="button" class="section-action quiz-unsure-btn" id="btn-quiz-unsure">不確定，看答案</button>'}
     </div>
 
     <div class="quiz-controls">
-      <button class="btn-action" id="btn-quiz-prev" ${isFirst ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-        上一題
-      </button>
-      ${isLast ? `
-        <button class="btn-action btn-primary" id="btn-quiz-finish">
-          ${!isReview && dueCount > 0 ? '下一題' : '完成'}
-        </button>
-      ` : `
-        <button class="btn-action btn-primary" id="btn-quiz-next">
-          下一題
-        </button>
-      `}
+      ${isFirst ? '<span></span>' : '<button type="button" class="section-action" id="btn-quiz-prev">上一題</button>'}
+      ${answeredOption ? '' : `<button type="button" class="section-action" id="${advanceId}">${isLast ? advanceLabel : '先跳過'}</button>`}
     </div>
 
-    ${dueCount > 0 || (isReview && mistakeCount > 0) ? `<div class="quiz-footer"><span>${isReview ? '答對的題目過幾天會再出一次，連續答對三次才移除' : `今天有 ${dueCount} 題錯題要複習，做完後會接著出`}</span></div>` : ''}
+    ${!isReview && dueCount > 0 && isFirst && !answeredOption ? `<div class="quiz-footer"><span>今天有 ${dueCount} 題錯題要複習，做完後會接著出</span></div>` : ''}
   `;
 
   // 「不確定」：直接公布答案，當作答錯存進錯題本

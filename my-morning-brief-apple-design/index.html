@@ -64,20 +64,16 @@
         </div>
       </article>
 
-      <!-- 太久沒備份才會出現（js/app.js 的 renderBackupReminder） -->
+      <!-- 沒開雲端備份、或雲端備份太久沒成功才會出現（js/app.js 的 renderBackupReminder） -->
       <article class="card col-span-2" id="backup-reminder" hidden>
         <div class="list-row backup-reminder-row">
           <span id="backup-reminder-text"></span>
-          <button type="button" class="section-action" id="backup-now-btn">現在備份</button>
+          <button type="button" class="section-action" id="backup-now-btn" data-goto="settings">開啟雲端備份</button>
         </div>
       </article>
 
       <!-- 倒數摘要：只顯示，新增/刪除要去「倒數」頁 -->
-      <article class="card col-span-2 tint-red">
-        <div class="card-header">
-          <h3 class="card-title">倒數</h3>
-          <button type="button" class="section-action card-link" data-goto="countdown">管理</button>
-        </div>
+      <article class="card col-span-2 tint-red" aria-label="倒數">
         <div id="today-countdown-widget-content">
           <!-- Rendered dynamically -->
         </div>
