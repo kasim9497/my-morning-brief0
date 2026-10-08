@@ -73,7 +73,9 @@ def to_traditional(value):
     if _S2TW is None:
         return value
     if isinstance(value, str):
-        return _S2TW.convert(value)
+        # ponytail: OpenCC 遇到本來就是繁體的字會多轉一次，目前只看過「注意」被轉成「註意」，先補這一個。
+        # 再出現別的就改成「整段沒有簡體字就不轉」。
+        return _S2TW.convert(value).replace("註意", "注意")
     if isinstance(value, list):
         return [to_traditional(v) for v in value]
     if isinstance(value, dict):

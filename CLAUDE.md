@@ -140,6 +140,14 @@
   - **題庫答案再驗一次**：用另一種方法（直接看答案欄數字的座標去對題號，不經過表格解析）重新對過，798 題的答案全部一致
   - **本週摘要**：設定頁新增一張卡片，`js/weeklyReport.js` 的 `buildWeeklyReport()` 把最近 7 天的任務、追劇讀書進度、錯題整理成一段附帶分析請求的文字，按鈕用系統分享選單（手機上可以直接選 Claude）或複製到剪貼簿。**資料不放進網址參數**。iPhone「健康」App 的資料網頁讀不到，使用者要自己看了填在備註欄；要自動讀取得等原生 App 接 HealthKit。過去幾天的任務是用現在的作息設定回推的（檔案裡有 `ponytail:` 註記）
   - 向左滑的刪除鈕沒滑開時會在列的交界露出一條紅線，改成沒滑開時隱藏
+- **AI 全部改用免費的 Cloudflare Workers AI（2026-10-08）**：OpenRouter 那把金鑰的額度用完（HTTP 402），使用者不打算再儲值，問有沒有不花錢的辦法
+  - **聊天**：`cloudflare-worker/wrangler.toml` 加了 `[ai] binding = "AI"`，`chat-proxy.js` 的 `callModel()` 先用 Workers AI（`@cf/meta/llama-3.3-70b-instruct-fp8-fast`），失敗而且有 OpenRouter 金鑰時才退回 OpenRouter。Workers AI 每天有免費額度，免費方案超過就是當天不能用，不會收費。用使用者之前那段對話測 3 次，動作都對，一則約 3.5 秒
+  - **每日資料**：Worker 多了一個 `mode: 'brief'`，收一段完整的提示詞、叫模型、把回的 JSON 原樣轉回去。`generate_brief.py` 的 `synthesize_with_ai()`（原本叫 `synthesize_with_openrouter`）先打這個，帶 `Origin: https://kasim9497.github.io` 才過得了 Worker 的來源檢查；第二順位才是 OpenRouter。**Worker 掛了的話每日運勢也會跟著變成樣板**，兩邊現在綁在一起
+  - **GitHub Models 不能用**：試過用 workflow 內建的 `GITHUB_TOKEN` 加 `models: read`，但 `https://models.github.ai/inference/chat/completions` 對任何請求（有沒有帶 token 都一樣）只回純文字 `OK`，GitHub 官方的 `actions/ai-inference@v1` 也因此失敗。在 runner 上和本機都一樣。**不要再花時間試這條**，除非先確認它恢復正常
+  - OpenRouter 那次 402 的實際訊息是「金鑰的總額度快用完，而請求沒有設 `max_tokens`，系統用模型上限去估費用所以被拒」。現在備援呼叫有設 `max_tokens: 1500`
+  - **品質**：Llama 寫的運勢比 deepseek 平淡，而且會把命盤特質（自我懷疑、渴望被認可）講得比較直白，但沒有再提考試或職涯。使用者如果不滿意，選項是付費或換模型
+  - Llama 回的本來就是繁體，OpenCC 再轉一次會把「注意」變成「註意」，`to_traditional()` 補了一個替換
+  - `gh` 已經登入（2026-10-08），可以用 `"/c/Program Files/GitHub CLI/gh.exe" run view <id> --log` 讀執行紀錄、`gh workflow run morning_brief.yml` 手動觸發。使用者的 PowerShell 要先設 `$env:HTTPS_PROXY="http://127.0.0.1:7897"` 才連得到 GitHub
 - **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
 
 ## 待辦／已知問題
