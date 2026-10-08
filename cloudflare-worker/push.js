@@ -24,9 +24,24 @@ const VAPID_SUBJECT = 'https://kasim9497.github.io/my-morning-brief0/';
 const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64url = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
 
+/**
+ * 從 Secret 取出私鑰。不直接 JSON.parse：貼進後台時頭尾的大括號或引號很容易少掉
+ * （實際發生過，開頭的 {" 不見了），所以只認裡面的 d、x、y 三個欄位。
+ * 錯誤訊息不帶 Secret 的任何內容。
+ */
+export function parseJwk(text) {
+  const field = (name) => {
+    const match = new RegExp(`(?:^|[^A-Za-z0-9_])${name}"?\\s*:\\s*"([A-Za-z0-9_-]{40,})"`).exec(text || '');
+    return match && match[1];
+  };
+  const jwk = { kty: 'EC', crv: 'P-256', d: field('d'), x: field('x'), y: field('y') };
+  if (!jwk.d || !jwk.x || !jwk.y) throw new Error('推播金鑰（VAPID_PRIVATE_JWK）的內容不完整，請重新產生再貼一次');
+  return jwk;
+}
+
 function loadJwk(env) {
   if (!env.VAPID_PRIVATE_JWK) throw new Error('後端還沒設定推播金鑰（VAPID_PRIVATE_JWK）');
-  return JSON.parse(env.VAPID_PRIVATE_JWK);
+  return parseJwk(env.VAPID_PRIVATE_JWK);
 }
 
 /** 瀏覽器訂閱推播時要用的公鑰（從私鑰的 JWK 裡取 x、y 組出來） */

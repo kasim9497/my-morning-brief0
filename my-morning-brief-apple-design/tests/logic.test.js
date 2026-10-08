@@ -328,3 +328,15 @@ test('推播後端：簽章用公鑰驗得過，而且寫明是給哪個推播�
   const valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey, decode(sig), new TextEncoder().encode(`${h}.${c}`));
   assert.equal(valid, true);
 });
+
+test('推播後端：金鑰貼進後台時頭尾少了字也讀得出來，缺欄位會講而且不洩漏內容', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign']);
+  const full = JSON.stringify(await crypto.subtle.exportKey('jwk', pair.privateKey));
+  const original = JSON.parse(full);
+  for (const text of [full, full.slice(2), full.slice(2, -1)]) {
+    const jwk = push.parseJwk(text);
+    assert.deepEqual([jwk.d, jwk.x, jwk.y], [original.d, original.x, original.y]);
+    await push.vapidAuthorization(jwk, 'https://web.push.apple.com/abc');
+  }
+  assert.throws(() => push.parseJwk('{"x":"abc"}'), (e) => !e.message.includes('abc'));
+});
