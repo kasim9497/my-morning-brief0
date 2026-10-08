@@ -402,14 +402,18 @@ def synthesize_with_ai(weather, exchange_rate, openrouter_api_key, sky=None, git
                     'Content-Type': 'application/json',
                     'Authorization': f'Bearer {token}'
                 })
+                body = ""
                 with urllib.request.urlopen(req, timeout=30) as resp:
-                    result = json.loads(resp.read().decode('utf-8'))
-                    parsed_json = json.loads(result['choices'][0]['message']['content'])
-                    print(f"AI synthesis succeeded with {name} ({model}).")
-                    return parsed_json
+                    body = resp.read().decode('utf-8')
+                parsed_json = json.loads(json.loads(body)['choices'][0]['message']['content'])
+                print(f"AI synthesis succeeded with {name} ({model}).")
+                return parsed_json
             except Exception as e:
+                # 4xx／5xx 的說明在回應本體裡，一起印出來才看得出是權限、額度還是格式問題
+                if isinstance(e, urllib.error.HTTPError):
+                    body = e.read().decode('utf-8', 'replace')
                 last_error = f"{name}: {e}"
-                print(f"{name} call failed on attempt {attempt + 1} ({e}).")
+                print(f"{name} call failed on attempt {attempt + 1} ({e}). Response starts with: {body[:300]!r}")
 
     print(f"All AI providers failed ({last_error}). Falling back to smart template synthesis.")
     return generate_offline_synthesis(weather, str(last_error)[:200])
