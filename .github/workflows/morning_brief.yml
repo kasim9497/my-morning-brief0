@@ -30,6 +30,8 @@ on:
 # still follows Strategy A above and is never committed).
 permissions:
   contents: write
+  # 讓內建的 GITHUB_TOKEN 可以呼叫 GitHub Models（免費的 AI 模型，generate_brief.py 用它寫運勢）
+  models: read
   pages: write
   id-token: write
 
@@ -70,6 +72,7 @@ jobs:
 
       - name: Run Daily Briefing Generation Script
         env:
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}

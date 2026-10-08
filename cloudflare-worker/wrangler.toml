@@ -1,3 +1,8 @@
 name = "my-morning-brief-chat-proxy"
 main = "chat-proxy.js"
 compatibility_date = "2025-01-01"
+
+# Workers AI：Cloudflare 內建的模型，帳號有每日免費額度，不用另外的金鑰。
+# chat-proxy.js 先用它，失敗才試 OpenRouter。
+[ai]
+binding = "AI"

@@ -41,7 +41,9 @@ function isRateLimited(ip, now = Date.now()) {
 const MAX_BODY_CHARS = 40000;
 const MAX_MESSAGE_CHARS = 2000;
 const MAX_HISTORY = 10;
-const MODEL = 'deepseek/deepseek-chat-v3.1';
+const MODEL = 'deepseek/deepseek-chat-v3.1'; // OpenRouter 上的付費模型（備援）
+// Cloudflare Workers AI 的模型（主要）。帳號每天有免費額度，免費方案超過就是當天不能用，不會收費
+const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 const SYSTEM_PROMPT = `你是 Kasim 的個人生活排程 App 裡的 AI 助理。你可以直接幫他操作 App（延後任務、改作息設定、記錄追劇/讀書進度、管理倒數等），不是只能聊天的客服機器人。
 
@@ -68,7 +70,7 @@ const SYSTEM_PROMPT = `你是 Kasim 的個人生活排程 App 裡的 AI 助理�
 6. 真的缺少必要資訊時（例如沒說延到哪一天）才問，而且一次問清楚。
 7. 有執行動作時，reply 用一句話說你做了什麼。
 8. 不是操作 App 的一般問題也要回答。天氣、匯率、星座、今天日期這些，【目前 App 狀態】的 brief 裡有今天的資料，直接拿來回答；brief 裡沒有的即時資訊就老實說這裡查不到。
-9. 被問到你是什麼模型時，照實回答：${MODEL}（透過 OpenRouter 呼叫）。
+9. 被問到你是什麼模型時，照實回答：Meta 的 Llama 3.3 70B（跑在 Cloudflare Workers AI 上）。
 10. 一律用繁體中文，語氣自然、簡短。
 
 【請輸出嚴格的 JSON 格式】：
@@ -85,6 +87,19 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
+}
+
+async function callWorkersAI(ai, messages) {
+  const out = await ai.run(WORKERS_AI_MODEL, {
+    messages,
+    temperature: 0.3,
+    max_tokens: 500,
+    response_format: { type: 'json_object' },
+  });
+  // 開了 JSON 模式時 response 有時已經是物件，有時是字串
+  const content = out?.response;
+  if (!content) throw new Error('Workers AI 回應沒有內容');
+  return typeof content === 'string' ? JSON.parse(content) : content;
 }
 
 async function callOpenRouter(apiKey, messages) {
@@ -115,6 +130,18 @@ async function callOpenRouter(apiKey, messages) {
   return JSON.parse(content);
 }
 
+// 先用免費的 Workers AI；它失敗（例如當天額度用完）而且有 OpenRouter 金鑰時才改用 OpenRouter
+async function callModel(env, messages) {
+  if (env.AI) {
+    try {
+      return await callWorkersAI(env.AI, messages);
+    } catch (e) {
+      if (!env.OPENROUTER_API_KEY) throw e;
+    }
+  }
+  return callOpenRouter(env.OPENROUTER_API_KEY, messages);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin');
@@ -139,11 +166,8 @@ export default {
       return new Response('Method Not Allowed', { status: 405, headers: corsHeaders(origin) });
     }
 
-    if (!env.OPENROUTER_API_KEY) {
-      return new Response(JSON.stringify({ reply: '後端還沒設定 OPENROUTER_API_KEY，請用 wrangler secret put 加上去。', action: null }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
-      });
+    if (!env.AI && !env.OPENROUTER_API_KEY) {
+      return json({ reply: '後端沒有可用的 AI 模型。', action: null }, 500);
     }
 
     let body;
@@ -173,7 +197,7 @@ export default {
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const result = await callOpenRouter(env.OPENROUTER_API_KEY, messages);
+        const result = await callModel(env, messages);
         // 模型有時還是會照舊格式回單一個 action，兩種都收
         const rawActions = Array.isArray(result.actions) ? result.actions : (result.action ? [result.action] : []);
         const actions = rawActions.filter((a) => a && typeof a === 'object' && a.type && a.type !== 'none');

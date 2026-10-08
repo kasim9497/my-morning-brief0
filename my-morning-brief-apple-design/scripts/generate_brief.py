@@ -333,12 +333,8 @@ def load_quiz_questions():
 
     return []
 
-def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key, sky=None):
-    if not openrouter_api_key:
-        print("OPENROUTER_API_KEY not provided. Using offline smart synthesis template.")
-        return generate_offline_synthesis(weather, "OPENROUTER_API_KEY not provided")
-
-    print("Calling OpenRouter (deepseek/deepseek-chat-v3.1) for AI Synthesis...")
+def synthesize_with_ai(weather, exchange_rate, openrouter_api_key, sky=None, github_token=None):
+    print("Calling an AI model for synthesis...")
     if sky:
         sky_text = "、".join(sky["positions"]) + f"；月相：{sky['moonPhase']}；逆行中的行星：" + ("、".join(sky["retrograde"]) or "無")
     else:
@@ -380,42 +376,42 @@ def synthesize_with_openrouter(weather, exchange_rate, openrouter_api_key, sky=N
   "horoscopeTransitAlert": "依準則 5，有逆行或新月滿月才寫一句，否則填 null"
 }}
 """
-    payload = {
-        "model": "deepseek/deepseek-chat-v3.1",
-        "messages": [{"role": "user", "content": prompt_text}],
-        "temperature": 0.2,
-        "response_format": {"type": "json_object"}
-    }
+    # 依序試這幾家，第一家成功就用它。
+    # 1. GitHub Models：GitHub Actions 內建的 GITHUB_TOKEN 就能呼叫，免費（有每日次數上限，這裡一天只用幾次）。
+    #    workflow 要有 `models: read` 權限。本機沒有這個 token，會直接跳過。
+    # 2. OpenRouter：付費的 deepseek。2026-10-08 起帳戶餘額是負的、使用者不打算再儲值，
+    #    留著只是萬一之後又有額度；沒額度時會回 402，然後落到離線樣板。
+    providers = []
+    if github_token:
+        providers.append(("GitHub Models", "https://models.github.ai/inference/chat/completions", github_token, "openai/gpt-4o-mini"))
+    if openrouter_api_key:
+        providers.append(("OpenRouter", "https://openrouter.ai/api/v1/chat/completions", openrouter_api_key, "deepseek/deepseek-chat-v3.1"))
 
-    # 2026-09-21：Gemini 免費層在這個 IP／帳號上被 FAILED_PRECONDITION 擋掉
-    # （Google 自己的地區白名單限制，跟帳號付款地無關），改用 OpenRouter。
-    # deepseek/deepseek-chat-v3.1 是付費模型但單次呼叫成本 < $0.0001，
-    # 已用真實 key 測試過中文 JSON 輸出正常，不要換回免費模型
-    # （:free 後綴那些常常被共用池 429 擋掉，穩定性不夠）
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    data_bytes = json.dumps(payload).encode('utf-8')
+    last_error = "沒有可用的模型金鑰"
+    for name, url, token, model in providers:
+        data_bytes = json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt_text}],
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"}
+        }).encode('utf-8')
+        # 每一家試兩次：實測過模型偶爾會吐出格式壞掉的 JSON，重跑一次通常就好
+        for attempt in range(2):
+            try:
+                req = urllib.request.Request(url, data=data_bytes, headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {token}'
+                })
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    result = json.loads(resp.read().decode('utf-8'))
+                    parsed_json = json.loads(result['choices'][0]['message']['content'])
+                    print(f"AI synthesis succeeded with {name} ({model}).")
+                    return parsed_json
+            except Exception as e:
+                last_error = f"{name}: {e}"
+                print(f"{name} call failed on attempt {attempt + 1} ({e}).")
 
-    last_error = None
-    # 2026-09-22：實測發現 deepseek 偶爾（不是每次）就算開了 response_format
-    # json_object 還是會吐出格式壞掉的 JSON（不同次呼叫會被 OpenRouter 路由到
-    # 不同的底層 provider，穩定度不一）。重試一次再放棄，不要一次失敗就整天
-    # 都是離線 fallback 文字
-    for attempt in range(2):
-        try:
-            req = urllib.request.Request(url, data=data_bytes, headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {openrouter_api_key}'
-            })
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                result = json.loads(resp.read().decode('utf-8'))
-                content_text = result['choices'][0]['message']['content']
-                parsed_json = json.loads(content_text)
-                return parsed_json
-        except Exception as e:
-            last_error = e
-            print(f"OpenRouter API call failed on attempt {attempt + 1} ({e}).")
-
-    print(f"OpenRouter API call failed after retry ({last_error}). Falling back to smart template synthesis.")
+    print(f"All AI providers failed ({last_error}). Falling back to smart template synthesis.")
     return generate_offline_synthesis(weather, str(last_error)[:200])
 
 def generate_offline_synthesis(weather, error):
@@ -490,7 +486,7 @@ def main():
     driving_quiz = load_quiz_questions()
 
     sky = get_sky_facts(now_tw)
-    ai_synthesis = to_traditional(synthesize_with_openrouter(weather, exchange_rate, openrouter_key, sky))
+    ai_synthesis = to_traditional(synthesize_with_ai(weather, exchange_rate, openrouter_key, sky, os.environ.get("GITHUB_MODELS_TOKEN")))
 
     weather["aiTip"] = ai_synthesis.get("weatherTip", weather.get("aiTip", ""))
 
