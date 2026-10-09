@@ -116,7 +116,7 @@ export function addMediaItem(title, type, totalUnits, targetDate) {
   if (!trimmedTitle || !targetDate || !Number.isFinite(units) || units <= 0) return;
 
   items.push({
-    id: `media-${Date.now()}`,
+    id: `media-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     title: trimmedTitle,
     type: TYPE_LABELS[type] ? type : 'drama',
     totalUnits: Math.round(units),

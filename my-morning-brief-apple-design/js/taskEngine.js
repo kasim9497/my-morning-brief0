@@ -204,7 +204,8 @@ export function getTaskDef(defId) {
 export function addCustomTask(label) {
   const trimmed = String(label || '').trim();
   if (!trimmed) return null;
-  const defId = `custom_${Date.now().toString(36)}`;
+  // 後面加幾個亂數字：同一毫秒內連加兩項（AI 助理一次做好幾件事時會發生）編號才不會撞在一起
+  const defId = `custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   store.customTasks[defId] = { label: trimmed };
   store.routineConfig[defId] = { mode: 'weekday', days: [] };
   saveStore(store);

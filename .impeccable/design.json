@@ -7,7 +7,7 @@
    "action-blue": {
     "role": "primary",
     "displayName": "行動藍",
-    "canonical": "#007aff"
+    "canonical": "#0068d9"
    },
    "system-gray-bg": {
     "role": "neutral",
@@ -100,7 +100,7 @@
    "refersTo": "button-primary",
    "description": "一張卡片最多一顆的主要動作。",
    "html": "<button class=\"ds-btn-primary\">現在備份</button>",
-   "css": ".ds-btn-primary{background:#007aff;color:#fff;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1),opacity .2s}.ds-btn-primary:active{transform:scale(.97);opacity:.85}.ds-btn-primary:focus-visible{outline:2px solid #007aff;outline-offset:2px}"
+   "css": ".ds-btn-primary{background:#0068d9;color:#fff;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1),opacity .2s}.ds-btn-primary:active{transform:scale(.97);opacity:.85}.ds-btn-primary:focus-visible{outline:2px solid #0068d9;outline-offset:2px}"
   },
   {
    "name": "次要按鈕",
@@ -108,7 +108,7 @@
    "refersTo": "button-tinted",
    "description": "淡藍底的次要動作。",
    "html": "<button class=\"ds-btn-tinted\">延後 3 天</button>",
-   "css": ".ds-btn-tinted{background:rgba(0,122,255,.12);color:#0058c4;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1)}.ds-btn-tinted:active{transform:scale(.97)}.ds-btn-tinted:focus-visible{outline:2px solid #007aff;outline-offset:2px}"
+   "css": ".ds-btn-tinted{background:rgba(0,122,255,.12);color:#0058c4;border:none;border-radius:9999px;padding:.5rem 1rem;min-height:40px;font-size:.9375rem;font-weight:600;transition:transform .09s cubic-bezier(.2,.8,.2,1)}.ds-btn-tinted:active{transform:scale(.97)}.ds-btn-tinted:focus-visible{outline:2px solid #0068d9;outline-offset:2px}"
   },
   {
    "name": "卡片與清單列",
@@ -124,7 +124,7 @@
    "refersTo": "input",
    "description": "淡填色底、沒有邊框。",
    "html": "<input class=\"ds-input\" type=\"time\" value=\"23:30\">",
-   "css": ".ds-input{appearance:none;background:rgba(118,118,128,.10);border:1px solid transparent;border-radius:14px;padding:.6rem .85rem;font-size:1rem;color:#1c1c1e}.ds-input:focus-visible{outline:none;border-color:#007aff}"
+   "css": ".ds-input{appearance:none;background:rgba(118,118,128,.10);border:1px solid transparent;border-radius:14px;padding:.6rem .85rem;font-size:1rem;color:#1c1c1e}.ds-input:focus-visible{outline:none;border-color:#0068d9}"
   },
   {
    "name": "分段控制",
@@ -132,7 +132,7 @@
    "refersTo": "",
    "description": "兩三個互斥選項。",
    "html": "<div class=\"ds-seg\"><button class=\"ds-seg-btn ds-on\">週</button><button class=\"ds-seg-btn\">月</button></div>",
-   "css": ".ds-seg{display:flex;gap:2px;padding:2px;background:rgba(118,118,128,.10);border-radius:10px}.ds-seg-btn{flex:1;background:transparent;border:none;border-radius:8px;min-height:40px;font-size:.8125rem;font-weight:500;color:#1c1c1e}.ds-seg-btn.ds-on{background:#fff;font-weight:600}.ds-seg-btn:focus-visible{outline:2px solid #007aff}"
+   "css": ".ds-seg{display:flex;gap:2px;padding:2px;background:rgba(118,118,128,.10);border-radius:10px}.ds-seg-btn{flex:1;background:transparent;border:none;border-radius:8px;min-height:40px;font-size:.8125rem;font-weight:500;color:#1c1c1e}.ds-seg-btn.ds-on{background:#fff;font-weight:600}.ds-seg-btn:focus-visible{outline:2px solid #0068d9}"
   }
  ],
  "narrative": {

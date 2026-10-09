@@ -63,7 +63,7 @@ export function getCountdowns() {
 export function addCountdown(label, targetDate) {
   const trimmedLabel = (label || '').trim();
   if (!trimmedLabel || !targetDate) return;
-  countdowns.push({ id: `cd-${Date.now()}`, label: trimmedLabel, targetDate });
+  countdowns.push({ id: `cd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, label: trimmedLabel, targetDate });
   saveCountdowns(countdowns);
 }
 

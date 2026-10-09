@@ -53,7 +53,7 @@ export function updateFixedItem(id, patch) {
 export function addFixedItem(label, time) {
   const trimmed = String(label || '').trim();
   if (!trimmed || !isTime(time)) return;
-  save([...load(), { id: `custom_${Date.now().toString(36)}`, label: trimmed, note: '每天', time, remind: false }]);
+  save([...load(), { id: `custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, label: trimmed, note: '每天', time, remind: false }]);
 }
 
 export function removeFixedItem(id) {

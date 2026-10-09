@@ -27,8 +27,31 @@ let quizState = {
   currentIndex: 0,
   userAnswers: {},
   score: 0,
-  completed: false
 };
+
+// 題庫做到哪裡。不用 morningBrief. 開頭：這是「今天這一輪」的暫時狀態，不用備份
+const QUIZ_PROGRESS_KEY = 'chenxu.quizProgress';
+const quizSignature = (questions) => `${new Date().toDateString()}|${questions.map((q) => q.qid || q.question).join(',')}`;
+
+function saveQuizProgress() {
+  if (!quizState.dailyQuestions.length) return;
+  try {
+    localStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify({ signature: quizSignature(quizState.dailyQuestions), state: quizState }));
+  } catch (e) {
+    // 存不進去（空間滿了）就算了，只是重新整理後要從頭做
+  }
+}
+
+/** 同一天、同一組題目才接著做；隔天或題目換了就從頭 */
+function loadQuizProgress(dailyQuestions) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(QUIZ_PROGRESS_KEY));
+    if (saved && saved.signature === quizSignature(dailyQuestions) && Array.isArray(saved.state?.questions)) return saved.state;
+  } catch (e) {
+    // 存的東西壞了就當作沒有
+  }
+  return null;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("Initializing 晨序 (Personal AI Life Scheduling System)...");
@@ -195,15 +218,19 @@ async function loadAllBriefData() {
     await renderSafely('語錄', () => dataService.getDailyQuote(), renderDailyQuote);
 
     const quizData = await dataService.getDrivingQuiz();
-    quizState.mode = 'daily';
-    quizState.finished = false;
-    quizState.dailyScore = 0;
-    quizState.dailyQuestions = quizData;
-    quizState.questions = quizData;
-    quizState.currentIndex = 0;
-    quizState.userAnswers = {};
-    quizState.score = 0;
-    quizState.completed = false;
+    const saved = loadQuizProgress(quizData);
+    if (saved) {
+      quizState = saved;
+    } else {
+      quizState.mode = 'daily';
+      quizState.finished = false;
+      quizState.dailyScore = 0;
+      quizState.dailyQuestions = quizData;
+      quizState.questions = quizData;
+      quizState.currentIndex = 0;
+      quizState.userAnswers = {};
+      quizState.score = 0;
+    }
     renderDrivingQuiz();
 
     // §16: Staggered card entrance after all content is rendered
@@ -448,6 +475,7 @@ function formatShortDate(dateStr) {
  * Render Scooter Driving License Quiz Widget
  */
 function renderDrivingQuiz() {
+  saveQuizProgress();
   const container = document.getElementById('quiz-widget-content');
   const total = quizState.questions.length;
   const currIdx = quizState.currentIndex;

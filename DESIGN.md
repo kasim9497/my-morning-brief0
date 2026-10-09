@@ -5,11 +5,11 @@ colors:
   system-gray-bg: "#f2f2f7"
   card-white: "#ffffff"
   ink: "#1c1c1e"
-  ink-muted: "#6c6c70"
-  ink-tertiary: "#8e8e93"
+  ink-muted: "#5c5c61"
+  ink-tertiary: "#6e6e73"
   hairline: "rgba(60, 60, 67, 0.12)"
   fill-subtle: "rgba(118, 118, 128, 0.10)"
-  action-blue: "#007aff"
+  action-blue: "#0068d9"
   action-blue-text: "#0058c4"
   action-blue-subtle: "rgba(0, 122, 255, 0.12)"
   done-green: "#34c759"
@@ -143,6 +143,8 @@ components:
 **藍色只給能按的東西。** 藍色不拿來裝飾、不拿來當標題色（題庫卡片的代表色是另一個比較深的藍）。
 
 **彩色文字用文字版。** 原始的飽和色（`#ff9500`、`#34c759`、`#ff3b30`）對比度不到 4.5:1，只能當圖示、開關、邊框的顏色，不能當文字。
+
+**每一組文字和底色都要有 4.5:1。** 行動藍比系統藍深一點（白字放在 `#007aff` 上只有 4.0:1）；兩個灰也比系統的深。沒有底的文字按鈕用行動藍・文字版。
 
 **不要寫死色碼。** 所有顏色走 `css/styles.css` 最上面 `:root` 的變數。
 

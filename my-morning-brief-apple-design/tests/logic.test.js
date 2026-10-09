@@ -344,9 +344,15 @@ test('推播後端：金鑰貼進後台時頭尾少了字也讀得出來，缺�
 });
 
 test('復原：延後的拿回來（延過去那筆消失），跳過的拿回來', () => {
+  // 自己加兩項每天都有的作息，不靠「那一天剛好排了什麼」——那樣測試會隨日期時過時不過
+  const ids = ['測試甲', '測試乙'].map((label) => {
+    const id = tasks.addCustomTask(label);
+    tasks.setTaskIntervalSchedule(id, 1, localDateStr(0));
+    return id;
+  });
   const day = localDateStr(40);
-  const [a, b] = tasks.getTasksForDate(day);
-  assert.ok(a && b, '這一天至少要有兩項固定作息');
+  const [a, b] = tasks.getTasksForDate(day).filter((t) => ids.includes(t.defId));
+  assert.ok(a && b);
   tasks.postponeTask(day, a.instanceId, 'plus1');
   const moved = tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId);
   assert.equal(moved.status, 'postponed');
@@ -354,21 +360,25 @@ test('復原：延後的拿回來（延過去那筆消失），跳過的拿回�
   assert.equal(moved.canUndo, true);
   assert.equal(tasks.undoTaskAction(day, a.instanceId), true);
   assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId).status, 'pending');
-  assert.equal(tasks.getTasksForDate(localDateStr(41)).some((t) => t.carriedFrom === day), false);
+  assert.equal(tasks.getTasksForDate(localDateStr(41)).some((t) => t.carriedFrom === day && t.defId === a.defId), false);
 
   tasks.skipTask(day, b.instanceId);
   assert.equal(tasks.undoTaskAction(day, b.instanceId), true);
-  assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === b.instanceId).status, 'pending');
+  assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === b.instanceId).status, 'pending');  ids.forEach((id) => tasks.removeRoutineTask(id));
 });
 
 test('復原：延過去那筆已經做完就不能拿回來', () => {
+  const id = tasks.addCustomTask('測試丙');
+  tasks.setTaskIntervalSchedule(id, 1, localDateStr(0));
   const day = localDateStr(50);
-  const [a] = tasks.getTasksForDate(day);
+  const a = tasks.getTasksForDate(day).find((t) => t.defId === id);
   tasks.postponeTask(day, a.instanceId, 'plus1');
-  const carried = tasks.getTasksForDate(localDateStr(51)).find((t) => t.carriedFrom === day);
+  // 要連項目一起比對：別的測試可能也從同一天延了別的東西過來
+  const carried = tasks.getTasksForDate(localDateStr(51)).find((t) => t.carriedFrom === day && t.defId === id);
   tasks.toggleDone(localDateStr(51), carried.instanceId);
   assert.equal(tasks.getTasksForDate(day).find((t) => t.instanceId === a.instanceId).canUndo, false);
   assert.equal(tasks.undoTaskAction(day, a.instanceId), false);
+  tasks.removeRoutineTask(id);
 });
 
 test('完成數：跳過和延後的不算在應做的裡面，所以那天還是能顯示全部做完', () => {
@@ -403,9 +413,8 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   await cloud.uploadNow();
   assert.equal(cloud.getCloudBackupState().savedAt, before);
   localStorage.setItem('morningBrief.note', 'A 手機的新資料');
-  await new Promise((r) => setTimeout(r, 5));
   await cloud.uploadNow();
-  assert.notEqual(cloud.getCloudBackupState().savedAt, before);
+  assert.ok([...kv.values()].some((v) => v.includes('A 手機的新資料')), '變了的內容有傳上去');
 
   // 「另一支手機」：同步狀態是空的、資料不一樣。開啟時不會自己蓋掉雲端，自動上傳也會停住
   clearSync();
@@ -425,4 +434,17 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: 'a'.repeat(64) }, env)).payload.exists, false);
   assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: '不是雜湊' }, env)).status, 400);
   fakeStorage.delete('morningBrief.note');
+});
+
+test('連續新增：同一瞬間加的幾項不會撞到同一個編號', () => {
+  const ids = [1, 2, 3, 4, 5].map((n) => tasks.addCustomTask(`連加 ${n}`));
+  assert.equal(new Set(ids).size, 5);
+  ids.forEach((id) => tasks.removeRoutineTask(id));
+  const before = countdown.getCountdowns().length;
+  [1, 2, 3].forEach((n) => countdown.addCountdown(`連加 ${n}`, localDateStr(10 + n)));
+  const added = countdown.getCountdowns().filter((c) => c.label.startsWith('連加'));
+  assert.equal(added.length, 3);
+  assert.equal(new Set(added.map((c) => c.id)).size, 3);
+  added.forEach((c) => countdown.removeCountdown(c.id));
+  assert.equal(countdown.getCountdowns().length, before);
 });
