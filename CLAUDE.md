@@ -1,258 +1,101 @@
-# 專案脈絡（給 Claude Code 讀的）
+# 晨序（給 Claude Code 讀的）
 
-這是 kasim9497/my-morning-brief0，一個南京交換學期用的個人生活排程 App，正在從純展示型晨報，擴充成一個整合任務清單、週曆、倒數、追劇/讀書自動排程的 App，最終目標是用 Capacitor 包成真正的 iOS app。
+`kasim9497/my-morning-brief0`：Kasim 一個人用的生活排程 App，在 iPhone 上「加入主畫面」使用（PWA）。線上網址 `https://kasim9497.github.io/my-morning-brief0/`。
 
-## 現況（已經做完的部分）
+先讀這三份，不要從程式碼裡猜：
 
-- `my-morning-brief-apple-design/` 是前端主目錄，純 ES module（`index.html` 用 `<script type="module">`），**開發時必須用本機伺服器（VS Code Live Server 或 `python -m http.server`）打開，不能直接雙擊 index.html**
-- 底部有 5 個 tab（今日／週曆／倒數／睡眠／設定），邏輯在 `js/tabs.js`
-- `scripts/generate_brief.py`：GitHub Actions 每天定時執行，抓天氣／匯率／新聞／機車筆試題庫，經 OpenRouter（`deepseek/deepseek-chat-v3.1`）合成後輸出 `data/today.json`，前端讀這個檔案渲染
-- 天氣資料來源已從台灣 CWA 換成南京的和風天氣（QWeather），`fetch_weather()` 用 `QWEATHER_API_KEY` + `QWEATHER_API_HOST`（本機驗證通過，2026-09-18；GitHub Secrets 已設定，見下方「已解決」）
-- `strip_html()` 之前有雙重 HTML 編碼漏字的 bug（Blogger 類 RSS 來源），已修正，改動時不要移除或簡化這個函式
-- `.github/workflows/morning_brief.yml`：Deploy to GitHub Pages 要在 Send Telegram Notification 之前執行，通知要用部署後的真實網址（`steps.deployment.outputs.page_url`），不要走舊的寫死網址
-- `js/taskEngine.js` + `js/TaskListView.js`：今日任務清單狀態機已完成，資料存 localStorage（key: `morningBrief.taskEngine.v1`），已接到「今日」頁最上方卡片，可以延 1/2/3 天／延下週／跳過這週。`TaskListView.js` 的 `renderTaskListInto(container, dateStr, label, onChange)` 是通用版，不限今天，`CalendarView.js` 也共用這個函式
-- `js/CalendarView.js`：週曆／月曆已完成。週檢視顯示週一到週日 7 天 + 每天完成度，點任何一天（含過去/未來）都能展開任務清單直接操作；月檢視顯示整月格子 + 圓點狀態（綠=全完成、橘=部分完成、紅=都沒做、灰=未來），點格子會切回週檢視並定位到那天。`taskEngine.js` 新增 export：`addDays`、`getWeekday`
-- `js/countdown.js` + `js/CountdownView.js`：倒數已完成。資料存 localStorage（key: `morningBrief.countdowns.v1`），預設帶一筆「交換學期結束」倒數到 `2027-01-31`，可以新增/刪除自訂倒數，按剩餘天數排序
-- **視覺重新設計（2026-09-19）**：拿掉整個 UI 裡大部分的表情符號（masthead、tab bar、卡片標題、按鈕、AI 生成內容的區塊標籤），換成統一的極簡線條 SVG icon（`stroke="currentColor"`，跟著版面配色走，不是寫死顏色）。只留 `taskEngine.js` 的 `TASK_DEFS` 任務類型 icon（💊📺🏃 等），那些是功能性的（快速辨識任務類型），不是純裝飾。以後要加新的 icon，比照這個風格：24x24 viewBox、`stroke-width 1.6-1.8`、`stroke-linecap round`，不要直接貼表情符號進 UI
-- **修掉一個會讓整個畫面看起來像「CSS 壞掉」的 bug**：`.card` 原本預設 `opacity: 0`，要靠「今日」頁專屬的 JS 進場動畫（`triggerCardStagger()`）幫每張卡片補上 `.card-enter` 才會顯示。這代表任何不在 `dashboard-grid` 裡、或 JS 沒執行成功的卡片會整個隱形（週曆/倒數剛做出來時就中過這個雷）。現在 `.card` 預設 `opacity: 1`，`.card-enter` 只是進場動畫的加分效果，不再是可見度的必要條件。以後新增卡片式 UI 不用再手動處理這件事
-- **UI/UX 無障礙與觸控修正（2026-09-19，用 uiux設計智庫 skill 查證後改的）**：
-  - 觸控熱區太小：`.task-check` 26px→40px、`.countdown-delete` 32px→44px、`.task-skip-btn`／`.task-postpone-select` 補 `min-height: 36px`。之後新增任何會在手機上點的按鈕，目標至少 40-44px，不要用預設的小 padding
-  - `CalendarView.js`／`CountdownView.js` 原本每次重新渲染（包含使用者點一下打勾這種小互動）都會讓卡片重播一次進場動畫，太干擾，已經移除——那個進場動畫現在只留給「今日」頁的一次性 dashboard 載入用
-  - 所有裝飾用的行內 SVG icon（跟在文字旁邊，不是唯一的操作線索）都補上 `aria-hidden="true" focusable="false"`，避免螢幕報讀器重複唸兩次。以後新增 icon 比照辦理；如果 icon 是「唯一」的操作線索（沒有旁邊文字），要在外層按鈕加 `aria-label`，不要加在 icon 本身
-- **「今日」頁卡片重新排序（2026-09-19）**：不是照功能寫好的順序排，是照「今天早上該先看什麼」排——`今日 AI 個人建議`（一句話摘要）現在是全寬 hero 放最上面（原本埋在第 5 個位置），接著是任務清單，然後天氣（放大成 2 欄寬，資訊量比較大）配星座運勢，接著匯率配駕照筆試（練習用、不急），新聞放最後（閱讀類內容）。之後如果要加新卡片，先想清楚它是「每天必看」「順手看看」還是「有空再看」，再決定放的位置，不要直接加到最後面
-- **手機寬度週曆/月曆橫向溢出 bug（2026-09-20）**：`.cal-week-grid`／`.cal-month-grid`／`.cal-month-weekdays` 都用 `grid-template-columns: repeat(7, 1fr)`，但純 `1fr` 欄位預設最小寬度是內容的 min-content，不是 0，手機窄螢幕 7 欄擠不下內容就會整排橫向溢出卡片邊界。已經全部改成 `repeat(7, minmax(0, 1fr))`。以後寫任何固定欄數的 grid，尤其是要在手機上顯示的，欄位定義都用 `minmax(0, 1fr)`，不要單寫 `1fr`
-- **平板寬度版面 bug（2026-09-19）**：`.col-span-2`／`.col-span-3` 原本只在 `min-width:1024px`（3 欄版面）有定義，768–1023px 那個 2 欄斷點完全沒對應規則，導致 hero 卡片、任務清單、天氣、題庫卡都被硬塞進半欄，「今天 3 件事」橫排擠成一團。已經在 768px 斷點也補上「col-span-2/3 都當全寬」的規則
-- **卡片材質改回不透明（2026-09-19，參考 Apple 官方 Liquid Glass 設計規則）**：`.card`（`dashboard-grid` 裡那些卡片）原本套了跟 masthead 一樣的玻璃霧化材質（`backdrop-filter: blur`），但 Apple 的規則是玻璃感只給「導覽層」（masthead／tab bar／sheet）用，「內容層」（這些卡片其實是逐格重複的清單）不該用玻璃。已經把 `.card` 改回不透明底色（`--bg-card-solid`），玻璃感保留在 masthead/tab-bar/modal 就好。以後新增卡片式內容，預設用不透明，不要再疊玻璃
-- **卡片標題不再有 icon（2026-09-20）**：使用者覺得每個標題前面的符號多餘，`index.html`／`CalendarView.js`／`CountdownView.js`／`SettingsView.js` 的 `<h3 class="card-title">` 全部改回純文字，不要再加 icon。masthead 的太陽 icon 跟 tab bar 的 icon 沒有動（那些算導覽/品牌，不算「標題」）
-- **「今日」頁再排一次（2026-09-20）**：任務清單移到最上面（原本 AI 建議 hero 卡才是第一個），接著新增一張「倒數」摘要卡（唯讀，只顯示，新增/刪除還是要去「倒數」頁），然後才是 AI 建議、天氣/星座、匯率/題庫
-- **拿掉「今日最重要的一件事」（2026-09-20）**：這個黑色 banner 的內容其實從沒變過（Gemini prompt 裡有沒有正確生成都一樣），使用者判斷沒意義直接要求刪除。前端 `renderDailyAdvice()` 跟後端 `dailyAdvice.primeGoal`（prompt schema + offline fallback + main()）都拿掉了，`dailyAdvice` 現在只剩 `top3`
-- **「今日 AI 個人建議」整張卡片也拿掉了（2026-09-22）**：使用者直接要求刪除，跟上面 primeGoal 是不同的卡片（這張顯示的是 `dailyAdvice.top3`）。`index.html` 的 `advice-card`／`#advice-widget-content` 區塊、`app.js` 的 `renderDailyAdvice()` 函式與呼叫都刪了，CSS 的 `.advice-card`／`.top3-list`／`.top3-item` 也一併清掉。**後端 `generate_brief.py` 的 `dailyAdvice.top3` 沒有拿掉**（`dataService.getDailyAdvice()` 也還在），只是前端不再渲染，純粹是死資料不影響功能，之後如果要徹底斷開再一起處理
-- **匯率歷史走勢改成真的資料（2026-09-20）**：ExchangeRate-API 免費版沒有歷史資料，`generate_brief.py` 現在自己維護 `data/exchange_rate_history.json`，每次執行存一筆當天匯率，滾動保留最近 7 筆，`yesterday`/`change`/`changePercent`/`last7Days` 全部從這份自己存的歷史算出來（不是編的假資料，前幾天資料不夠時會比較短，累積滿 7 天才有完整一週）。**這是目前唯一需要 workflow 寫回 repo 的資料**：permissions 加了 `contents: write`，多一個 commit 步驟，訊息帶 `[skip ci]` 避免跟新加的 push 觸發器form 成無限迴圈
-- **星座 prompt 加了一條「可以提但不能編」的規則（2026-09-20）**：如果 AI 確定知道當下有廣為人知的天象事件（例如水星逆行），可以順帶提一句，但不確定日期就不要提，避免編造聽起來合理但其實是幻覺的天象資訊
-- **天象提醒獨立成一個欄位（2026-09-22）**：使用者要求運勢要「有根據」、如果有土星逆行或其他重大天象要主動提醒，不要只是埋在長文字裡。新增 `horoscopeTransitAlert` 欄位（prompt schema／offline fallback／`main()` 都有處理，對應到 `horoscope.transitAlert`），規則比照水星逆行那條擴大到「水星逆行、土星逆行、其他行星逆行、日食／月食等」，一樣是「確定知道才填，不確定就填 null」。前端 `app.js` 的 `renderHoroscope()` 只有 `transitAlert` 有值時才畫一個獨立的橘色提醒區塊（`.transit-alert-box`），沒有事件就完全不顯示，不會跟平常的運勢摘要混在一起
-- **匯率卡片加上「點開看每日明細」（2026-09-22）**：使用者要求人民幣匯率可以點下去看歷史每一天的數字（原本近 7 日走勢只有 bar 的 hover title，手機沒有 hover 等於看不到）。後端 `fetch_exchange_rate()` 新增 `last7DaysDetailed`（`[{date, rate}]`，帶真實日期，跟原本純數字的 `last7Days` 並存不衝突），前端 `app.js` 的 `renderExchangeRate()` 把整個 `.sparkline-container` 變成可點擊區塊，點一下展開/收合 `.rate-history-list`（今天／昨天／其餘日期顯示 M/D，都是真實日期不是假資料）。**踩過一個 CSS 陷阱**：`.rate-history-list` 預設有 `display: flex`，跟瀏覽器內建的 `[hidden] { display: none }` 規則同優先度打平手，author stylesheet 後載入蓋掉瀏覽器預設，導致 `hidden` 屬性完全沒用、清單永遠顯示。修法是額外補一條 `.rate-history-list[hidden] { display: none; }`。**以後任何元素要用 `hidden` 屬性做顯示切換，如果那個 class 本身有設 `display: flex/grid/block` 等非 none 值，一定要額外補 `[hidden]` 覆寫規則，不能只靠瀏覽器預設**
-- **新增「追劇／讀書進度」功能，塞進「設定」頁（2026-09-22）**：對應 roadmap 第 6 步的自動分配部分，使用者要求可以填劇名/書名、填總集數/頁數，系統算出每日建議份量，還要做成 list。已用 AskUserQuestion 確認放置位置——**不開新的第 5 個 tab，塞進「設定」頁最下面**，維持 4 個 tab。新增 `js/mediaTracker.js`（純 localStorage，key: `morningBrief.mediaTracker.v1`，架構照抄 `countdown.js` 的模式，不需要後端——`個人排程AI助理_企劃書.md`原本以為「延後」按鈕需要後端寫入，但其實跟 taskEngine/countdown 一樣純前端 localStorage 就能做，不用額外後端）。核心演算法照企劃書 5.1/5.2 節：`todayQuota = ceil(剩餘量 ÷ 剩餘天數)`，落後的量會自動併入「剩餘量」不用另外存 carry_over 欄位；如果目前需要的份量超過最初平均值的 1.5 倍，顯示橘色「進度有點落後，要不要延後目標日？」提示 + 「延後 3 天」按鈕，不會默默要求使用者硬看更多（使用者自己決定要不要延）。`SettingsView.js` 加了新增表單（劇名/書名、類型：劇/書/電影、總集數/頁數、目標日）跟每筆項目的進度條、記錄今天進度輸入框、刪除鈕。已在瀏覽器實測過新增/記錄進度/落後警示/延後/刪除，行為都正確
-- **OpenRouter 呼叫偶爾會吐出格式壞掉的 JSON（2026-09-22 發現）**：實測時遇過一次 `json.loads()` 對 `content` 解析失敗（`Expecting ',' delimiter`），重跑同樣的 prompt 又正常了——研判是 OpenRouter 把請求路由到不同底層 provider（例如 SambaNova vs 其他）時，就算開了 `response_format: json_object`，穩定度還是不是 100%。已經在 `synthesize_with_openrouter()` 加上重試一次的邏輯（`for attempt in range(2)`），兩次都失敗才真的 fall back 到離線樣板，不要看到有重試邏輯就以為是多餘的，這是實測踩過雷才加的
-- **Apple Design 審核 + 全部修完（2026-09-30，用 `apple-design` skill 逐頁審過）**：使用者要求檢查點擊範圍／按壓回饋／動畫／字級字距／對比度／圓角一致性，列完清單後使用者說「全改」，全部照下面這樣修了：
-  - **點擊範圍**：`.close-btn` 30px→44px（`css/styles.css`，影響 roadmap／chat／睡眠返回鍵 3 處共用這個 class）、`.weekday-toggle` 38px→40px、`.mode-btn` min-height 32px→40px、`.interval-input` min-height 36px→40px（同時圓角也從 `--radius-sm` 改成 `--radius-md`，見下方圓角那條）
-  - **按壓回饋**：`app.js` 的 `setupInstantPressListeners()` 原本只認 `.btn-action`/`.option-btn` 兩個 class，其他可點元件全部只靠瀏覽器原生 `:active`（不保證所有行動瀏覽器第一時間觸發）。改成 `PRESSABLE_SELECTOR` 常數集中列出全部可點 class（含 `.task-check`／`.weekday-toggle`／`.mode-btn`／`.cal-week-cell`／`.cal-month-cell`／`.sleep-mode-card`／`.sleep-option`／`.countdown-delete`／`.tab-item`／`.chat-fab`／`.close-btn`），pointerdown 時統一補上 `.is-pressing`。**CSS 那邊要跟著改**：每個元件原本只寫 `.foo:active { transform: ... }` 的地方都要補成 `.foo:active, .foo.is-pressing { ... }`，不然 JS 加的 class 沒作用（這次全部補了）；`.countdown-delete` 原本甚至完全沒有按壓效果（只有 hover），也一併補上。**以後新增任何可點元件，記得同時做兩件事：class 加進 `app.js` 的 `PRESSABLE_SELECTOR`，CSS 的按壓樣式選擇器寫成 `:active, .is-pressing` 兩個一起**，漏掉任何一邊都不會生效
-  - **動畫**：`.chat-fab` 原本 `transition: transform 0.15s ease` 跟其他「按下去縮小」元件（`--spring-press`）觸感不一致，改成統一用 `var(--spring-press)`
-  - **字級字距**：`.tab-label`（0.7rem）補上 `letter-spacing: 0.02em`，跟同量級的 `.sparkline-title`／`.news-source-tag` 一致（小字要正值 tracking 幫辨識度，這條原則整體貫徹得算好，只有這個漏網）
-  - **對比度**：新增 `--apple-orange-text: #9a4d00`／`--apple-red-text: #c62620`／`--apple-green-text: #1b7a34` 三個加深過的文字色變數，只要是「彩色文字疊在同色系淺底（或白色卡片）上」的地方一律改用這組，不要直接拿 `--apple-orange`/`--apple-red`/`--apple-green` 當文字色（原始飽和色對比度不到 WCAG AA 4.5:1）。改到的地方：`.rate-up`/`.rate-down`、`.task-status-tag`/`.task-carried`、`.media-quota.is-behind`/`.is-done`、`.media-warning`、`.sleep-option-day`、`.stars`（星座星星評分）、`.task-skip-btn:hover`、`.countdown-days`（is-today 狀態）、`.countdown-delete:hover`。`border-color`／icon 純裝飾用的地方（例如 masthead 太陽 icon、`.countdown-item.is-today` 的邊框）沒動，那些不是文字對比度的範疇
-  - **圓角一致性**：`.cal-month-cell` 從 `--radius-sm`（8px）改成 `--radius-md`（14px），跟 `.cal-week-cell` 對齊（同樣是「一天」的格子，週檢視跟月檢視圓角不該不一樣）；`.interval-input` 同理從 `--radius-sm` 改成 `--radius-md`，跟 `.countdown-input` 等其他表單輸入框對齊
-  - 全部改完在瀏覽器桌面/手機寬度都測過一輪，沒有版面跑掉，`app.js` `node --check` 過
-- **全專案 bug 檢查，抓到 3 個真的問題（2026-10-02）**：使用者要求檢查目前的 bug，逐一讀過 `taskEngine.js`／`CalendarView.js`／`TaskListView.js`／`app.js`／`dataService.js` 找到的：
-  - **`app.js` 四處 CSS 變數名字打錯，顏色悄悄沒生效**：`var(--accent-red)`／`var(--accent-green)`／`var(--primary-color)` 這三個變數從來沒在 `styles.css` 的 `:root` 定義過（實際存在的是 `--apple-red`／`--apple-green`／`--apple-blue`），`color` 是會繼承的屬性，`var()` 指向不存在的變數時瀏覽器會整條宣告判定無效、直接用繼承值頂替，畫面不會壞掉但顏色就是沒出現。影響：日期過期警示文字（`renderHeader`）、天氣資料抓不到的紅字警示（`renderWeather`）、降雨機率數字（`renderWeather`）、駕照測驗答對/答錯標題顏色（`renderDrivingQuiz`）。全部改成正確的 `--apple-red`/`--apple-green`/`--apple-blue`
-  - **`CalendarView.js` 月曆「上個月／下個月」邏輯是錯的**：原本用 `addDays(anchorDate, ±30)` 當作「一個月」，但月份長度不是固定 30 天（28~31 天都有）。從長月份的 1 號點「下個月」，+30 天還是落在同一個月，等於按鈕沒反應；短月份（二月）則會多跳一點。已經寫一個真正用 `Date.setMonth` 算月份的 `addMonths(dateStr, n)`（統一對齊到該月 1 號，避免日期溢位的邊界問題），月檢視的上一月/下一月改呼叫這個，週檢視的 `addDays(±7)` 不受影響維持原樣。已經在瀏覽器裡連續點「下個月」測過跨 10 月→11 月→12 月，月份正確往前走，不會卡住
-  - **`taskEngine.js` 的 `postponeTask()` 不是冪等的，AI 聊天框那條路徑會踩到**：UI 本身（`TaskListView.js`）已經把狀態不是 `pending` 的任務列停用延後/跳過的操作，所以透過畫面點擊永遠不會重複呼叫同一個 instance。但 AI 聊天框的 `chatBox.js` `ACTION_EXECUTORS.postpone_task` 是直接呼叫 `postponeTask()`，沒有同樣的狀態檢查——如果 AI 對同一個已經延後過的任務又呼叫一次 `postpone_task`，會用同一把 `defId__from_原始日期` key 覆寫掉目標日那筆「已經被延過去」的任務，把它真實的狀態（可能已經打勾完成，或又被延到更後面）悄悄蓋回 `pending`。已經在函式開頭加一條「狀態不是 pending 就直接 return」的擋，實測過：先延後一個任務、把延過去那筆標記完成、再對原始那筆呼叫一次 `postponeTask`，延過去那筆的「完成」狀態沒有被蓋掉，擋住了
-- **新增「每日語錄」功能（2026-10-02）**：使用者指定主題——名人語錄、工作向、日本職人精神為主（其他國家也可以），有提到《実行の鬼》這本書當作調性參考，但**沒有照抄這本書的內容**（避免大量重現某一份單一著作的文字，而且也沒有那本書的原文可以照抄），改成自己收錄一批查證過、確定出處正確的真實短語錄。後端 `generate_brief.py` 新增 `WORK_QUOTES` 常數（稻盛和夫、本田宗一郎、松下幸之助、Steve Jobs、Thomas Edison、Henry Ford、Walt Disney、德川家康、孔子、荀子、Peter Drucker、李小龍、日本諺語等，共 17 條），`get_daily_quote(now_tw)` 用「今年第幾天 % 語錄總數」固定輪替，同一天重複執行結果一樣，**刻意不用 AI 生成**——語錄這種東西最怕被 AI 幻覺捏造出假語錄或錯的出處，寧可語錄庫小一點但每一條都查證過。輸出欄位 `dailyQuote: {text, author}`。前端：`index.html` 在 greeting-banner 下面新增 `.quote-banner`（`#quote-banner-content`），`app.js` 的 `renderDailyQuote()` 渲染，樣式是左側細長 `--apple-indigo` 色條（跟 greeting-banner 的藍色條做出區隔，語錄用紫色系），斜體文字 + 右下角作者。**以後要加新語錄，一定要先查證出處是不是真的，不確定就不要加**，這是使用者明確要求的紅線。已經本機實跑一次 pipeline、瀏覽器桌面+手機都看過畫面正確渲染
-  - **擴充到 398 條（2026-10-03）**：使用者嫌 17 條太少，要超過 365。語錄搬到 `data/quotes.json`（格式 `[語錄, 作者, 出處]`），`generate_brief.py` 的 `WORK_QUOTES` 常數拿掉，改成 `load_quotes()` 讀檔 + `get_daily_quote()` 用固定種子洗牌後按日期序數取餘數（398 天內不重複，實測過）；讀檔失敗退回 `FALLBACK_QUOTE`。前端作者列會多顯示出處（`q.source`）。**怎麼做到「有根據」**：大宗是古籍原文並附篇章（《論語》《孟子》《荀子》《道德經》《孫子兵法》《禮記》《周易》等），任何人都能直接對原文；日本的收世阿彌、宮本武藏、上杉鷹山、千利休、福澤諭吉等有明確出處的，加日本諺語；西方的收有原始文獻的（Marcus Aurelius、Seneca、Franklin《窮理查年鑑》等）。**原本 17 條裡用 WebSearch 查證後刪掉 4 條**：Henry Ford「不管你覺得行不行」（被標為誤傳）、Edison「一萬種行不通的方法」（原話版本不一，數字從 700 到 50000 都有）、松下幸之助「不忘記希望」（查不到出處）、Peter Drucker 那條（沒查證）；本田宗一郎那條改成《我的履歷書》的原話。**誠實的限制**：使用者原本要的是「日本職人／現代名人」調性，但現代名人語錄網路上誤傳太多，真正查得到出處的很少，所以現在是古籍為主。以後要加現代人物的，一條一條用 WebSearch 查到原始出處再加
-  - **Windows 本機跑 `generate_brief.py` 會崩潰的 bug（2026-10-03 修掉）**：前一天改名時在 `print` 裡寫了「Chénxù」，Windows 主控台是 cp950，印不出「é」直接 `UnicodeEncodeError`。GitHub Actions 是 Linux 不受影響，但本機測試會掛。**`print` 的字串不要放 cp950 沒有的字元**（帶重音的拉丁字母、emoji 都不行；中文可以）
+- [PRODUCT.md](PRODUCT.md)：給誰用、最重要的事（每天的作息和任務有沒有做到）、不可以做的事。
+- [DESIGN.md](DESIGN.md)：樣式規範。北極星是「健康 App 的摘要頁」，元件手感「紮實、明確」。
+- [docs/project-history.md](docs/project-history.md)：2026-09 到 2026-10-09 的完整開發紀錄（每個決定的原因、踩過的雷）。平常不用讀；要知道「為什麼這樣做」時再去查。裡面有很多已經作廢的做法（深色模式、Gemini、新聞、原生 App 為主、手動備份），以這份和程式碼為準。
 
-- **資料備份：匯出／匯入（2026-10-05）**：所有使用者資料只存在瀏覽器 localStorage，清瀏覽器資料、換裝置、之後包成 Capacitor app 都會全沒，所以加了備份。`js/backup.js`：`exportBackup()` 把所有 `morningBrief.` 開頭的 key 打包成 `{app: 'chenxu', exportedAt, data}` 下載成 `chenxu-backup-日期.json`；`importBackup(file)` 驗證格式（不是 JSON、不是晨序備份檔、沒資料都會回錯誤訊息）→ `confirm` 確認 → **先清掉現有的 `morningBrief.` key 再寫入**（不然備份裡沒有的項目會殘留）→ 重新載入頁面（各模組載入時就把資料讀進記憶體，只改 localStorage 它們不知道）。UI 是設定頁最下面的「資料備份」卡片。**以後新增任何要保存的資料，localStorage key 一律用 `morningBrief.` 開頭，才會自動被備份涵蓋**。瀏覽器實測過：匯出 → 清空 → 匯入後 localStorage 逐 key 比對完全一致，殘留 key 會被清掉，兩種壞檔案會被擋
-- **可以「加到主畫面」+ 手機專屬修正（2026-10-05，照 `mobile-native` skill 做的）**：之前文件裡說是 PWA，其實沒有 manifest。這次補上：`manifest.webmanifest`（`display: standalone`、名稱「晨序」）、`icons/`（180/192/512 三張 PNG，橘色漸層底 + 白色太陽線條，用 PIL 產生）、`index.html` 的 `apple-mobile-web-app-capable`／`apple-touch-icon`／`theme-color`／`viewport-fit=cover`。**刻意沒做 service worker**：它只帶來離線快取，而這個專案已經被 JS 快取坑過很多次，不值得。同時修掉幾個只在手機上出現的問題（全在 `css/styles.css`）：
-  - **hover 會黏住**：觸控沒有 hover，瀏覽器會在點擊後把 `:hover` 樣式留在元素上（例如 `.card:hover` 的上浮）。12 條 `:hover` 規則全部包進 `@media (hover: hover) and (pointer: fine)`；`.bar:hover` 跟 JS 加的 `.bar-hover` 寫在同一條規則裡，沒動。**以後寫 `:hover` 一律包在這個 media query 裡**
-  - **底部 sheet 被網址列蓋住**：`.modal-overlay` 原本 `height: 100vh`，手機上那是網址列收起來的高度；加了 `100dvh`（保留 `100vh` 當舊瀏覽器後備），`.modal-content`／`.chat-modal-content` 的 `85vh`／`70vh` 同理
-  - **tab bar 在有 home indicator 的 iPhone 會被擠扁**：原本 `height: 60px` + `padding-bottom: env(safe-area-inset-bottom)`，border-box 下 padding 會吃掉圖示區；之前沒出事只是因為沒有 `viewport-fit=cover` 時 `env()` 永遠是 0。改成 `height: calc(60px + env(...))`
-  - **點輸入框頁面會放大**：iOS 對字級小於 16px 的 input/select 會放大頁面且不縮回來。`@media (pointer: coarse)` 下把 `.countdown-input`／`.chat-input`／`.interval-input`／`.task-postpone-select` 設成 16px（桌機維持原樣）。副作用：手機上任務列的「延後…」字比旁邊的「跳過」大
-  - 所有 `button`／`select` 加 `touch-action: manipulation`（免等雙擊縮放判定）與 `user-select: none`；`.chat-messages`／`.modal-content` 加 `overscroll-behavior: contain`
-  - **驗證範圍**：規則有載入、桌機 hover 仍有效、模擬手機寬度下字級與版面正常，這些測過。**sticky hover、輸入框放大、安全區、加到主畫面後的樣子都只有真機才看得出來，還沒在真的手機上確認**
-- **整體介面改成 iOS「健康」App 的樣子 + 深淺色（2026-10-06）**：使用者給了 5 張健康 App 截圖，要求版面和風格比照、要有深色和淺色。用 AskUserQuestion 確認過四件事：底部浮動膠囊保留 5 個分頁、外觀跟系統走且可手動、每一頁都要重新設計（分階段做）、每個區塊一個代表色。**這一條跟上面比較舊的條目有衝突時，以這一條為準**（例如上面寫的右下角 `.chat-fab`、`.greeting-banner`／`.quote-banner`、masthead 的品牌標題和太陽 icon、3 欄版面、tab bar 用線條 icon，都已經不存在）
-  - **顏色全部走 `styles.css` 最上面的變數，下面不要寫死色碼**。深色的值寫了兩次：`@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`（跟系統）和 `:root[data-theme="dark"]`（手動），**改深色的值兩塊要一起改**。`js/theme.js` 負責在 `<html>` 放 `data-theme` 和更新兩個 `theme-color` meta，偏好存在 localStorage `morningBrief.theme`（沒有這個 key = 自動）；`index.html` 的 `<head>` 另有一小段行內 script 在樣式載入前先套用，避免閃一下。切換的 UI 在設定頁最上面的「外觀」卡片
-  - **字級只有九級**（`--text-large-title` 34／`--text-title1` 28／`--text-title2` 22／`--text-title3` 20／`--text-body` 17／`--text-subhead` 15／`--text-footnote` 13／`--text-caption` 12／`--text-caption2` 11），**不要再寫零散的 rem 數字**。使用者第一版看完說「怪怪的」，用「品牌與介面系統」skill 的 `validate-tokens.cjs` 掃出來的主因是原本有三十多種字級（多半 13–14px）而且九成是粗體。字重規則：700 只給頁面大標題、區塊標題、大數字；其他最多 600；內文 400
-  - **版面元件**：導覽列（class 還是叫 `.masthead`）是 fixed、頂端透明，捲超過 56px 才加 `.scrolled` 浮出玻璃底和置中小標題；右上角兩顆 `.nav-btn` 圓鈕（重新整理、AI 助理）。大標題在 `.page-head`，是跨分頁共用的同一個元素，文字由 `tabs.js` 的 `TAB_TITLES` 切換。底部 `.tab-bar` 是置中的浮動玻璃膠囊，**只有這裡的 icon 是實心的**（使用者要求，比照 iOS tab bar），其他地方的 icon 還是線條。`.card` 沒有邊框和陰影，小標題顏色來自卡片上的 `.tint-xxx`（任務橘、倒數紅、天氣青、星座紫、匯率綠、題庫藍、語錄靛）。卡片外的區塊標題用 `.section-head`／`.section-title`，右邊的藍色文字按鈕是 `.section-action`（加 `data-goto="分頁名"` 會跳到那個分頁）
-  - **卡片裡不要再包一層有底色的小框**：使用者明確要求對照健康 App。明細一律是「細線分隔的列」（`.list-row`、`.weather-detail-item`、`.task-row`、`.countdown-item`）。大數字用 `.metric`（`.metric-value` + `.metric-unit`），匯率卡和倒數共用
-  - **不要有重複文字**：使用者點名過「處女座運勢／8/23 - 9/22／處女座 ♍」這種。頁面大標題、卡片標題、卡片內容三層不要重複同一個詞；天氣的地點現在只出現在卡片標題列右邊（`#weather-card-badge`）
-  - **設定頁使用者嫌「太多圓形很亂」**：星期按鈕是圓角方形排成一列 7 格；「星期幾／每 N 天」和外觀選項是分段控制（`.routine-mode-switch` + `.mode-btn`），不要改回一顆顆膠囊。開關用 `.ios-switch`（底下還是 checkbox）
-  - **任務列尾端只有一個「⋯」**（原生 select，class 還是 `.task-postpone-select`）：裡面是「只跳過今天」（走 `skipTask`）加上原本的延後選項。原本獨立的「跳過」按鈕拿掉了，因為字級調到 16px 之後手機上一列放不下。**「只跳過今天」和選單裡的「這件事跳過這週」是兩個不同的功能，不要合併**
-  - **AI 助理按鈕在右上角導覽列**（`#btn-open-chat`），不是右下角浮動按鈕了——浮動按鈕會蓋到內容，使用者要求處理。「未來規劃」的按鈕（`#btn-open-settings`）和 Debug 面板搬到頁尾
-  - **字體**：`fonts/noto-sans-tc/` 是自己放的思源黑體可變字重版（來自 npm `@fontsource-variable/noto-sans-tc` 5.3.0，OFL 授權，105 個依 unicode-range 切開的 woff2，瀏覽器只抓用到的那幾片），Google Fonts 的連結拿掉了。字體堆疊裡系統的 SF Pro／蘋方排在前面，所以 iPhone 不會下載這份。**SF Pro／蘋方不能放進網站（Apple 授權不允許），不要去下載**
-  - **還沒做**：週曆、倒數、睡眠、設定四頁只換了外觀和上面提到的幾處，內部排版還沒照健康 App 重新設計。匯率卡的小長條圖沒看過實際畫出來的樣子（本機資料沒有歷史匯率）。玻璃模糊、安全區、深色模式在真機上的樣子都還沒確認
-- **實機回饋後的一輪調整（2026-10-06）**：使用者在 iPhone 17 實機看過，確認深淺色（跟系統、手動、重開後保留）、底部選單不擋 home indicator 都正常，接著要求下面這些：
-  - **「未來規劃」整個刪掉**：頁尾的按鈕、`#modal-roadmap`、`app.js` 裡的接線、`.roadmap-*` 樣式都拿掉了。`AppleFluidModal` 現在只剩 AI 助理那一個用
-  - **AI 內容會是簡體字 → 後端加簡轉繁**：deepseek 就算 prompt 要求繁體，星座和天氣出門提醒還是常整段回簡體。`generate_brief.py` 的 `to_traditional()` 把 `synthesize_with_openrouter()` 的回傳值整個過一次 OpenCC（`s2twp`）。workflow 多一步 `pip install opencc-python-reimplemented`——**這是這支腳本第一個第三方套件**，沒裝時 `to_traditional()` 會原樣回傳不會壞（所以本機沒裝也能跑，只是不轉）
-  - **題庫一天 10 題 + 錯題本**：`DAILY_QUIZ_SIZE = 10`。**但 `data/questions.json` 目前只有 8 題**，所以實際上每天是同樣那 8 題；要真的有 10 題不重複，得先擴充題庫，而且題目必須來自公路局官方題庫，**不可以自己編題目或答案**（卡片上標的是官方題庫，編的題目會害使用者考試答錯）。錯題本是 `js/quizMistakes.js`（localStorage `morningBrief.quizMistakes.v1`，用題目文字當 key，因為每天的 `q_1`… 是重編的）：答錯自動存、累計錯幾次；題庫卡片最下面有「複習錯題」，複習時答對那題就移除。`quizState.mode` 分 `daily`／`review`
-  - **左右切換的滑入動畫**：`js/motion.js` 的 `slideIn(el, direction)`，用在分頁切換（照底部選單左右順序）、週曆上下週／上下月、題庫上下題。只有動畫，**沒有做手指左右滑的手勢**
-  - **匯率精度改成小數 4 位存、3 位顯示**：人民幣兌台幣一天只動到小數第三位，原本四捨五入到兩位，使用者看到連續五天都是 4.75 以為資料壞了。`exchange_rate_history.json` 裡舊的幾筆還是兩位小數，新的會是四位，混在一起是正常的。明細清單的「今天／昨天」改成照手機當下日期標
-  - **看起來更像正式產品（使用者要求「更正經、像能上架的 App，但不要變難用」）**：Debug 面板平常不顯示，網址加 `?debug` 才出現；日期和問候語改用手機當下時間算（早安／午安／晚安），不再顯示資料檔裡那句「這是為您整理的今日個人化 AI 數位晨報」；設定頁最下面加「關於晨序」（版本號 `APP_VERSION` 在 `SettingsView.js`、資料只存本機、三個資料來源）；`<title>` 和頁尾只寫「晨序」；題庫的「✓ 答對了！」這類符號和驚嘆號拿掉。**還沒清的**：睡眠頁模式卡片的 🌙☀️、週曆的「🗓 切換月曆」，留到那兩頁重新設計時一起處理
-  - **使用者回報但沒有確定原因的**：淺色時螢幕最上面（動態島那一條）是黑的。推測是手機系統在深色、App 手動選淺色時，狀態列跟系統走；補了 `html { background-color }`，但沒辦法在這邊重現，要等使用者回覆是哪種情況
-- **週曆／倒數／睡眠／設定四頁照健康 App 重新設計完成（2026-10-06）**：上面寫「還沒做」的四頁內部排版和殘留的表情符號（🌙☀️📆🗓）都處理完了，任務類型的表情符號（💊📺🏃）照舊保留
-  - **四頁的外層都是 `<main class="container card-stack">`**，卡片和區塊標題的間距統一由 `.card-stack` 管，**不要再用行內的 `style="margin-top: 1.25rem;"`**
-  - **週曆**：最上面是「週／月」分段控制（取代原本的切換按鈕）；卡片標題是目前顯示的範圍（`rangeTitle()`：「10月5日 – 11日」或「2026年10月」），右邊是「今天」和兩顆 `.icon-btn` 圓形箭頭。一天一格沒有底色，日期數字在圓圈裡：今天藍字、選中的那天藍底白字。下面的任務清單用區塊標題顯示選的是哪一天（`detailTitle()`）
-  - **倒數**：清單卡片沒有標題列；新增表單是清單列的樣子（名稱用 `.row-input` 靠右無框輸入、日期）加一顆 `.btn-block` 整列按鈕
-  - **睡眠**：兩種算法是直接放在頁面上的兩張小卡（線條 icon 在左上，月亮靛色、太陽橘色），不是包在一張大卡片裡；就寢提醒用區塊標題
-  - **設定**：分成「作息」「追劇／讀書」「資料」三個區塊，卡片標題改短（每週安排、固定時間、進行中、新增、備份、關於晨序）
-  - **題庫擴充卡住了**：使用者同意下載官方檔案，但公路局網站（thb.gov.tw）有 Incapsula 防機器人機制，curl 和內建瀏覽器都只拿到空白的挑戰頁；政府資料開放平臺的資料集 30305 只是一份索引 CSV，裡面的連結還是指回 thb.gov.tw。**不要想辦法繞過防機器人機制**。可行的路是請使用者自己用瀏覽器下載 PDF 放進專案，再由我解析。機車中文題庫在索引裡的名稱：機車法規是非題／選擇題-中文1101217、機車標誌是非題／選擇題-中文-1100823、機車情境題(新)-中文
-- **AI 助理端到端通了，並依第一次真實對話調整（2026-10-06）**：使用者在 Clash Verge 加了 `workers.dev` 走代理的規則之後，聊天框能用了，這台電腦的 curl 也連得到 Worker（**可以直接用 curl POST 測 Worker，不用再模擬**；測試用的請求格式是 `{history: [{role, content}], appState: {...}}`）。使用者第一次用完說「慢且傻」，實測確認兩件事都是真的：
-  - **慢**：一則回覆約 10 秒。在 OpenRouter 請求加 `provider: { sort: 'latency' }`（同一個模型挑回應最快的供應商）和 `max_tokens: 500` 之後約 3 秒。**模型沒換**，還是 deepseek
-  - **傻**：(1) 把「水果日」當成找不到而反問；(2) 使用者回「好，然後…」時沒有接著做完，只回答後面的問題；(3) 被問天氣說查不到；(4) 「改成每週一跟五」會保留原本的星期二變成 [2, 5]。對應改法：prompt 加了「名稱差一點就直接認」「回『好』是同意上一句」「一句話多個要求全部處理」「改成＝整個換掉、附星期數字對照、同音錯字照合理意思理解」；Worker 回傳改成 `actions` 陣列（同時保留單一個 `action` 給還留著快取的舊前端），`chatBox.js` 逐一執行，有動作被參數檢查擋下時會在回覆後面講；`appState.brief` 帶今天的天氣、匯率、星座摘要讓它答得出來。用使用者那段對話原文重測 6 次，6 次都正確
-  - **改 prompt 之後要實測，不要只看文字覺得合理**：第 (4) 點就是加完前三點後重測才發現的，3 次裡錯 2 次
-  - 使用者裝了 GitHub CLI（`C:\Program Files\GitHub CLI\gh.exe`，不在 Git Bash 的 PATH 裡，要用完整路徑），**但還沒登入**；登入後才能用它讀 Actions 的執行紀錄
-- **題庫換成官方題庫 650 題（2026-10-06）**：使用者自己用瀏覽器下載了公路局的「機車駕照筆試題庫(全部804題)-1150218.pdf」放在專案最外層（沒有進版控，不用 commit 它）。用 pdfplumber 解析表格，檔案裡實際編號到 806 題，收進 `data/questions.json` 的是 650 題：**只收純文字、三個選項、剛好一個答案的選擇題**；148 題因為所在的表格列碰到圖片（標誌、標線、情境圖）沒收，8 題題幹解析不出來沒收——寧可少收，不用猜的
-  - **原本那 8 題整個換掉了**：它們是四個選項（A–D）還附解析，官方題庫是三個選項而且沒有解析，所以那 8 題不是照官方檔案來的
-  - 題目格式：選項 key 是 `"1"`／`"2"`／`"3"`（跟官方一樣），**沒有 `category` 和 `explanation` 欄位**，前端在沒有這兩個欄位時不顯示分類標籤和解析那一行。**不要幫題目補寫解析**，官方沒給，自己寫等於編內容
-  - 之後公路局更新題庫時，重新解析的腳本邏輯：逐頁 `find_tables()`，題號欄是數字就開新題，答案欄和題目欄可能落在後面幾列（跨頁、跨列都有），所以要把同一題的列累加起來；驗證每題剛好一個答案，可以確認答案沒有整排錯位
-- **作息可以自己新增、向左滑刪除；任務圖示換掉表情符號（2026-10-06）**：
-  - **自訂作息**：`taskEngine.js` 的 store 多了 `customTasks`（`{ id: { label } }`，id 是 `custom_xxx`）和 `removedTaskIds`（被刪掉的內建項目，內建定義拿不掉所以記「不要顯示」）。`getConfigurableTaskIds()` 回傳「沒被刪的內建 + 自訂」，`getTaskDef(defId)` 統一查名稱和圖示（**外面不要再直接讀 `TASK_DEFS[defId]`**，自訂項目不在裡面）。`removeRoutineTask()` 會把今天和之後還沒做的那幾筆一起拿掉，過去的紀錄留著；`restoreDefaultTasks()` 把刪掉的內建項目加回來。新增的自訂項目一開始不排在任何一天，要自己點星期
-  - **向左滑刪除**：`js/swipeRow.js` 的 `enableSwipeRows(container)`，列的結構是 `.swipe-row > .swipe-delete + .swipe-content`。只有設定頁的「每週安排」用到。為了讓列能滑到卡片邊緣，`.routine-config-list` 用負邊距吃掉卡片內距
-  - **任務圖示**：使用者說整體要成熟、不要像半成品，表情符號（💊📺🏃…）是最明顯的來源，所以**之前「任務類型的表情符號保留」那個決定作廢**。現在是彩色圓角方塊配白色線條圖示（`js/taskIcons.js` 的 `renderTaskIcon(icon, tint)`），`TASK_DEFS` 每項有 `icon`（圖示名稱）和 `tint`。幸運色也不再要模型附表情符號
-  - **同一天的星座運勢固定用一份**：使用者發現同一天重新產生後內容不一樣，覺得不準。原因是每次 push 都會重跑、模型每次寫的都不同。`generate_brief.py` 的 `load_published_horoscope()` 會去抓線上那份 `today.json`，如果是今天產生的而且 `horoscope.source == "ai"` 就沿用；`source` 是 `fallback`（模型沒回應用了樣板）時不沿用，讓模型再試。**這只保證同一天不變，運勢本身還是模型根據命盤摘要寫的文字，不是天文計算**
-  - **還沒解決**：使用者說淺色模式下螢幕最上面有一塊顏色不對（先說黑、後來說白），iOS 系統切到淺色也還在，不是「系統深色＋App 手動淺色」造成的。這邊無法重現，已請使用者截圖
-- **狀態列那一塊顏色不對的原因找到了；標題區重新設計（2026-10-06）**：
-  - **狀態列（還在實驗，沒有定案）**：使用者截圖顯示，加到主畫面後 App 是深色，最上面狀態列卻是一塊淺灰底（就是 `#f2f2f7`），iOS 系統切深淺色都不變。之前猜「系統深色＋App 手動淺色」是錯的。
-    - 試過 `apple-mobile-web-app-status-bar-style: black-translucent`：深色時跟背景連成一片，但這個模式狀態列的字固定是白的，淺色時系統會在上面蓋一層灰色漸層，使用者實機看了說很醜，**已經撤掉，不要再用**
-    - 現在的做法：那塊淺灰剛好等於 `manifest.webmanifest` 裡寫死的 `theme_color`，推測是它蓋過了 `index.html` 裡會跟著深淺色變的兩個 `theme-color` meta（`js/theme.js` 手動切換時也會更新它們）。所以把 manifest 的 `theme_color` 拿掉，讓系統改讀 meta。**這是推測，要等使用者重新加到主畫面後回報才知道對不對**；如果狀態列還是不跟著變，代表 iOS 的主畫面 App 不會動態讀 meta，網頁這條路就做不到「深淺色各自正確」，要等包成 Capacitor App 才能由原生那一層控制
-    - 每次改這類設定都要請使用者把主畫面的圖示刪掉重加，設定是在「加入主畫面」時讀的
-  - **標題區**：使用者說日期小字＋大標題＋問候語＋更新時間那一疊很醜。現在只有大標題；「今日」頁的大標題是問候語（`tabs.js` 的 `setTodayTitle()`，由 `app.js` 的 `renderHeader()` 給「午安，Kasim」），下面一行灰字日期，其他四頁只有大標題沒有日期。捲動後導覽列的小標題仍然是「今日」。「資料更新於」那行拿掉了；連不上最新資料時才顯示紅字的 `#stale-notice`
-- **清掉沒人用的內容、部署時加版本號、設定頁再整理（2026-10-06）**：
-  - **新聞和「今日三件事」整條拿掉**：畫面早就不顯示，但後端每天還在抓 RSS、叫模型寫摘要。`generate_brief.py` 的 `fetch_rss_news()`／`process_ai_news_output()`／`strip_html()`、prompt 裡的 `aiNews`／`dailyAdvice`、`dataService.js` 的 `getAiNews()`／`getDailyAdvice()`、`mockData.js` 對應的假資料、workflow 裡檢查 `aiNews` 的那段、Telegram 通知裡那行永遠是空的「今日核心目標」都刪了。**上面舊條目提到 `strip_html()`「不要移除」是它還有人用的時候，現在整個功能不在了**
-  - **部署時幫 CSS／JS 網址加版本號**：workflow 的「Stamp asset URLs with the commit hash」步驟，用 sed 把 `index.html` 裡的 `css/styles.css`、`js/app.js`、字體 CSS，以及每個 JS 檔裡的 `from './xxx.js'` 都加上 `?v=<commit 前 7 碼>`。目的是換版時瀏覽器整組一起重抓，不會出現新 HTML 配舊 JS。只改要部署的那一份，不 commit 回 repo，本機開發看不到。**所以 JS 之間的 import 一律寫成 `from './xxx.js'`（單引號、相對路徑、以 .js 結尾）**，寫成雙引號或動態 `import()` 的話 sed 抓不到，那個檔案就不會帶版本號
-  - **設定頁**：「固定時間」改成可以改的「作息時間」，六個時間點各一列時間輸入（`js/fixedSchedule.js`，localStorage `morningBrief.fixedSchedule.v1`）；**這些時間只是給使用者自己看的，沒有接任何通知**，原本列在這裡的保健食品和每月檢查不是時間點，拿掉了。追劇／讀書原本「進行中」「新增」兩張卡片合成一張，新增表單收在原生 `<details>` 裡（點「新增一部」才展開）。「向左滑可以刪除」那行提示和每頁最下面的「晨序」兩個字是使用者要求刪的
-  - **今日頁**：星座卡片右上角改標今天日期（使用者要「每天的」，不要星座月份 8/23 - 9/22）；題庫卡片右上角標「每日 N 題」或「錯題複習」
-- **深色模式整個拿掉了；加了自動測試、備份提醒、AI 失敗通知（2026-10-06）**：
-  - **深色模式刪除**：使用者在實機上試了三種做法，加到主畫面後最上面的狀態列在深色時始終是一塊淺色（系統畫的，網頁控制不了），最後決定不要深色模式。`styles.css` 的兩塊深色變數、`js/theme.js`、設定頁的「外觀」卡片、`index.html` 的行內 script 和雙 `theme-color` 都刪了，現在只有淺色一種。**上面幾條講深淺色切換、`data-theme`、`black-translucent`、狀態列實驗的內容都是歷史紀錄，程式裡已經沒有**。顏色還是一律走 `:root` 變數。之後要是包成原生 App 想把深色加回來，狀態列可以由原生那層控制，到時再談
-  - **自動測試**：`my-morning-brief-apple-design/tests/logic.test.js`，用 Node 內建的測試工具，在那個資料夾跑 `node --test`（多了一個只有 `"type": "module"` 的 `package.json` 讓 Node 認得 ES module，沒有任何相依套件）。21 項，涵蓋睡眠計算、任務排程（星期幾／每 N 天／每月第一個週日）、延後與跳過、自訂作息、追劇每日份量、倒數。這些模組一載入就讀 localStorage，測試檔開頭放了一個假的。**workflow 在產生資料前會先跑測試，沒過就不部署**。改 `taskEngine.js`／`sleepCalculator.js`／`mediaTracker.js`／`countdown.js` 之後先在本機跑一次；改了行為就同步改測試，不要為了讓它過而刪測試
-  - **備份提醒**：`backup.js` 匯出時記下時間（`morningBrief.lastBackupAt`），`daysSinceBackup()` 回傳距今幾天（沒備份過是 null）。超過 `BACKUP_REMINDER_DAYS`（14）天或從沒備份過，今日頁最上面會出現一張提醒卡片（`#backup-reminder`）；設定頁備份卡片右上角顯示上次備份是幾天前
-  - **AI 沒回應時 Telegram 會講**：`generate_brief.py` 把失敗原因放進 `today.json` 的 `buildInfo.aiError`（成功時是 null），`notify_telegram.py` 看到有值就在通知裡多一行警告和原因。原因文字裡的 `_ * \` [ ]` 會先換成空白，因為通知是用 Markdown 送的，這些符號會讓 Telegram 拒收整則訊息
-- **題庫補上看圖題、作息多一個刪除入口、聊天後端加防護（2026-10-06）**：
-  - **看圖題 148 題**：題庫現在 798 題（650 純文字 + 148 看圖）。官方 PDF 裡這類題目每題剛好一張圖（標誌、標線、手勢）配三個文字選項，圖用 pdfplumber 依圖片的位置裁成 PNG 放在 `data/quiz-images/thb_<題號>.png`（共約 1 MB），題目多一個 `image` 欄位，前端有這個欄位就顯示圖。圖和題目的對應是「圖片中心落在哪一題的表格列裡」，148 張圖剛好對到 148 題各一張，並抽看過幾題圖和答案相符。**其中 126 題在官方檔案裡只有圖沒有題目文字，「這張圖代表什麼？」這句是 App 自己加的提示**（`questions.json` 的 metadata 有寫明），選項和答案照原檔
-  - **錯題本的 key 改用題庫編號**：看圖題的題目文字會重複（例如兩題都叫「自行車騎士手勢預告即將」但圖不同），所以 `generate_brief.py` 把題庫原本的編號留在 `qid`，`quizMistakes.js` 的 `mistakeKey(q)` 用 `qid`，沒有 `qid` 的舊資料才退回用題目文字。`resolveMistake()` 現在收整個題目物件，不是題目文字
-  - **作息的刪除入口**：「每週安排」卡片右上角多了「編輯／完成」，按了每一列都滑開露出刪除鈕（`.is-editing`）。向左滑還是可以用。使用者要求拿掉「向左滑可以刪除」的提示字之後，這是唯一看得到的線索，不要拿掉
-  - **聊天 Worker 的防護**：只接受 `Origin` 是 `https://kasim9497.github.io` 或本機（localhost／127.0.0.1）的請求，其他回 403；同一個 IP 10 分鐘內最多 20 次，超過回 429（計數在記憶體裡，Worker 重啟就歸零，只擋一口氣狂打）；請求本體、每則訊息、歷史則數都有上限。**用 curl 測 Worker 時要自己帶 `-H "Origin: https://kasim9497.github.io"`，不然會拿到 403**。Origin 可以用工具偽造，真正的上限還是 OpenRouter 那把 key 的花費額度（使用者已設 2 美元）。**如果之後換網址或綁自訂網域，要把新網域加進 `ALLOWED_ORIGINS`，不然聊天框會整個不能用**
-- **iOS App 外殼，雲端打包成功（2026-10-06）**：roadmap 第 5 步開始做了。使用者沒有 Mac、不想付 99 美元，所以走「GitHub 的 macOS 機器不簽名編譯 → 使用者在 Windows 用自己的免費 Apple ID 簽名安裝」。免費簽名 7 天過期要重簽，這是使用者知道的代價
-  - `ios-shell/` 是 Capacitor 7 專案，**App 只是外殼**：`capacitor.config.json` 的 `server.url` 指向 GitHub Pages，打開就載入線上網站，所以平常改網站照舊 push 就好，不用重新打包。`ios/`（Xcode 專案）不進版控，每次由 workflow 用 `npx cap add ios` 重新產生
-  - `.github/workflows/ios_build.yml`：`ios-shell/**` 或這個檔有變動時自動跑，也能手動觸發。產出 `chenxu-unsigned.ipa`（約 0.6 MB），在那次執行頁面的 Artifacts。第一次就全部步驟通過（2026-10-06，run 37441164259）。**這條流程沒辦法在本機測**（沒有 Mac），改了只能推上去看結果；沒登入 `gh` 時只看得到哪一步失敗，看不到錯誤內容
-  - workflow 裡用 PlistBuddy 把 `UIUserInterfaceStyle` 設成 Light：網站只有淺色，鎖定之後系統開深色模式時狀態列的字才不會變白
-  - 網頁的來源仍然是 `https://kasim9497.github.io`，所以聊天 Worker 的來源檢查不用改
-  - **還沒做／還沒確認**：使用者還沒實際簽名安裝，App 在真機上能不能開、狀態列對不對都還不知道。就寢提醒的背景通知還沒接（要加 `@capacitor/local-notifications`，並且在網頁端判斷是不是在 App 裡執行）
-- **週曆兩個讓日期看起來不對的問題（2026-10-06）**：
-  - **月曆表頭的星期錯位一天**：格子從週一排到週日，表頭卻用週日開頭的 `WEEKDAY_LABELS`，整個月每個日期都對到前一個星期名稱（10 月 1 日是週四卻排在「三」底下）。這個從月曆做出來就一直在，現在表頭改用 `MONTH_HEADER_LABELS`（週一開頭）。`WEEKDAY_LABELS` 是給 `getWeekday()` 的 0–6 查表用的，順序不能動
-  - **日期下面的「0/2」被看成日期**：使用者回報「日期不對，月全部變成 0」。重新設計後每格只剩日期數字，正下方的完成進度「0/2」看起來就像「0 月 2 日」。改成「剩 2」，全部做完顯示綠色的「完成」（`progressLabel()`）。**之後在日期旁邊放數字，不要用「數字/數字」的寫法**
-  - 使用者有時會用注音輸入法忘了切換，打出一串英數字（這次是 `b4fu61j42jo4` ＝「日期不對」）。看到像亂碼的訊息先照注音鍵盤對一次
-  - 在預覽瀏覽器裡測刪除、打勾這類會改資料的操作之後，要重新載入頁面：只把 localStorage 還原是不夠的，頁面記憶體裡那份還在，下次存檔又會寫回去（這次就留下了一筆被刪掉的作息，害使用者看到週二少一項）
-- **一輪使用者回饋：語錄、間距、題庫流程、圖片比例、運勢寫法、本週摘要（2026-10-08）**：
-  - **語錄偏日本職人風**：使用者說太「綜合」，要日本職人、做事態度那一類。`quotes.json` 多了 `featured_authors`（日本作者清單）並新增 24 條日本語錄（共 422 條，featured 45 條）。`get_daily_quote()` 三天裡兩天從 featured 出、一天從其他出。**featured 只有 45 條，大約兩個月就會輪到重複**，這跟之前「要超過 365 條不重複」的要求有衝突，已經跟使用者說了；要拉長就得再加查證過的日本語錄。新增的來源：稻盛和夫的方程式（京瓷官網）、松下幸之助（改用《人を活かす経営》裡查得到的原文，網路上流傳的那句「失敗したところでやめてしまうから…」國會圖書館的查證結果是找不到出處，**不要加**）、道元《典座教訓》、法隆寺宮大工口傳，這四組用 WebSearch 查過；其餘是有固定篇章的日本古典（《風姿花傳》《花鏡》《徒然草》《五輪書》《獨行道》《葉隱》《言志四錄》《南洲翁遺訓》《士規七則》《二宮翁夜話》《南方錄》《萬民德用》《都鄙問答》）和漱石 1916 年書簡等，憑記憶寫的，沒有逐條上網對原文
-  - **間距收緊**：使用者覺得區塊之間、卡片裡的上下留白太大。`.section-head` 上方只留 0.375rem 並用負的下邊距貼近它管的卡片；一頁最上面的區塊標題不留上邊距；`.dashboard-grid`／`.card-stack` 間距 0.75rem；`.card` 上下內距 1rem；`.list-row` 最小高度 44px。**之後加新區塊不要再自己加上下 margin**
-  - **題庫流程**：做完今天的題目後，最後一題的按鈕會直接接著出錯題本裡的題目（不特別標「錯題複習」，右上角一直是「每日 N 題」），錯題也做完才顯示成績畫面（`quizState.finished`）。不會再從第一題重來。之前的 bug：進複習時錯題本是空的會卡在「題目暫時載入不了」
-  - **題庫圖片比例**：使用者發現圖是被上下拉長的。原因是官方 PDF 把寬的原圖（187×135）硬塞進正方形的框。93 張照 PDF 裡記錄的原圖尺寸還原；另外 16 張原圖檔本身是正方形但內容同樣被橫向壓成 135/187（7 張圓形標誌用內容寬高比判斷、9 張三角形逐張看過），一併壓回來。剩下的正方形圖（道路示意圖、交通警察等）內容比例正常，沒動
-  - **運勢改成報紙專欄口吻**：使用者覺得運勢一直提到他個人的事（「適合準備機車筆試」）很不舒服。prompt 拿掉所有個人背景，明確禁止提考試、職涯、所在地和命盤術語；命盤摘要只當作「該著墨哪些面向」的依據。離線樣板也改掉了。`horoscope.style = 2` 是寫法的版本，沿用當天已發布運勢時會檢查，改寫法時加一
-  - **運勢有了真的天象依據**：`get_sky_facts()` 用 `ephem` 算當天太陽、月亮、五顆行星在哪個星座、哪些在逆行、月相，放進 prompt，也存在 `horoscope.sky`。天象提醒只能根據算出來的逆行和新月滿月寫，不再讓模型自己判斷有沒有逆行。workflow 多裝 `ephem`，沒裝時會跳過。驗算過 2026 年 3 月水星逆行、10 月金星逆行都對得上。**運勢文字本身還是模型寫的，「準確」只限於天象事實**
-  - **題庫答案再驗一次**：用另一種方法（直接看答案欄數字的座標去對題號，不經過表格解析）重新對過，798 題的答案全部一致
-  - **本週摘要**：設定頁新增一張卡片，`js/weeklyReport.js` 的 `buildWeeklyReport()` 把最近 7 天的任務、追劇讀書進度、錯題整理成一段附帶分析請求的文字，按鈕用系統分享選單（手機上可以直接選 Claude）或複製到剪貼簿。**資料不放進網址參數**。iPhone「健康」App 的資料網頁讀不到，使用者要自己看了填在備註欄；要自動讀取得等原生 App 接 HealthKit。過去幾天的任務是用現在的作息設定回推的（檔案裡有 `ponytail:` 註記）
-  - 向左滑的刪除鈕沒滑開時會在列的交界露出一條紅線，改成沒滑開時隱藏
-- **AI 全部改用免費的 Cloudflare Workers AI（2026-10-08）**：OpenRouter 那把金鑰的額度用完（HTTP 402），使用者不打算再儲值，問有沒有不花錢的辦法
-  - **聊天**：`cloudflare-worker/wrangler.toml` 加了 `[ai] binding = "AI"`，`chat-proxy.js` 的 `callModel()` 先用 Workers AI（`@cf/meta/llama-3.3-70b-instruct-fp8-fast`），失敗而且有 OpenRouter 金鑰時才退回 OpenRouter。Workers AI 每天有免費額度，免費方案超過就是當天不能用，不會收費。用使用者之前那段對話測 3 次，動作都對，一則約 3.5 秒
-  - **每日資料**：Worker 多了一個 `mode: 'brief'`，收一段完整的提示詞、叫模型、把回的 JSON 原樣轉回去。`generate_brief.py` 的 `synthesize_with_ai()`（原本叫 `synthesize_with_openrouter`）先打這個，帶 `Origin: https://kasim9497.github.io` 才過得了 Worker 的來源檢查；第二順位才是 OpenRouter。**Worker 掛了的話每日運勢也會跟著變成樣板**，兩邊現在綁在一起
-  - **GitHub Models 不能用**：試過用 workflow 內建的 `GITHUB_TOKEN` 加 `models: read`，但 `https://models.github.ai/inference/chat/completions` 對任何請求（有沒有帶 token 都一樣）只回純文字 `OK`，GitHub 官方的 `actions/ai-inference@v1` 也因此失敗。在 runner 上和本機都一樣。**不要再花時間試這條**，除非先確認它恢復正常
-  - OpenRouter 那次 402 的實際訊息是「金鑰的總額度快用完，而請求沒有設 `max_tokens`，系統用模型上限去估費用所以被拒」。現在備援呼叫有設 `max_tokens: 1500`
-  - **品質**：Llama 寫的運勢比 deepseek 平淡，而且會把命盤特質（自我懷疑、渴望被認可）講得比較直白，但沒有再提考試或職涯。使用者如果不滿意，選項是付費或換模型
-  - Llama 回的本來就是繁體，OpenCC 再轉一次會把「注意」變成「註意」，`to_traditional()` 補了一個替換
-  - `gh` 已經登入（2026-10-08），可以用 `"/c/Program Files/GitHub CLI/gh.exe" run view <id> --log` 讀執行紀錄、`gh workflow run morning_brief.yml` 手動觸發。使用者的 PowerShell 要先設 `$env:HTTPS_PROXY="http://127.0.0.1:7897"` 才連得到 GitHub
-- **日本語錄加到 372 條（2026-10-08）**：使用者要 featured 那一池加到 365。現在全部 749 條，featured 372、其他 377；模擬過連續 558 天不重複。上一條寫的「featured 只有 45 條、兩個月重複」已經不成立
-  - **來源和驗證方式**：(1) 青空文庫的公版全文（柳宗悅《工藝之道》《手仕事の日本》《民藝とは何か》《雜器之美》等、北大路魯山人的隨筆、幸田露伴《努力論》、新渡戶稻造《自警錄》、福澤諭吉《學問之勸》、《南洲翁遺訓》、三木清《人生論筆記》、芥川《侏儒的話》、寺田寅彥、漱石演講稿、高村光太郎《回想錄》等）下載後，用程式確認每一句日文是原文裡**逐字出現**的字串，對不上的不收；(2) 日文維基語錄有標篇章的古典（世阿彌、兼好、武藏、松陰、海舟、利休、北齋、空海）同樣逐字比對；(3) 日本諺語 111 條，只收維基語錄「日本の諺」頁面列出的。維基語錄上標「帰せられるもの」（出處不明）的一律沒收
-  - **要知道的限制**：「——」後面的中文是我自己翻的，不是出版過的譯本；句子是從長文裡摘出來的單句，脫離了上下文；《努力論》有一部分用的是青空文庫的現代語譯本（出處欄有標）、《茶之書》是村岡博的日譯本；柳宗悅一人佔 76 條、諺語佔 111 條，比例偏高
-  - 順手刪了兩條：重複的稻盛和夫方程式（沒附出處的那條）、沒有出處的松下「成功とは成功するまで続けること」（有出處的《人を活かす経営》版本留著）
-  - **之後要再加**：照同樣做法——先拿到原文全文，句子用程式比對過再加。青空文庫的作品目錄是 `https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip`，要走代理（`HTTPS_PROXY=http://127.0.0.1:7897`）才連得到；內文是 Shift_JIS，要去掉 `<rt>` 注音
-- **錯題隔幾天再出、備份提醒改 7 天（2026-10-08）**：
-  - **錯題本**：原本複習時答對一次就移除。現在 `quizMistakes.js` 每題多了 `streak`（連續答對幾次）和 `dueDate`：第一次答對 2 天後再出、第二次 5 天後再出（`REVIEW_GAPS = [2, 5]`），第三次答對才移除；中途答錯就歸零、當天可再複習。今天的題目做完後接著出的只有 `getDueMistakes()`（到期的），不是整本。舊資料沒有 `dueDate`，當作今天到期。測試檔有對應的一項（共 23 項）
-  - **備份提醒**：`BACKUP_REMINDER_DAYS` 14 → 7。理由是資料只在手機瀏覽器裡，iOS 對久沒開的網站會清資料
-- **使用者實機回饋後的一輪修正（2026-10-08）**：
-  - **「每週安排」向左滑後按刪除沒反應（會彈回去）**：`swipeRow.js` 的 `pointerdown` 會把「不是正在按的那一列」收回去，但刪除鈕不在 `.swipe-content` 裡面，所以按刪除鈕時連自己那一列也被收回；收回後刪除鈕變成 `visibility: hidden`，手指放開時 click 就落空。現在按的是 `.swipe-delete` 就不收。**之後在滑開的列裡加別的按鈕，要注意同一件事**
-  - **作息可以改名**：按「編輯」後名稱變成輸入框。`taskEngine.js` 的 `renameRoutineTask()`；內建項目的新名稱存在 `labelOverrides`，自訂的直接改 `customTasks`
-  - **作息時間可以新增、刪除、改名，每一項有提醒開關**：`fixedSchedule.js` 的儲存格式從 `{ id: 時間 }` 改成 `{ items: [...] }`（舊格式讀得回來）。內建項目有 `days`（屬於星期幾）；凌晨 5 點前的時間算前一晚，所以「週一至週三 01:20」是週二到週四凌晨響（`fireWeekdays()`）
-  - **提醒只有一套**：`sleepReminder.js` 現在是所有作息時間的提醒，睡眠頁的「就寢提醒」就是今晚適用的那一項就寢時間（`getBedItem()`），不再另外存一份；舊的 `morningBrief.sleepReminder.v1` 不用了。`getSleepReminderConfig()`／`setSleepReminderConfig()` 的介面沒變，AI 助理那邊不用改
-  - **提醒的兩條路**：在 iOS App 外殼裡用 `@capacitor/local-notifications`（`ios-shell/package.json` 加了，App 關著也會響，免費簽名也能用）；網頁用瀏覽器通知，只有開著時會響，而且 **iPhone 的瀏覽器根本沒有這個功能**，開關會打不開並跳說明。**原生那條路沒有在真機上跑過**，是照文件寫的，使用者裝好 App 後要先測
-  - **睡眠頁「我現在要睡」可以改上床時間**：預設是現在，改成別的時間就照那個時間推起床時間（`calcFromNow(bed, now)` 第二個參數是用來標「明天」的基準）
-  - **備份說明改白話**：今日頁的提醒卡片按鈕直接備份（原本是跳去設定頁，使用者到了不知道按哪個）；設定頁兩顆按鈕改成「現在備份（存成一個檔案）」「用之前存的檔案還原」，各有一行說明什麼時候用
-  - **題庫「不確定，看答案」**：直接公布答案，當作答錯存進錯題本（`UNSURE`）
-  - **錯題本清空一次**：使用者測試時亂答，要求重來。`quizMistakes.js` 載入時看旗標 `morningBrief.quizMistakes.reset20261008`，沒有就清空並設旗標，每支裝置只清一次。**之後不要再用這種方式清資料，除非使用者要求**
-- **提醒改走推播，不再靠原生 App（2026-10-08）**：老師建議用 PWA；使用者不要捷徑（改時間要改兩邊）也不想每 7 天重簽，所以做了網頁推播。**原生 App 那條路的程式還留著，但不是主要做法了**
-  - **流程**：設定頁打開某一項的提醒開關 → `sleepReminder.js` 註冊 `sw.js`、訂閱推播、把「幾點、星期幾、時區」傳給 Worker（`mode: 'push-sync'`）→ Worker（`cloudflare-worker/push.js`）存進 KV 的單一個 key `subs` → 排程每分鐘跑一次 `sendDuePushes()`，時間到就對那支手機的推播網址發一個**不帶內容**的推播 → `sw.js` 收到後讀頁面事先存在 Cache Storage 的時間表（`chenxu-reminders`），找剛到時間的那幾項顯示通知
-  - **為什麼不帶內容**：帶內容要做訊息加密，沒辦法在真機上測的情況下出錯機率高；而且這樣項目名稱不用離開手機，後端只知道時間
-  - **為什麼 KV 只用一個 key**：免費方案 list 一天只能 1000 次，每分鐘 list 一次會超過；讀一個 key 一天 1440 次沒問題
-  - **`sw.js` 沒有 fetch 處理、不快取任何東西**，只處理推播。不要幫它加離線快取
-  - **Worker 要兩樣設定**：KV `PUSH_KV`（`wrangler.toml` 沒寫 id，靠 wrangler 部署時自動建立）和 Secret `VAPID_PRIVATE_JWK`（使用者自己產生、自己貼進後台，步驟在 `cloudflare-worker/README.md`）。公鑰由 Worker 從私鑰算出來回給前端（`mode: 'push-key'`），所以前端不用填任何金鑰
-  - **iPhone 的條件**：iOS 16.4 以上，而且一定要「加入主畫面」後從主畫面打開；在 Safari 分頁裡沒有推播功能，開關會打不開並跳說明
-  - **在南京的限制**：訂閱和每次改時間都要連得到 `workers.dev`（要開 VPN）。沒傳成功會記在 `morningBrief.pushSyncPending`，設定頁那行說明會講，下次打開晨序自動重試；這段期間提醒照舊的時間響。收推播本身走 Apple 的線路，不用 VPN
-  - **沒驗證的部分**：這台電腦的預覽瀏覽器通知權限是拒絕的，訂閱到收到通知整段沒有實際跑過；後端的時間判斷、網址檢查、簽章有測試（共 30 項）。**要使用者在手機上試過才算數**
-  - Worker 網址抽到 `js/config.js` 的 `WORKER_URL`，AI 助理和推播共用
-- **推播在使用者的 iPhone 上確認會響（2026-10-08）**，所以上一條「沒驗證的部分」已經驗證了。過程中踩到一個：使用者用滑鼠從終端機複製金鑰，頭尾和中間都少了字。`push.js` 的 `parseJwk()` 現在只認 `d`／`x`／`y` 三個欄位（頭尾少大括號也讀得出來），錯誤訊息不帶金鑰內容；給使用者的指令改成接 `| clip` 直接進剪貼簿
-- **收尾檢查（2026-10-08）**：用瀏覽器在手機寬度掃過五個分頁（點擊範圍、沒有名稱的按鈕、橫向溢出、console 錯誤），修了下面這些
-  - **「每週安排」編輯模式把列的左邊切掉**：原本整列往左推 88px 露出刪除鈕，圖示、名稱開頭、星期日那顆被推到卡片外。改成列不動、右邊讓出 88px，並在編輯時收起排程的控制項（只做改名和刪除）
-  - **還原舊備份會把錯題本清空**：一次性清空用的旗標原本是 `morningBrief.` 開頭，還原備份時會跟著被清掉，下次載入又清一次。旗標改名成 `chenxu.quizMistakesReset20261008`（舊名字還認，已經清過的裝置不會再清）。**不想被備份還原動到的旗標，不要用 `morningBrief.` 開頭**
-  - 就寢項目全被刪掉時，睡眠頁的提醒開關按了沒作用 → 改成顯示說明
-  - `.row-input` 只有 25px 高、沒有焦點樣式 → 補到 36px 並加 `:focus-visible`；`.section-action` 補 `min-width: 44px`
-  - 「關於晨序」寫的「不會上傳」不成立了（提醒的時間會傳到後端），改掉
-  - 刪了 `index_standalone.html`：很久沒維護的舊版單檔，卻一直被部署成公開網頁
-  - **量版面位置時的陷阱**：預覽視窗沒在畫面上時動畫不會前進，剛切分頁量到的位置會偏 28px（滑入動畫的第一格）。量之前先 `document.getAnimations().forEach(a => a.finish())`
-  - **檢查過、沒有動的**：`isChatConfigured`、`getCurrentTab`、`formatDate` 等幾個沒人用的 export 留著；`chatBox.js` 開頭的註解還在講 OpenRouter
-- **產品說明、設計規範、第一次設計評審（2026-10-08，用 impeccable 技能）**：
-  - `PRODUCT.md`：這個 App 給誰用、最重要的事是什麼、不可以做的事。使用者確認過三點：只有他自己用；早上起床後、白天空檔、收到提醒時打開；最重要的是「每天的作息和任務有沒有做到」
-  - `DESIGN.md` 和 `.impeccable/design.json`：現有樣式的規範。北極星是「健康 App 的摘要頁」，元件手感是「紮實、明確」（都是使用者選的）。**之後做新畫面先讀這份**，不用再從上面這一長串歷史裡找規則
-  - 今日頁的評審存在 `.impeccable/critique/`，22/40。三個 P1：任務清單不是第一個也不夠顯眼（語錄卡和備份提醒排在它上面）；舊資料或範例資料會被標成今天的；跳過和延後不能復原、完成數的分母沒扣掉它們。**這些還沒修**，等使用者決定
-  - 評審用的是本機的 `data/today.json`，那是 8 月的範例檔，所以天氣全是 N/A、題庫是舊格式；跟資料有關的觀察不算數
-- **照評審修了三個 P1，並做了雲端自動備份（2026-10-08）**：上一條寫「還沒修」的三個 P1 已經修掉
-  - **今日頁重排**：任務卡緊接在問候語下面，沒有標題列；完成數搬到大標題下面那一行（`TaskListView.js` 的 `renderTaskList()` 寫 `#header-date`：「10月8日 星期四 · 還剩 3 項」，全部做完是綠色的「今天都做完了」）。備份提醒在任務卡下面，語錄移到最後。375px 寬時任務卡從 y=503 提到 y=208
-  - **舊資料標清楚**：`app.js` 的 `staleLabelFor()` 比對資料產生的日期和手機日期，不是今天的就把天氣和匯率卡片右上角改成「昨天的資料」或「M月D日的資料」，並隱藏運勢。**所以每天 07:30 資料更新前打開，會看到「昨天的資料」而且沒有運勢，這是對的**。完全抓不到資料檔時，標了 `data-needs-data` 的區塊全部收起來，只留一列說明和重試，不再顯示 `mockData.js` 的範例內容。每張卡片各自 try/catch（`renderSafely()`），一張壞掉不會連累後面的
-  - **跳過和延後可以復原**：`taskEngine.js` 的 `undoTaskAction()`；延後的記 `movedTo`、整週不做的記 `skipWeek`。延過去那筆如果已經做完或又被延走就不能復原（`canUndo`）。處理過的列顯示去向（「已延到 10月9日」「今天不做」「這週不做」），選單只剩「復原」。選單的字改成「今天不做」「這週都不做」
-  - **完成數不算跳過和延後的**：`summarizeTasks()`，今日頁和週曆共用
-  - **運勢收短**：只顯示星等和一句話，幸運色和五個分項收在 `<details>`「看分項」裡
-  - **雲端自動備份**：設定頁「雲端自動備份」卡片，設一組至少 8 個字的通關密語開啟。`js/cloudBackup.js` 把所有 `morningBrief.` 的資料傳到 Worker（`cloudflare-worker/backup.js`，存在 `PUSH_KV`）；載入時、每 5 分鐘、離開和回到晨序時各檢查一次，內容沒變就不傳。同步狀態存在 `chenxu.cloudBackup.*`（不進備份、還原時不會被清）
-    - **防舊資料蓋新資料**：上傳要帶「這支手機上次同步到的版本」，跟雲端現在的不一樣就被拒絕（409），設定頁會問要用哪一份，選之前不會自動上傳
-    - 密語在手機上雜湊成 token 才傳，後端再雜湊一次當 key。**這不是正式的登入**，知道密語就拿得到資料；內容沒加密（使用者要的：出問題時方便查看）。最多 3 份、每份約 600 KB
-    - 測試把前端和後端接在一起跑（fetch 換成直接呼叫後端函式）。**沒有對線上的 Worker 實際存過資料**，使用者第一次開啟就是第一次真的跑
-  - 檢測還剩 7 項沒處理：灰色小字 `--text-tertiary` 對比不足（改它會影響全站）、沒人用的舊樣式 `.prime-goal-box`、隱藏的除錯面板裡的破折號
-- **評審的兩個 P2、拿掉手動備份、作息時間搬到睡眠頁（2026-10-08）**：
-  - **題庫卡片精簡**：進度只留圓點（拿掉「第 N / N 題」、題號、橘色的答對數）；目前那一題的圓點是深色，答過就顯示對錯的顏色。答完後的結果是細線下面的幾行字（`.quiz-result`，沒有底色和色條），緊接一顆整列寬的「下一題」。還沒答的時候右下角是文字按鈕「先跳過」。答對幾題只在結束畫面顯示
-  - **天氣收短**：大數字（氣溫）加天氣狀況、一行「最低 ~ 最高 · 降雨」、一行出門提醒；體感和紫外線收在「看更多」。天氣來源沒回應時只顯示一句「今天的天氣還沒抓到」，不再擺一排 N/A。氣溫改用 `.metric`（28px），原本的 48px 不在九級字級裡
-  - **今日頁的倒數卡片沒有標題列了**（分頁就叫倒數，「管理」也拿掉，底部選單就有）
-  - **手動備份整個拿掉**（使用者要求）：設定頁的「備份」卡片、`backup.js` 的 `exportBackup()`／`importBackup()` 都刪了，`backup.js` 只剩 `collectBackupData()`／`applyBackupData()`／`daysSinceBackup()`（只看雲端）。**現在唯一的備份是雲端自動備份；沒開的話今日頁會一直顯示提醒**，按鈕會跳到設定頁。使用者以前存的備份檔現在沒有地方匯入，真的需要時要把匯入功能從 git 歷史拿回來（`a610a5b` 之前的 `backup.js`）
-  - **作息時間搬到睡眠頁，就寢提醒併進去**：新的 `js/FixedScheduleView.js`（`renderFixedScheduleCard()`／`bindFixedSchedule()`）畫「作息與提醒」那一區，睡眠頁用它，設定頁不再有。原本獨立的「就寢提醒」卡片拿掉了——它本來就是清單裡的就寢那一項。清單上會標出「今晚」適用的就寢和「明早」適用的起床（`getBedItem()`／新的 `getWakeItem()`）
-  - **睡眠計算機跟作息表接在一起**：「我要幾點起床」預設帶明早的起床時間；算出來的上床時間點一下就寫進今晚的就寢那一項；「我現在要睡」的結果上面會寫「你排的『假日起床』是 10:00，挑最接近的那個」。「預估入睡時間」那一列拿掉了（使用者看不懂也不需要），計算裡仍然有 15 分鐘的入睡緩衝
-- **預覽伺服器的埠不要用 8549–8648**：這台 Windows 把這段列為保留埠（`netsh interface ipv4 show excludedportrange protocol=tcp` 看得到），`preview_start` 會直接失敗。同一個埠重開會拿到快取的舊 CSS/JS，每次驗證要換埠
+## 怎麼跟使用者合作
 
-## 待辦／已知問題
+- 一律用繁體中文回覆。使用者不是工程師：給步驟、講白話、講清楚哪些我測過、哪些要他在手機上看。
+- 他有時用注音輸入法忘了切換，打出一串英數字（`b4fu61j42jo4` ＝「日期不對」）。看到像亂碼的訊息先照注音鍵盤對一次。
+- 金鑰、密碼、驗證碼不要請他貼給我，也不要寫進檔案或 repo。要他自己貼進 Cloudflare 或 GitHub 的後台；指令接 `| clip` 直接進剪貼簿，不要叫他用滑鼠從終端機選取（會少字）。
+- 不花錢：不儲值 AI 服務、不付 Apple 開發者帳號。
+- 不要動他的 VPN（Clash Verge）設定，只給步驟。不要繞過網站的防機器人機制。
+- 不要自己改 repo 名稱或 Pages 網址。
 
-- **`.github/workflows/morning_brief.yml` 現在 push 到 main 就會自動跑（2026-09-20）**：原本只有排程（07:30）跟手動觸發，改完程式碼要等到隔天或自己去點才會真的上線。現在多加了 `on: push: branches: [main]`，以後每次 push 都會自動重新產生 + 部署，不用再手動點 Run workflow。**連帶影響**：因為 workflow 現在會自己 commit 回 repo（匯率歷史那個 `[skip ci]` commit），本機的 `origin/main` 隨時可能比本機 `main` 新，**每次要 push 之前先 `git fetch && git pull --rebase origin main`**，不然會被 reject（non-fast-forward），2026-09-20 已經中過一次
-- ~~QWeather GitHub Secrets 還沒設定~~ 已解決（2026-09-20）：使用者在 Actions secrets 加了 `QWEATHER_API_KEY`／`QWEATHER_API_HOST`（之前卡兩晚的原因單純是這兩個 secret 從沒真的存進去），run #64 手動觸發後線上天氣正確顯示南京栖霞區真實資料（例如：陰、25°C、濕度79%），`isFallback: false`，問題徹底解決
-- ~~個人化資料還沒換~~ 已完成（2026-09-20）：`USER_PROFILE` 改成 `name: "Kasim"`、`city: "南京市"`、`district: "栖霞區"`，同步改掉 `mockData.js`、`index.html` 靜態文字、`app.js` fallback 字串、Gemini prompt、`notify_telegram.py`（這支原本寫死「蘆洲區」，現在改成讀 `weather.location`，以後地點再變不會又忘記改）
-- ~~星座運勢是假的~~ 已修（2026-09-20）：`generate_brief.py` 新增 `BIRTH_CHART_SUMMARY` 常數（融合西洋占星＋八字＋紫微斗數三套系統整理出的真實命盤重點，使用者原始完整資料沒有存進 repo，只存了整理過的摘要），Gemini prompt 現在會根據這份摘要生成 `horoscopeSummary`／`horoscopeDetails`（overall/love/work/wealth/health 五項）／`horoscopeLuckyColor`／`horoscopeLuckyNumber`／`horoscopeRating`，`main()` 全部改讀這些欄位（`rating_to_stars()` 把數字評分轉成星星字串），不再是寫死的 `★★★★☆`／固定五行字句。Gemini 不可用時的離線 fallback 一樣是根據真實命盤寫的，只是不會每天換說法
-- **意外抓到的舊 bug**：修星座的時候完整跑一次 pipeline 測試，發現 `strip_html()` 這個函式定義在 commit 108ab15 之後、9300ac6 之前的某次手動上傳（`Add files via upload`／`Delete...directory` 那種 commit）裡被誤刪了，但呼叫的地方還在，導致 `fetch_rss_news()` 每次都靜默丟 `NameError`、新聞永遠抓不到（有 try/except 包住不會讓整個 pipeline 掛掉，但長期都在用空清單）。已經照 108ab15 原始版本一字不改地補回來
-- `index_standalone.html` 是舊版單檔備份，沒有同步 tab bar 等新功能，先不要維護這份，只維護 `index.html` + 拆開的 js/css
-- **Gemini 已徹底放棄，改用 OpenRouter（2026-09-21）**：Gemini Developer API 連續踩了 4 輪雷——`gemini-2.5-flash-lite` 404（2026-10-16 停用公告）→ 換 `gemini-2.5-flash` 還是 404（Google 錯誤訊息直接說「no longer available to new users, use gemini-3.6-flash instead」）→ 換 `gemini-3.6-flash` + `X-goog-api-key` header 認證一度是 401 → 最後穩定復現的是 `FAILED_PRECONDITION: User location is not supported`。**這個地區限制查證確認是免費層根據「呼叫當下伺服器 IP」做的地區白名單限制，跟 Google 帳號的付款地/帳單地址完全無關**（一開始誤判成帳號層級地區鎖，被使用者糾正過）。四輪修正都沒解決，判斷是 GitHub Actions runner 的 IP 剛好不在白名單內，於是放棄 Gemini。已改用 **OpenRouter**（`synthesize_with_gemini()` 重新命名為 `synthesize_with_openrouter()`），model 是 `deepseek/deepseek-chat-v3.1`（付費但單次呼叫成本 < US$0.0001，一天呼叫個位數次幾乎等於免費），呼叫 `https://openrouter.ai/api/v1/chat/completions`，`Authorization: Bearer <OPENROUTER_API_KEY>`，用 `response_format: {"type": "json_object"}` 強制輸出 JSON。**已用真實 key 實測過完整 pipeline**：運勢正確扣合 `BIRTH_CHART_SUMMARY` 命盤重點、結合當天星期幾發揮，新聞摘要正確對應 RSS 候選項目，繁體中文輸出正常，不是套版文字。曾經試過 OpenRouter 的免費模型（`:free` 後綴，例如 `qwen/qwen3.8-27b:free`、`z-ai/glm-5.2:free`）但共用池常常 429 rate limit，不夠穩定，改用付費模型是使用者確認的決定，不要為了省那幾分錢改回免費模型。**下一步**：GitHub Actions repo secrets 要新增 `OPENROUTER_API_KEY`（workflow 檔案已經改成讀這個變數，但 secret 本身還沒在 GitHub 上設定，下次看到 Actions 日誌記得確認是否真的成功，不是憑空假設）
-- ~~每日語錄功能，還沒開始~~ 已完成（2026-10-02，見上方「新增『每日語錄』功能」）
-- ~~App 改名，還沒決定~~ 已改名為「晨序」（Chénxù，2026-10-02）：提了「晨鬼」／「晨序」／「職早」／「起行」／「早安，執行」幾個選項，使用者選「晨序」。已經改掉使用者看得到的地方——`index.html` 的 `<title>`／masthead `brand-title`／footer，以及 `app.js`／`mockData.js`／`generate_brief.py`／`notify_telegram.py` 的註解與 console/print 字串。**沒有改的**：GitHub repo 還是叫 `kasim9497/my-morning-brief0`，本機資料夾、GitHub Pages 網址（`kasim9497.github.io/my-morning-brief0`）、Telegram 通知裡預設的 `PAGES_URL` 都沒動——改 repo 名字會動到真實網址（Pages URL 跟著變、現有書籤/Telegram 訊息裡的連結失效），這是影響比較大的決定，之後使用者如果真的要連 repo 一起改名再另外處理，不要自己順手做掉
-- **AI 聊天框，程式碼已完成，等使用者部署後端（2026-09-22）**：範圍——要能實際操作（延後任務、改設定），不是只能問答。三個技術決定（AskUserQuestion 確認過）：(1) 後端走**小型 Cloudflare Workers 代理**幫忙藏 `OPENROUTER_API_KEY`；(2) 放置位置是**全站浮動按鈕**（右下角圓形按鈕，不管在哪個分頁都點得到，不佔用 tab bar 名額）；(3) 要能實際操作。
-  - **架構**：前端（`js/chatBox.js`）把使用者訊息 + 目前 App 狀態摘要（今天的任務 instanceId/label/status、可調整作息任務的 defId/schedule、倒數的 id/label/targetDate、追劇讀書的 id/title/進度、睡眠提醒設定）送到 Worker → Worker（`cloudflare-worker/chat-proxy.js`）組 system prompt + 呼叫 OpenRouter（沿用 `deepseek/deepseek-chat-v3.1`，`response_format: json_object`，失敗重試一次）→ 回傳 `{reply, action: {type, args} | null}` → **Worker 完全不執行任何動作，只轉發 AI 的決策**，因為 Worker 是無狀態的，碰不到瀏覽器的 localStorage；`chatBox.js` 的 `ACTION_EXECUTORS` 才是真的呼叫 `taskEngine.js`/`countdown.js`/`mediaTracker.js`/`sleepReminder.js` 既有函式去寫 localStorage 的地方，每個 executor 都會驗證參數存在才動作，不盲目信任 AI 回傳的內容。System prompt 明確要求 AI 只能用【目前 App 狀態】裡「已經存在」的真實 id，不能自己編
-  - **前端 UI**：`js/ChatBoxView.js` + `index.html` 的 `#modal-chat`（沿用 `app.js` 既有的 `AppleFluidModal` class 做開關/拖曳關閉手勢，跟「未來規劃」那個 modal 是同一套機制），浮動按鈕 `.chat-fab` 固定在右下角、tab bar 正上方
-  - **已用模擬後端的方式在瀏覽器完整測試過整條鏈路**：暫時 patch `CHAT_WORKER_URL` + mock `fetch` 回傳一個假的 `{reply, action: postpone_task}`，確認送出訊息後對話框正確顯示、且 `taskEngine.js` 的 localStorage 真的被改到（今天的任務狀態變成 `postponed`，明天多出一筆延後過去的任務），整條鏈路（前端狀態 → mock worker 回覆 → 前端執行 action → 真的寫 localStorage）沒問題，只是還沒接真正部署的 Worker
-  - **`CHAT_WORKER_URL` 目前是空字串**（`js/chatBox.js` 最上面），沒設定時聊天框會回覆「這個功能還沒接上後端」的提示文字，不會壞掉或報錯。**下一步是使用者要自己申請 Cloudflare 帳號、用 wrangler 部署**（步驟寫在 `cloudflare-worker/README.md`，模式跟當初申請 OpenRouter key 一樣），部署完把網址貼進 `CHAT_WORKER_URL` 就會真的動起來
-  - **部署卡在 `wrangler login`（2026-10-02）**：使用者已經有 Cloudflare 帳號，但執行部署步驟時瀏覽器跳出 `welcome.developers.workers.dev 意外中斷連線`，連不上。`wrangler login` 預設是跳瀏覽器走 OAuth 流程，需要連到 Cloudflare 的 dashboard/workers 網域，南京的網路環境連這類網域不穩定是已知狀況（類似之前 Gemini 連線被地區擋的狀況，但這次是單純連線不穩/被擋，不是帳號問題）。**下次要改用 API Token 走 headless 登入，不要再試互動式 `wrangler login`**：請使用者去 Cloudflare dashboard → My Profile → API Tokens → Create Token（用 "Edit Cloudflare Workers" 範本），把拿到的 token 設成環境變數 `CLOUDFLARE_API_TOKEN`（終端機打 `export CLOUDFLARE_API_TOKEN=xxx`，Windows 是 `$env:CLOUDFLARE_API_TOKEN="xxx"`），這樣 `wrangler secret put`／`wrangler deploy` 都不用再開瀏覽器，整個繞過會連不上的那個頁面。使用者說要明天再處理，這個方案還沒實際試過，下次先用這個方法
-  - **Worker 已部署、網址已接上，但端到端還沒驗證過（2026-10-03）**：使用者最後沒走終端機，是在 Cloudflare 後台用「連 GitHub repo」的方式部署的（專案名稱 `my-morning-brief-chat-proxy`，部署命令 `npx wrangler deploy --config cloudflare-worker/wrangler.toml`，因為 `wrangler.toml` 在子資料夾不在根目錄），`OPENROUTER_API_KEY` 在後台設成 Secret 類型（一開始設成文字變數，已改）。**連了 GitHub 之後每次 push 到 main 都會重新部署 Worker**，改 `cloudflare-worker/chat-proxy.js` 要小心，壞了線上就壞了。網址 `https://my-morning-brief-chat-proxy.loverinline520.workers.dev/` 已寫進 `js/chatBox.js` 的 `CHAT_WORKER_URL`。**沒驗證的原因**：`*.workers.dev` 從使用者這台電腦（南京）連不上，curl 是 TLS 握手失敗，同一時間 GitHub Pages 跟 cloudflare.com 都是 200——這個網域在中國大陸被擋，跟前一天 `welcome.developers.workers.dev` 連不上是同一件事。所以 Worker 本身對不對、OpenRouter key 有沒有生效，我這邊都測不到，**要使用者開 VPN 實際用一次聊天框才算驗證**。`chatBox.js` 的錯誤訊息已改成：fetch 本身失敗時顯示「連不上 AI 後端…開 VPN 再試」，Worker 回非 200 時顯示 Worker 給的說明。另外補了一個之前漏掉的東西：動作執行成功後會發 `chenxu:data-changed` 事件，`app.js` 收到後重畫任務清單／週曆／倒數／設定／睡眠，不然 AI 延後了任務畫面卻不會變。**還沒處理**：Worker 的 CORS 還是 `*` 而且沒有任何驗證，網址又寫在公開 repo 裡，任何人都能打這支 API 花使用者的 OpenRouter 額度；CORS 擋不了 curl，真正有效的是在 OpenRouter 給這把 key 設花費上限。不開 VPN 也能用的做法是幫 Worker 綁自訂網域（要先有一個網域），還沒做
-  - **「開著 VPN 還是連不上」的真正原因（2026-10-03 查到）**：使用者一直開著 VPN（本機代理 `127.0.0.1:7897`），但聊天框仍回「連不上 AI 後端」。實測 `https://www.cloudflare.com/cdn-cgi/trace` 回 `ip=202.119.42.39 loc=CN`（教育網 IP），代表代理是**規則分流模式**，不在規則清單裡的網域直接走校園網出去，沒經過 VPN 節點；`workers.dev` 就是這樣被直連然後被擋（直連時 DNS 還被污染成 `64.13.192.74`）。這也解釋了使用者說的「有時候會被認定為中國」。解法在使用者的 VPN 軟體裡：切全局模式，或加一條 `DOMAIN-SUFFIX,workers.dev` 走代理的規則。這是使用者自己的軟體設定，我只給步驟不動它。使用者改完之後還要重測一次聊天框
-- ~~追劇/讀書進度自動分配，完全還沒開始~~ 已完成（2026-09-22，見上方「新增『追劇／讀書進度』功能」）
-- ~~90 分鐘睡眠週期功能，還沒開始~~ 已完成，經過兩次改版（2026-09-22 初版 → 2026-09-22 搬到獨立分頁 → 2026-09-23 照使用者給的完整線框圖三度重做）：
-  - (1) 睡眠計算機：`js/sleepCalculator.js`，常數 `SLEEP_CYCLE_MIN=90`／`FALL_ASLEEP_MIN=15`／`MIN_CYCLES=3`／`MAX_CYCLES=6`／`RECOMMENDED_CYCLES=4`。`calcFromNow(now)`：現在時間 + 15 分鐘入睡緩衝，往後推算 3~6 個週期各自對應的起床時間。`calcFromWakeTime(wakeTimeStr, now)`：指定起床時間（取「下一次發生」的那個時間點，過了今天就算明天），往回推算 3~6 個週期各自對應的建議上床時間。兩個函式都回傳帶 `dayLabel`（''/'明天'/'昨天'）的選項陣列，用真正的 `Date` 物件算跨日，不是純字串加減
-  - (2) 就寢提醒：`js/sleepReminder.js` 不變，純前端 `setTimeout` + 瀏覽器 `Notification` API，資料存 localStorage（key: `morningBrief.sleepReminder.v1`）。**使用者自己已經知道並接受的限制**：只在分頁還開著的時候才會跳通知，PWA 純前端沒辦法背景推播，這塊要等之後真的包成 Capacitor app 才可能做到背景通知
-  - **放置位置（2026-09-22 定案）**：不塞在「設定」頁，底部 tab bar 獨立的「睡眠」分類（第 5 個 tab，`js/tabs.js`／`index.html`／`js/SleepView.js`）
-  - **UI 三度重做（2026-09-23，使用者給了完整線框圖 + pseudocode，照著做）**：`js/SleepView.js` 整個重寫成線框圖那套流程——一進來先是「你想要怎麼計算？」的模式選擇卡片（🌙 我現在要睡 / ☀️ 我要幾點起床，`.sleep-mode-card`），選了以後才進到輸入畫面：「我現在要睡」自動抓當下時間 + 顯示預估入睡時間（+15分）不用手動輸入；「我要幾點起床」給一個 time input。算完之後進結果畫面：3/4/5/6 個週期四張卡片（`.sleep-option`，2x2 grid），4 個週期那張固定有「推薦」徽章（`.sleep-option-badge`）。卡片本身可點：點下去選取高亮（`is-selected`），如果是「我要幾點起床」模式（結果是建議上床時間）還會直接把那個時間套用成就寢提醒時間，不用手動再打一次；「我現在要睡」模式（結果是建議起床時間）點選只做高亮，沒有起床提醒功能可以套用。結果畫面下面有「重新計算」按鈕，只會退回輸入畫面（時間輸入那步），不會整個退回模式選擇；卡片標題列的 × 按鈕才是真的退回模式選擇。**時間顯示會標「明天」**：例如現在 23:50、算出來的時間是隔天凌晨，會顯示成「06:35・明天」，不會讓使用者自己猜有沒有跨過午夜
+## 架構
 
-## 接下來要做的（照這個順序）
+| 部分 | 位置 | 說明 |
+|---|---|---|
+| 前端 | `my-morning-brief-apple-design/` | 純 ES module 的靜態網站，沒有打包工具。要用本機伺服器開，不能直接雙擊 `index.html` |
+| 每日資料 | `scripts/generate_brief.py` → `data/today.json` | GitHub Actions 每天 07:30 和每次 push 到 main 時跑：天氣（和風天氣，南京栖霞區）、匯率、語錄、10 題題庫、運勢 |
+| 後端 | `cloudflare-worker/` | 一個 Worker：AI 助理（`chat-proxy.js`）、每日運勢的模型呼叫（`mode: 'brief'`）、推播提醒（`push.js`）、雲端備份（`backup.js`）。push 到 main 時 Cloudflare 會自動重新部署，改壞了線上就壞了 |
+| iOS 外殼 | `ios-shell/` | Capacitor 專案，只是打開線上網站的殼。現在不是主要做法，留著備用 |
 
-1. ~~`taskEngine.js`~~ 已完成（見上）
-2. ~~`CalendarView.js`~~ 已完成（見上）
-3. ~~`countdown.js` + `CountdownView.js`~~ 已完成（見上）
-4. ~~`SettingsView.js`~~ 已完成：可調整「運動、蔬果日、PO文、洗衣採買」這幾項出現在星期幾（`taskEngine.js` 新增 `getRoutineConfig()`/`setTaskWeekdays()`/`getConfigurableTaskIds()`，設定存在跟任務資料同一個 localStorage key 底下的 `routineConfig` 欄位）。保健食品/追劇是每天固定不開放關閉；居家用品檢查/旅遊規劃/睡眠時間/手機宵禁目前只做成唯讀參考，還沒有實際的提醒/通知機制（那是第 7 步的事）
-   - **每 N 天排程模式已加上（2026-09-21）**：原本每個任務只能設「星期幾」，現在每個任務可以自己獨立選「星期幾」或「每 N 天一次」（使用者確認的設計）。`taskEngine.js` 的 `DEFAULT_ROUTINE_CONFIG` 改成結構化物件 `{mode: 'weekday', days: [...]}` 或 `{mode: 'interval', everyNDays: N, anchorDate: 'YYYY-MM-DD'}`，`normalizeRoutineConfig()` 會把舊格式（純陣列）自動遷移成新格式，`isTaskActiveOnDate()` 依 mode 分流判斷（interval 模式算 `(今天 - anchorDate 天數) % everyNDays === 0`）。`setTaskWeekdays` 改名成 `setTaskWeekdaySchedule`，新增 `setTaskIntervalSchedule`。`SettingsView.js` 每個任務列多了「星期幾／每 N 天」的模式切換鈕。已用瀏覽器直接測過 interval 模式算出來的啟用日期是對的
-5. Capacitor 包裝 + Codemagic 雲端構建（下一步）（沒有 Mac，走免費 Apple ID + AltStore，或視情況付費 $99/年，這個之後再決定）
-6. ~~OpenRouter 接進日報~~ 已完成（2026-09-21，見上方「Gemini 已徹底放棄，改用 OpenRouter」）；~~追劇/讀書進度自動分配~~ 已完成（2026-09-22，見上方「新增『追劇／讀書進度』功能」，`js/mediaTracker.js` + `SettingsView.js`）
+前端的模組（都在 `js/`）：
 
-## 使用者的確定排程（跟任務清單/提醒功能設計有關）
+- 資料與邏輯：`taskEngine.js`（任務與作息）、`fixedSchedule.js`（固定時間點）、`sleepCalculator.js`、`sleepReminder.js`（提醒怎麼發）、`quizMistakes.js`（錯題本）、`countdown.js`、`mediaTracker.js`、`backup.js` + `cloudBackup.js`、`weeklyReport.js`、`chatBox.js`、`services/dataService.js`
+- 畫面：`app.js`（今日頁和初始化）、`tabs.js`、`TaskListView.js`、`CalendarView.js`、`CountdownView.js`、`SleepView.js`、`FixedScheduleView.js`、`SettingsView.js`、`ChatBoxView.js`、`taskIcons.js`、`swipeRow.js`、`motion.js`
+- `config.js`：Worker 的網址。`sw.js`（在網站根目錄）：只處理推播的 service worker。
 
-- 運動：嚴格一週 2 天（週二 跑步 2km + 重訓、週四 重訓），籃球是非固定娛樂項目不算配額
-- 蔬果日：週二
-- 洗澡提醒／手機宵禁：每天固定 23:30／23:00
-- 追劇規則：每天洗澡後到就寢前至少看完一集
-- 保健食品：每天早上
-- 洗衣打掃／採買下週蔬果：週日下午
-- 濾心／除溼袋／馬桶殺菌球檢查＋旅遊規劃：每月第一個週日
+五個分頁：今日（任務 → 倒數 → 天氣、運勢、匯率 → 題庫 → 語錄）、週曆、倒數、睡眠（計算機 + 作息與提醒）、設定（每週安排、追劇讀書、本週摘要、雲端備份）。
+
+## 一定要遵守的規則
+
+**資料**
+- 使用者的紀錄存在 localStorage，key 一律 `morningBrief.` 開頭，才會被雲端備份涵蓋。
+- 不是使用者紀錄的東西（同步狀態、一次性旗標、題庫今天做到哪）用 `chenxu.` 開頭，才不會被備份帶走、也不會在還原時被清掉。
+- 新編號不要只用 `Date.now()`：AI 助理一次加好幾項時會在同一毫秒撞號。後面加亂數字（照 `taskEngine.js` 的 `addCustomTask`）。
+- 不要用程式默默清使用者的資料，除非他明確要求。
+
+**內容不可以編**
+- 題庫只用公路局官方題庫（`data/questions.json`，798 題）。不補寫解析、不改答案。
+- 語錄要有查得到的出處。日文的句子要逐字對過原文才能加（做法在 history）。
+- 運勢不提使用者個人的事（考試、職涯、所在地）。天象只能用 `get_sky_facts()` 算出來的。
+- 抓不到今天的資料就不顯示，不拿範例內容充數。
+
+**樣式**（細節在 DESIGN.md）
+- 顏色、字級、圓角只用 `css/styles.css` 最上面 `:root` 的變數。字級只有九級。
+- 每一組文字和底色要有 4.5:1 的對比。
+- 手機上可以點的東西至少 40–44px。輸入框字級不小於 16px。
+- 卡片不透明、沒有陰影和邊框；卡片裡用細線分隔的列，不再包有底色的框。
+- `:hover` 包在 `@media (hover: hover) and (pointer: fine)` 裡。按壓樣式同時寫 `:active` 和 `.is-pressing`，class 加進 `app.js` 的 `PRESSABLE_SELECTOR`。
+- 用 `hidden` 屬性切換顯示、而那個 class 有設 `display` 時，要另外補 `[hidden] { display: none }`。
+- 固定欄數的格線用 `minmax(0, 1fr)`，不要單寫 `1fr`。
+- 只有淺色外觀。不要加深色模式。
+- 不用表情符號當圖示。
+
+**程式**
+- JS 之間的 import 一律寫成 `from './xxx.js'`（單引號、相對路徑、`.js` 結尾）。部署時會用 sed 幫這些網址加版本號，寫成別的形式會漏掉，瀏覽器就會拿到新舊混雜的檔案。
+- `sw.js` 不要加 fetch 處理或離線快取。這個專案被快取坑過很多次。
+- `print` 的字串不要放 cp950 沒有的字元（重音字母、emoji），Windows 本機跑會崩潰。
+- 在滑開的清單列裡加按鈕時，注意 `swipeRow.js` 的 `pointerdown` 不要把那一列收回去（收回去按鈕會隱藏，點擊落空）。
+
+## 測試與部署
+
+- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（36 項，沒有相依套件）。**部署流程會先跑測試，沒過就不部署，連每天早上的資料更新也會停。**
+- 所以測試不可以依賴「今天是星期幾」或「某一天剛好排了什麼」。2026-10-09 就因為這樣停了一天。要用任務的測試自己建項目；改完用假日期多跑幾天（做法在 history 最後一段）。
+- 改了 `taskEngine.js`／`sleepCalculator.js`／`quizMistakes.js`／`fixedSchedule.js`／`cloudBackup.js`／Worker 的 `push.js`、`backup.js` 之後要跑測試。改了行為就同步改測試，不要為了讓它過而刪測試。
+- push 之前：`git stash push -- .claude/launch.json; git pull --rebase origin main; git stash pop`。Actions 會自己 commit 匯率歷史回 repo，不先拉會被拒絕。`.claude/launch.json` 和最外層那份題庫 PDF 不要 commit。
+- push 之後用 `"/c/Program Files/GitHub CLI/gh.exe" run list --repo kasim9497/my-morning-brief0` 確認部署成功再說「上線了」。
+- 這台電腦連外要走代理：`HTTPS_PROXY=http://127.0.0.1:7897`。
+- 用 curl 測 Worker 要帶 `-H "Origin: https://kasim9497.github.io"`，不然是 403。不要對線上的 Worker 存測試用的備份（只有 3 個名額）。
+
+## 在瀏覽器裡驗證
+
+- 預覽伺服器的設定在 `.claude/launch.json`。**每次驗證換一個埠**（同一個埠會拿到快取的舊 CSS／JS），不要用 8549–8648（這台 Windows 的保留埠）。
+- 本機的 `data/today.json` 是 8 月的範例檔。要看正常的樣子，暫時把 `window.fetch` 換成回傳改過日期和內容的資料，再按重新整理。
+- 預覽視窗沒在畫面上時動畫不會前進，量位置前先 `document.getAnimations().forEach(a => a.finish())`。截圖常常逾時，改用讀 DOM 和計算後的樣式。
+- 測過會改資料的操作之後換一個新的埠（新的來源），不要只還原 localStorage：頁面記憶體裡那份會再寫回去。
+- 這裡測不到的：推播通知（預覽瀏覽器拒絕通知權限）、安全區、實際觸感。這些要請使用者在手機上確認，回報時講清楚。
+
+## 現在的狀態（2026-10-09）
+
+使用者在 iPhone 上確認過：推播提醒會響、底部選單不擋橫條、淺色外觀正常。
+
+還沒在手機上確認的（都在 2026-10-08 到 10-09 做的）：今日頁新排版、任務的復原、題庫新流程和進度保存、天氣和運勢的收合、睡眠頁的「作息與提醒」、雲端備份第一次實際上傳。
+
+已知的限制（使用者知道）：
+- 在南京，連 Worker 要開 VPN。改提醒時間、雲端備份、AI 助理都受影響；收推播不受影響。
+- 提醒可能晚一分鐘左右，偶爾可能漏。
+- 雲端備份靠一組通關密語，不是正式登入，內容沒加密。手動備份已經拿掉，沒開雲端備份就沒有任何備份。
+- 每天 07:30 之前打開，天氣和匯率會標「昨天的資料」，沒有運勢。這是對的。
+- 「週一至週三 01:20 就寢」的提醒在週二到週四凌晨響（凌晨 5 點前算前一晚）。使用者還沒確認這是不是他要的。
+- 運勢的文字是免費模型寫的，只有天象是算的。
+- 日本語錄的中文是我翻的；柳宗悅和諺語的比例偏高。
+
+接下來：使用者打算先照常用兩週，記下哪些沒在看、哪些卡，再跑一次 `/impeccable critique`（上次今日頁 22/40，之後修了全部五個優先問題）。在那之前不要主動加新功能。
