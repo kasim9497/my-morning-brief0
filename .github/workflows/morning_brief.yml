@@ -60,7 +60,10 @@ jobs:
           python-version: '3.11'
 
       # 日期與排程邏輯的自動測試。沒過就停在這裡，不會把壞掉的版本部署出去
+      # 排程（每天早上）跑的是已經上線、push 時測過的同一份程式，這時候測試失敗不該擋住當天的資料更新
+      # （2026-10-09 就因為一項跟日期有關的測試停了一天）。失敗還是會在這次執行上標出來
       - name: Run Logic Tests
+        continue-on-error: ${{ github.event_name == 'schedule' }}
         run: cd my-morning-brief-apple-design && node --test
 
       # opencc：簡轉繁（to_traditional），沒裝的話 AI 內容會維持模型回的簡體字
@@ -73,6 +76,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
+          BIRTH_CHART_SUMMARY: ${{ secrets.BIRTH_CHART_SUMMARY }}
           # Build metadata injected into today.json → buildInfo
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}

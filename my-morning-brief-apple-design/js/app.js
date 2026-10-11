@@ -11,7 +11,7 @@ import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView } from './SleepView.js';
-import { scheduleReminderIfEnabled } from './sleepReminder.js';
+import { scheduleReminderIfEnabled, saveTaskSnapshot } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
 import { startCloudBackup, getCloudBackupState } from './cloudBackup.js';
@@ -67,6 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSettingsView();
   renderSleepView();
   scheduleReminderIfEnabled();
+  // 在週曆上打勾不會經過今日頁，所以離開晨序時再存一次待辦通知要用的清單
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveTaskSnapshot().catch(() => {}); });
   startCloudBackup();
   // 雲端備份成功後，今日頁那張「還沒備份」的提醒就不用再出現
   window.addEventListener('chenxu:cloud-backup', renderBackupReminder);

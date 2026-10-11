@@ -16,7 +16,16 @@ const DEFAULTS = [
   { id: 'shower', label: '洗澡', note: '每天', time: '23:30' },
 ];
 
+// 待辦的通知：不是作息，但一樣是「每天幾點響一次」，所以放在同一張清單裡。不能改名和刪除。
+// 通知上要寫哪些任務，由 sw.js 看 sleepReminder.js 存好的那份清單決定
+const TASK_REMINDERS = [
+  { id: 'tasksMorning', kind: 'tasks', label: '今天的待辦', note: '每天', time: '08:30', remind: false },
+  { id: 'tasksEvening', kind: 'tasks', label: '還沒做完的', note: '每天', time: '21:30', remind: false },
+];
+
 const isTime = (value) => /^\d{2}:\d{2}$/.test(value);
+const isBed = (item) => item.id.endsWith('Bed') || item.label.includes('就寢');
+const pad = (n) => String(n).padStart(2, '0');
 
 function load() {
   let saved = null;
@@ -25,9 +34,11 @@ function load() {
   } catch (e) {
     saved = null;
   }
-  if (saved && Array.isArray(saved.items)) return saved.items;
   // 舊格式只存 { id: 時間 }，那時候還不能新增刪除
-  return DEFAULTS.map((item) => ({ ...item, time: (saved && saved[item.id]) || item.time, remind: false }));
+  const items = saved && Array.isArray(saved.items)
+    ? saved.items
+    : DEFAULTS.map((item) => ({ ...item, time: (saved && saved[item.id]) || item.time, remind: false }));
+  return [...items, ...TASK_REMINDERS.filter((extra) => !items.some((item) => item.id === extra.id))];
 }
 
 function save(items) {
@@ -46,6 +57,7 @@ export function updateFixedItem(id, patch) {
   if (isTime(patch.time)) item.time = patch.time;
   if (typeof patch.label === 'string' && patch.label.trim()) item.label = patch.label.trim();
   if (typeof patch.remind === 'boolean') item.remind = patch.remind;
+  if (Number.isInteger(patch.lead) && patch.lead >= 0 && patch.lead <= 120) item.lead = patch.lead;
   save(items);
 }
 
@@ -70,13 +82,31 @@ export function fireWeekdays(item) {
   return item.days.map((day) => (day + shift) % 7);
 }
 
+/** 提前幾分鐘提醒。就寢沒設過的話是 30：看到通知還要刷牙、收東西，不是馬上躺下 */
+export function leadOf(item) {
+  return Number.isInteger(item.lead) ? item.lead : (isBed(item) ? 30 : 0);
+}
+
+/** 通知實際上幾點、星期幾響（作息時間減掉提前量；減過午夜的話星期也往前一天） */
+export function alertOf(item) {
+  const lead = leadOf(item);
+  const minutes = Number(item.time.slice(0, 2)) * 60 + Number(item.time.slice(3)) - lead;
+  const wrapped = (minutes + 1440) % 1440;
+  const weekdays = fireWeekdays(item);
+  return {
+    time: `${pad(Math.floor(wrapped / 60))}:${pad(wrapped % 60)}`,
+    weekdays: weekdays && minutes < 0 ? weekdays.map((day) => (day + 6) % 7) : weekdays,
+    body: lead ? `再 ${lead} 分鐘，${item.time}` : `${item.time} 到了`,
+  };
+}
+
 // 凌晨還沒睡的時候，「今晚」指的是昨天那一晚
 const nightOf = (now) => (now.getDay() + (now.getHours() < 5 ? 6 : 0)) % 7;
 const forNight = (items, night) => items.find((item) => !item.days || item.days.includes(night)) || items[0] || null;
 
 /** 今晚適用的那一項就寢時間（就寢提醒、睡眠計算機用的就是它）。就寢項目都被刪掉時回傳 null */
 export function getBedItem(now = new Date()) {
-  return forNight(load().filter((item) => item.id.endsWith('Bed') || item.label.includes('就寢')), nightOf(now));
+  return forNight(load().filter(isBed), nightOf(now));
 }
 
 /** 今晚睡下去之後，隔天早上適用的那一項起床時間。沒有就回傳 null */

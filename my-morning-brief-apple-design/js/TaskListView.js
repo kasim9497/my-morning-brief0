@@ -14,6 +14,7 @@ import {
   getPostponeOptions,
 } from './taskEngine.js';
 import { renderTaskIcon } from './taskIcons.js';
+import { saveTaskSnapshot } from './sleepReminder.js';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -139,6 +140,8 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
 export function renderTaskList() {
   const container = document.getElementById('tasklist-widget-content');
   renderTaskListInto(container, getTodayStr(), null, renderTaskList);
+  // 待辦的通知要用的清單，跟著畫面一起更新
+  saveTaskSnapshot().catch(() => {});
 
   const subtitle = document.getElementById('header-date');
   if (!subtitle) return;

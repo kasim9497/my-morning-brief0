@@ -10,7 +10,8 @@
  * 3. 都沒有：瀏覽器通知 + setTimeout，只有晨序開著的時候才會響。
  */
 
-import { getFixedSchedule, updateFixedItem, fireWeekdays, getBedItem } from './fixedSchedule.js';
+import { getFixedSchedule, updateFixedItem, alertOf, getBedItem } from './fixedSchedule.js';
+import { getTasksForDate, getTodayStr, addDays } from './taskEngine.js';
 import { WORKER_URL } from './config.js';
 
 // 改了作息時間但還沒成功傳到後端時記著，設定頁會顯示，下次打開晨序會再試
@@ -18,6 +19,7 @@ const PENDING_KEY = 'morningBrief.pushSyncPending';
 // sw.js 讀這份來決定通知上要寫哪一項（推播本身不帶內容）
 const SCHEDULE_CACHE = 'chenxu-reminders';
 const SCHEDULE_URL = './reminder-schedule.json';
+const TASKS_URL = './reminder-tasks.json';
 
 let timerId = null;
 
@@ -79,8 +81,9 @@ export function nextReminder(items, now = new Date()) {
   let best = null;
   for (const item of items) {
     if (!item.remind) continue;
-    const [h, m] = item.time.split(':').map(Number);
-    const weekdays = fireWeekdays(item);
+    const alert = alertOf(item);
+    const [h, m] = alert.time.split(':').map(Number);
+    const weekdays = alert.weekdays;
     for (let offset = 0; offset <= 7; offset++) {
       const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, h, m, 0, 0);
       if (at <= now || (weekdays && !weekdays.includes(at.getDay()))) continue;
@@ -101,13 +104,14 @@ async function syncNative(native, items) {
   const notifications = [];
   items.forEach((item, index) => {
     if (!item.remind) return;
-    const [hour, minute] = item.time.split(':').map(Number);
+    const alert = alertOf(item);
+    const [hour, minute] = alert.time.split(':').map(Number);
     // 原生的 weekday 是 1 = 週日；沒指定星期就是每天
-    (fireWeekdays(item) || [null]).forEach((weekday, j) => {
+    (alert.weekdays || [null]).forEach((weekday, j) => {
       notifications.push({
         id: index * 10 + j + 1,
         title: item.label,
-        body: `${item.time} 到了`,
+        body: item.kind === 'tasks' ? '' : alert.body,
         schedule: { on: weekday === null ? { hour, minute } : { weekday: weekday + 1, hour, minute } },
       });
     });
@@ -130,7 +134,7 @@ const keyBytes = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(
 
 /** 推播這條路：訂閱（第一次才需要）、把時間表存給 sw.js、把時間傳給後端 */
 async function syncPush(items) {
-  const wanted = items.filter((item) => item.remind);
+  const wanted = items.filter((item) => item.remind).map((item) => ({ item, alert: alertOf(item) }));
   const registration = await navigator.serviceWorker.register('./sw.js');
   await navigator.serviceWorker.ready;
 
@@ -145,15 +149,32 @@ async function syncPush(items) {
   }
 
   const cache = await caches.open(SCHEDULE_CACHE);
-  await cache.put(SCHEDULE_URL, new Response(JSON.stringify(wanted.map((item) => ({ label: item.label, time: item.time })))));
+  await cache.put(SCHEDULE_URL, new Response(JSON.stringify(wanted.map(({ item, alert }) => (
+    { label: item.label, time: alert.time, body: alert.body, tasks: item.kind === 'tasks' }
+  )))));
 
   // 名稱不用傳上去，後端只需要知道幾點、星期幾
   await callWorker({
     mode: 'push-sync',
     subscription: subscription.toJSON(),
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    items: wanted.map((item) => ({ time: item.time, weekdays: fireWeekdays(item) })),
+    items: wanted.map(({ alert }) => ({ time: alert.time, weekdays: alert.weekdays })),
   });
+}
+
+/**
+ * 把今天、明天、後天還沒做的任務存給 sw.js：待辦的通知要寫出名稱，而推播本身不帶內容。
+ * 存在手機上，不會傳到後端。多存兩天是為了早上還沒打開晨序時，通知也有東西可以寫。
+ */
+export async function saveTaskSnapshot() {
+  if (!('caches' in globalThis) || !getFixedSchedule().some((item) => item.kind === 'tasks' && item.remind)) return;
+  const days = {};
+  for (let offset = 0; offset < 3; offset++) {
+    const dateStr = addDays(getTodayStr(), offset);
+    days[dateStr] = getTasksForDate(dateStr).filter((task) => task.status === 'pending').map((task) => task.label);
+  }
+  const cache = await caches.open(SCHEDULE_CACHE);
+  await cache.put(TASKS_URL, new Response(JSON.stringify(days)));
 }
 
 function setPending(pending) {
@@ -180,6 +201,7 @@ export function scheduleReminderIfEnabled() {
   if (!('Notification' in globalThis) || Notification.permission !== 'granted') return;
 
   if (pushSupported()) {
+    saveTaskSnapshot().catch(() => {});
     syncPush(items).then(() => setPending(false)).catch((e) => {
       console.warn('[reminder] 推播同步失敗：', e);
       setPending(true);
@@ -191,7 +213,7 @@ export function scheduleReminderIfEnabled() {
   if (!next) return;
   timerId = setTimeout(() => {
     try {
-      new Notification(next.item.label, { body: `${next.item.time} 到了` });
+      new Notification(next.item.label, { body: next.item.kind === 'tasks' ? '' : alertOf(next.item).body });
     } catch (e) {
       console.warn('[reminder] 顯示通知失敗：', e);
     }

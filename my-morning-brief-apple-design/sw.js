@@ -10,15 +10,19 @@
 
 const SCHEDULE_CACHE = 'chenxu-reminders';
 const SCHEDULE_URL = './reminder-schedule.json';
+const TASKS_URL = './reminder-tasks.json';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-async function dueLabels() {
+async function readJson(url) {
   const cache = await caches.open(SCHEDULE_CACHE);
-  const res = await cache.match(SCHEDULE_URL);
-  if (!res) return [];
-  const items = await res.json();
+  const res = await cache.match(url);
+  return res ? res.json() : null;
+}
+
+async function dueItems() {
+  const items = (await readJson(SCHEDULE_URL)) || [];
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   return items.filter((item) => {
@@ -29,20 +33,33 @@ async function dueLabels() {
   });
 }
 
+/** 待辦的通知：今天還沒做的那幾項。清單是晨序上次打開時存的（js/sleepReminder.js） */
+async function taskNote(item) {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const pending = ((await readJson(TASKS_URL)) || {})[today];
+  // 太久沒打開晨序，手上沒有今天的清單
+  if (!pending) return { title: item.label, body: '打開晨序看看今天的安排' };
+  if (!pending.length) return { title: '今天的事都做完了', body: '' };
+  return { title: `今天還有 ${pending.length} 項`, body: pending.join('、') };
+}
+
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
-    let title = '作息提醒';
-    let body = '';
+    const notes = [];
     try {
-      const due = await dueLabels();
-      if (due.length) {
-        title = due.map((item) => item.label).join('、');
-        body = `${due[0].time} 到了`;
+      const due = await dueItems();
+      const fixed = due.filter((item) => !item.tasks);
+      const tasks = due.find((item) => item.tasks);
+      if (fixed.length) {
+        notes.push({ title: fixed.map((item) => item.label).join('、'), body: fixed[0].body || `${fixed[0].time} 到了`, tag: 'chenxu-reminder' });
       }
+      if (tasks) notes.push({ ...(await taskNote(tasks)), tag: 'chenxu-tasks' });
     } catch (e) {
       // 讀不到時間表也要顯示通知：iOS 規定每一則推播都必須讓使用者看到東西
     }
-    await self.registration.showNotification(title, { body, icon: 'icons/icon-192.png', tag: 'chenxu-reminder' });
+    if (!notes.length) notes.push({ title: '作息提醒', body: '', tag: 'chenxu-reminder' });
+    await Promise.all(notes.map((note) => self.registration.showNotification(note.title, { body: note.body, icon: 'icons/icon-192.png', tag: note.tag })));
   })());
 });
 

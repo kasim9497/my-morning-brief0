@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 
+
+# 個人資料，只留在這台電腦，不進 GitHub
+private/

@@ -2276,8 +2276,8 @@ button, select, [role="button"] {
   min-height: 44px;
 }
 
-/* 手機上一列要放名稱、時間、開關三樣：備註換到名稱下面一行，名稱才不會被擠成直的 */
-.fixed-row .row-note { display: block; margin-left: 0; }
+/* 手機上一列要放名稱、時間、開關三樣：備註換到名稱下面一行，名稱才不會被擠成直的；備註太長就換行，不要壓到時間框上 */
+.fixed-row .row-note { display: block; margin-left: 0; white-space: normal; }
 .fixed-row > span:first-child { white-space: nowrap; }
 
 /* ── 收尾檢查修的幾處（2026-10-08）── */

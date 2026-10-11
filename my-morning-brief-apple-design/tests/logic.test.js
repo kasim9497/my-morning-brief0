@@ -259,7 +259,7 @@ test('作息時間：可以新增、改名、刪除；舊格式（只存時間�
 
 test('提醒：挑最近的一項；凌晨的就寢時間算前一晚，所以「週一至週三」是週二到週四凌晨響', () => {
   const items = [
-    { id: 'weekdayBed', label: '平日就寢', time: '01:20', days: [1, 2, 3], remind: true },
+    { id: 'weekdayBed', label: '平日就寢', time: '01:20', days: [1, 2, 3], remind: true, lead: 0 },
     { id: 'shower', label: '洗澡', time: '23:30', remind: true },
     { id: 'off', label: '沒開', time: '12:00', remind: false },
   ];
@@ -271,6 +271,26 @@ test('提醒：挑最近的一項；凌晨的就寢時間算前一晚，所以�
   assert.equal(next.at.getDate(), 13);
   assert.equal(next.at.getHours(), 1);
   assert.equal(reminder.nextReminder([items[2]], new Date()), null);
+});
+
+test('提前提醒：就寢預設提前 30 分鐘；減過午夜時星期跟著往前一天', () => {
+  const bed = { id: 'weekdayBed', label: '平日就寢', time: '01:20', days: [1, 2, 3], remind: true };
+  assert.deepEqual(fixed.alertOf(bed), { time: '00:50', weekdays: [2, 3, 4], body: '再 30 分鐘，01:20' });
+  // 00:10 就寢、提前 30 分鐘：變成前一天 23:40，也就是回到週一到週三的晚上
+  assert.deepEqual(fixed.alertOf({ ...bed, time: '00:10' }), { time: '23:40', weekdays: [1, 2, 3], body: '再 30 分鐘，00:10' });
+  assert.deepEqual(fixed.alertOf({ id: 'shower', label: '洗澡', time: '23:30' }), { time: '23:30', weekdays: null, body: '23:30 到了' });
+  // 每天的項目減過午夜不用管星期
+  assert.equal(fixed.alertOf({ id: 'x', label: '吃藥', time: '00:05', lead: 10 }).time, '23:55');
+
+  const next = reminder.nextReminder([bed], new Date(2026, 9, 11, 20, 0));
+  assert.equal(`${next.at.getDate()} ${next.at.getHours()}:${next.at.getMinutes()}`, '13 0:50');
+
+  fixed.updateFixedItem('shower', { lead: 15 });
+  assert.equal(fixed.leadOf(fixed.getFixedSchedule().find((i) => i.id === 'shower')), 15);
+  fixed.updateFixedItem('shower', { lead: 999 });
+  assert.equal(fixed.leadOf(fixed.getFixedSchedule().find((i) => i.id === 'shower')), 15, '不合理的提前量不會被存進去');
+  // 待辦的兩項通知一定在清單裡，預設關著
+  assert.deepEqual(fixed.getFixedSchedule().filter((i) => i.kind === 'tasks').map((i) => i.remind), [false, false]);
 });
 
 test('作息改名：內建和自訂的項目都能改，空白的名稱不收', () => {

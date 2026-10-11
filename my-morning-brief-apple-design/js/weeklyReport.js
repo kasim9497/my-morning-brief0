@@ -43,7 +43,7 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
     return `- ${m.title}：${m.completedUnits}/${m.totalUnits} ${unit}，目標日 ${m.targetDate}，${m.progress.status}`;
   });
   const mistakes = getMistakes();
-  const scheduleLine = getFixedSchedule().map((item) => `${item.label} ${item.time}`).join('、');
+  const scheduleLine = getFixedSchedule().filter((item) => !item.kind).map((item) => `${item.label} ${item.time}`).join('、');
 
   const sections = [
     `以下是我 ${shortDate(dates[0])} 到 ${shortDate(dates[6])} 這一週在生活排程 App「晨序」裡的紀錄。`,

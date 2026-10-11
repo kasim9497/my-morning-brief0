@@ -5,7 +5,7 @@
  * 資料在 fixedSchedule.js，提醒怎麼發在 sleepReminder.js。
  */
 
-import { getFixedSchedule, updateFixedItem, addFixedItem, removeFixedItem, getBedItem, getWakeItem } from './fixedSchedule.js';
+import { getFixedSchedule, updateFixedItem, addFixedItem, removeFixedItem, getBedItem, getWakeItem, leadOf } from './fixedSchedule.js';
 import {
   scheduleReminderIfEnabled,
   requestNotificationPermission,
@@ -15,6 +15,8 @@ import {
 } from './sleepReminder.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
+
+const LEAD_OPTIONS = [0, 10, 15, 20, 30, 45, 60];
 
 let editing = false;
 
@@ -31,7 +33,7 @@ function escapeHtml(str) {
 function footnote() {
   if (isPushSyncPending()) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。在傳上去之前，提醒會照舊的時間響。連上後再打開晨序會自動重試。';
   return canRemindInBackground()
-    ? '打開右邊的開關，時間到會跳通知，晨序關著也會。'
+    ? '打開右邊的開關，時間到會跳通知，晨序關著也會。按「編輯」可以設提前幾分鐘。待辦那兩項會列出當天還沒做的事。'
     : '打開右邊的開關，時間到會提醒。iPhone 要先把晨序「加入主畫面」，從主畫面打開才收得到。';
 }
 
@@ -41,14 +43,19 @@ export function renderFixedScheduleCard() {
   const tomorrow = getWakeItem();
   const mark = (item) => (tonight && item.id === tonight.id ? '今晚' : tomorrow && item.id === tomorrow.id ? '明早' : '');
 
-  const rowsHtml = getFixedSchedule().map((item) => (editing ? `
+  const leadNote = (item) => (!item.kind && leadOf(item) ? `提前 ${leadOf(item)} 分` : '');
+  // 待辦的那兩項（item.kind）不能改名、刪除，也沒有「提前」，編輯時不列出來
+  const rowsHtml = getFixedSchedule().filter((item) => !editing || !item.kind).map((item) => (editing ? `
       <div class="list-row">
         <input type="text" class="row-input rename-input" data-action="fixed-label" data-id="${item.id}" value="${escapeHtml(item.label)}" maxlength="20" aria-label="名稱">
+        <select class="countdown-input" data-action="fixed-lead" data-id="${item.id}" aria-label="${escapeHtml(item.label)}提前多久提醒">
+          ${[...new Set([...LEAD_OPTIONS, leadOf(item)])].sort((a, b) => a - b).map((n) => `<option value="${n}" ${n === leadOf(item) ? 'selected' : ''}>${n ? `提前 ${n} 分` : '準時'}</option>`).join('')}
+        </select>
         <button type="button" class="countdown-delete" data-action="fixed-delete" data-id="${item.id}" aria-label="刪除${escapeHtml(item.label)}">${ICON_TRASH}</button>
       </div>
     ` : `
       <div class="list-row fixed-row">
-        <span>${escapeHtml(item.label)}<small class="row-note">${[mark(item), item.note].filter(Boolean).map(escapeHtml).join(' · ')}</small></span>
+        <span>${escapeHtml(item.label)}<small class="row-note">${[mark(item), item.note, leadNote(item)].filter(Boolean).map(escapeHtml).join(' · ')}</small></span>
         <input type="time" class="countdown-input" data-action="fixed-time" data-id="${item.id}" value="${item.time}" aria-label="${escapeHtml(item.label)}的時間">
         <input type="checkbox" class="ios-switch" data-action="fixed-remind" data-id="${item.id}" ${item.remind ? 'checked' : ''} aria-label="${escapeHtml(item.label)}提醒">
       </div>
@@ -98,6 +105,13 @@ export function bindFixedSchedule(container, rerender) {
   container.querySelectorAll('[data-action="fixed-label"]').forEach((input) => {
     input.addEventListener('change', () => {
       updateFixedItem(input.dataset.id, { label: input.value });
+      scheduleReminderIfEnabled();
+    });
+  });
+
+  container.querySelectorAll('[data-action="fixed-lead"]').forEach((select) => {
+    select.addEventListener('change', () => {
+      updateFixedItem(select.dataset.id, { lead: Number(select.value) });
       scheduleReminderIfEnabled();
     });
   });
