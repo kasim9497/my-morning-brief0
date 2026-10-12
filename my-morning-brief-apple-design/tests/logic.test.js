@@ -427,14 +427,18 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.equal(await cloud.turnOnCloudBackup('correct horse battery'), null);
   assert.ok(cloud.getCloudBackupState().savedAt, '開啟後馬上傳一份');
   assert.ok(![...kv.values()].some((v) => v.includes('correct horse')), '後端看不到密語');
+  assert.ok(![...kv.values()].some((v) => v.includes('A 手機的資料')), '後端看不到內容（加密過了）');
+  const stored = () => [...kv.entries()].find(([k]) => k.startsWith('backup:'))[1];
 
   // 資料變了就再傳；沒變就不傳
   const before = cloud.getCloudBackupState().savedAt;
   await cloud.uploadNow();
   assert.equal(cloud.getCloudBackupState().savedAt, before);
   localStorage.setItem('morningBrief.note', 'A 手機的新資料');
+  const firstUpload = stored();
   await cloud.uploadNow();
-  assert.ok([...kv.values()].some((v) => v.includes('A 手機的新資料')), '變了的內容有傳上去');
+  assert.notEqual(stored(), firstUpload, '變了的內容有傳上去');
+  const fromA = stored();
 
   // 「另一支手機」：同步狀態是空的、資料不一樣。開啟時不會自己蓋掉雲端，自動上傳也會停住
   clearSync();
@@ -442,9 +446,26 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.equal(await cloud.turnOnCloudBackup('correct horse battery'), null);
   assert.ok(cloud.getCloudBackupState().conflictSavedAt, '發現雲端已經有一份');
   await cloud.uploadNow();
-  assert.ok([...kv.values()].some((v) => v.includes('A 手機的新資料')), '雲端那份沒有被蓋掉');
+  assert.equal(stored(), fromA, '雲端那份沒有被蓋掉');
 
   // 選「用雲端那一份」
+  assert.equal(await cloud.restoreFromCloud(), null);
+  assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
+
+  // 雲端那份壞掉（解不開）時，手機上的資料不能被清掉
+  const [kvKey, kvValue] = [...kv.entries()].find(([k]) => k.startsWith('backup:'));
+  const broken = JSON.parse(kvValue);
+  broken.data['morningBrief.encrypted.v1'] = broken.data['morningBrief.encrypted.v1'].slice(0, -8) + 'AAAAAAA=';
+  kv.set(kvKey, JSON.stringify(broken));
+  assert.match(await cloud.restoreFromCloud(), /解不開/);
+  assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
+
+  // 加密功能出來之前開啟的手機（沒有鑰匙）：照舊傳得上去，設定頁會提示；沒加密的舊備份也還原得回來
+  fakeStorage.delete('chenxu.cloudBackup.key');
+  assert.equal(cloud.getCloudBackupState().unencrypted, true);
+  assert.match(await cloud.restoreFromCloud(), /加密的/);
+  await cloud.uploadNow({ force: true });
+  localStorage.setItem('morningBrief.note', '被改掉的');
   assert.equal(await cloud.restoreFromCloud(), null);
   assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
 
@@ -454,6 +475,37 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: 'a'.repeat(64) }, env)).payload.exists, false);
   assert.equal((await backend.handleBackupRequest({ mode: 'backup-get', token: '不是雜湊' }, env)).status, 400);
   fakeStorage.delete('morningBrief.note');
+});
+
+test('任務操作回傳有沒有真的改到；做完的不能標成不做；讀不出來的資料會另外留一份', async () => {
+  const day = '2027-05-03';
+  const id = tasks.addCustomTask('回傳值測試');
+  tasks.setTaskWeekdaySchedule(id, [0, 1, 2, 3, 4, 5, 6]);
+  const find = () => tasks.getTasksForDate(day).find((t) => t.defId === id);
+
+  assert.equal(tasks.toggleDone(day, '沒有這一項'), false);
+  assert.equal(tasks.toggleDone(day, find().instanceId), true);
+  assert.equal(tasks.skipTask(day, find().instanceId), false, '做完的不能標成不做');
+  assert.equal(tasks.postponeTask(day, find().instanceId, 'plus1'), false, '做完的不能延後');
+  assert.equal(find().status, 'done');
+  assert.equal(tasks.toggleDone(day, find().instanceId), true);
+  assert.equal(tasks.postponeTask(day, find().instanceId, '亂填'), false);
+  assert.equal(tasks.skipTask(day, find().instanceId), true);
+  assert.equal(tasks.toggleDone(day, find().instanceId), false, '不做的要先復原才能打勾');
+  tasks.removeRoutineTask(id);
+
+  const backup = await import('../js/backup.js');
+  assert.equal(backup.applyBackupData({}), false);
+  assert.equal(backup.applyBackupData({ 'other.key': 'x' }), false);
+  assert.ok(localStorage.getItem('morningBrief.taskEngine.v1'), '空的備份不會清掉手機上的資料');
+
+  // 任務資料壞掉時：重新載入的模組會用空白狀態，但原本那份要留著
+  const good = localStorage.getItem('morningBrief.taskEngine.v1');
+  localStorage.setItem('morningBrief.taskEngine.v1', '{壞掉的');
+  await import('../js/taskEngine.js?reload-broken');
+  assert.equal(localStorage.getItem('morningBrief.taskEngine.v1.unreadable'), '{壞掉的');
+  localStorage.setItem('morningBrief.taskEngine.v1', good);
+  fakeStorage.delete('morningBrief.taskEngine.v1.unreadable');
 });
 
 test('連續新增：同一瞬間加的幾項不會撞到同一個編號', () => {

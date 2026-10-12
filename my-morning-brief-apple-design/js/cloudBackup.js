@@ -1,6 +1,11 @@
 /**
  * 雲端自動備份：開啟後，資料有變動就自動存一份到後端（cloudflare-worker/backup.js）。
- * 手動的「現在備份」還是留著，當第二道保險。
+ *
+ * 內容在手機上先加密（AES-GCM）才傳出去，鑰匙是從通關密語算出來的、只留在這支手機，
+ * 所以後端存的是一串看不懂的東西。加密後的內容包成一筆 `morningBrief.encrypted.v1`，
+ * 後端不用知道它是加密的，照原本的規則收就好。
+ * ponytail: 傳給後端認人用的 token 是密語的一次雜湊。密語太好猜的話，拿得到 token 的人猜得出密語、
+ * 也就解得開內容——加密的強度就是密語的強度。
  *
  * 這裡存的幾個 key 刻意不用 morningBrief. 開頭：它們是「這支手機和雲端的同步狀態」，
  * 不是使用者的紀錄，不該被打包進備份，也不該在還原時被清掉。
@@ -12,6 +17,8 @@ import { collectBackupData, applyBackupData } from './backup.js';
 const TOKEN_KEY = 'chenxu.cloudBackup.token';
 const SAVED_AT_KEY = 'chenxu.cloudBackup.savedAt'; // 這支手機上次同步到的雲端版本
 const HASH_KEY = 'chenxu.cloudBackup.hash';        // 那一次上傳的內容指紋，沒變就不用再傳
+const CRYPT_KEY = 'chenxu.cloudBackup.key';        // 加解密用的鑰匙。2026-10-12 之前開啟的手機沒有這個
+const ENCRYPTED_KEY = 'morningBrief.encrypted.v1';
 const CHECK_EVERY_MS = 5 * 60 * 1000;
 export const MIN_PASSPHRASE_LENGTH = 8;
 
@@ -29,6 +36,39 @@ function fingerprint(data) {
 async function tokenFor(passphrase) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`chenxu-backup:${passphrase}`));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const toB64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+const fromB64 = (text) => Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+
+/** 從密語算出加解密的鑰匙（故意算得慢，讓人不好用猜的） */
+async function keyFor(passphrase) {
+  const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode('chenxu-backup-key-v1'), iterations: 210000 },
+    material, 256,
+  );
+  return toB64(bits);
+}
+
+const importKey = (stored) => crypto.subtle.importKey('raw', fromB64(stored), 'AES-GCM', false, ['encrypt', 'decrypt']);
+
+async function encrypt(data, storedKey) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const text = new TextEncoder().encode(JSON.stringify(data));
+  const sealed = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await importKey(storedKey), text);
+  // 大的陣列不能一次展開成參數，分段轉
+  let body = '';
+  const bytes = new Uint8Array(sealed);
+  for (let i = 0; i < bytes.length; i += 30000) body += String.fromCharCode(...bytes.subarray(i, i + 30000));
+  return { [ENCRYPTED_KEY]: `${toB64(iv)}.${btoa(body)}` };
+}
+
+/** 解不開（鑰匙不對、內容壞了）會丟出錯誤 */
+async function decrypt(data, storedKey) {
+  const [iv, body] = data[ENCRYPTED_KEY].split('.');
+  const opened = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(iv) }, await importKey(storedKey), fromB64(body));
+  return JSON.parse(new TextDecoder().decode(opened));
 }
 
 async function call(payload) {
@@ -52,6 +92,8 @@ export function getCloudBackupState() {
   return {
     on: !!localStorage.getItem(TOKEN_KEY),
     savedAt: localStorage.getItem(SAVED_AT_KEY),
+    // 加密功能出來之前就開啟的手機：還在傳沒加密的，要重新輸入一次密語才有鑰匙
+    unencrypted: !!localStorage.getItem(TOKEN_KEY) && !localStorage.getItem(CRYPT_KEY),
     conflictSavedAt,
     error: lastError,
   };
@@ -70,7 +112,8 @@ export async function uploadNow({ force = false } = {}) {
   // 還在等使用者決定用哪一份的時候，不要自己上傳
   if (conflictSavedAt && !force) return;
   try {
-    const result = await call({ mode: 'backup-put', token, data, baseSavedAt: localStorage.getItem(SAVED_AT_KEY), force });
+    const cryptKey = localStorage.getItem(CRYPT_KEY);
+    const result = await call({ mode: 'backup-put', token, data: cryptKey ? await encrypt(data, cryptKey) : data, baseSavedAt: localStorage.getItem(SAVED_AT_KEY), force });
     if (result.conflict) {
       conflictSavedAt = result.savedAt;
     } else {
@@ -96,6 +139,7 @@ export async function turnOnCloudBackup(passphrase) {
     return `連不上雲端（${e.message}）。確認 VPN 開著再試一次。`;
   }
   localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(CRYPT_KEY, await keyFor(passphrase));
   localStorage.removeItem(SAVED_AT_KEY);
   localStorage.removeItem(HASH_KEY);
   if (existing.exists) {
@@ -118,7 +162,18 @@ export async function restoreFromCloud() {
     return `連不上雲端（${e.message}）。`;
   }
   if (!result.exists) return '雲端沒有這組密語的備份。';
-  applyBackupData(result.data);
+  let data = result.data;
+  if (data && data[ENCRYPTED_KEY]) {
+    const cryptKey = localStorage.getItem(CRYPT_KEY);
+    if (!cryptKey) return '雲端那一份是加密的。請先關閉雲端備份，再用同一組密語重新開啟，就能還原。';
+    try {
+      data = await decrypt(data, cryptKey);
+    } catch (e) {
+      return '雲端那一份解不開，這支手機的資料沒有動。';
+    }
+  }
+  // 備份是空的或格式不對時什麼都不會動
+  if (!applyBackupData(data)) return '雲端那一份是空的或格式不對，這支手機的資料沒有動。';
   conflictSavedAt = null;
   localStorage.setItem(SAVED_AT_KEY, result.savedAt);
   localStorage.setItem(HASH_KEY, fingerprint(collectBackupData()));
@@ -128,7 +183,7 @@ export async function restoreFromCloud() {
 
 /** 關閉：這支手機不再自動上傳。雲端那一份留著 */
 export function turnOffCloudBackup() {
-  [TOKEN_KEY, SAVED_AT_KEY, HASH_KEY].forEach((key) => localStorage.removeItem(key));
+  [TOKEN_KEY, SAVED_AT_KEY, HASH_KEY, CRYPT_KEY].forEach((key) => localStorage.removeItem(key));
   conflictSavedAt = null;
   lastError = null;
   changed();

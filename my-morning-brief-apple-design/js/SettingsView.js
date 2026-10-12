@@ -38,7 +38,7 @@ const APP_VERSION = '1.0.0';
 
 const ABOUT_ROWS = [
   { label: '版本', value: APP_VERSION },
-  { label: '資料儲存', value: '這台裝置；開了雲端備份會多存一份在後端' },
+  { label: '資料儲存', value: '這台裝置；開了雲端備份會多存一份加密過的在後端' },
   { label: '提醒', value: '開了提醒的時間會傳到後端，名稱不會' },
   { label: '天氣', value: '和風天氣' },
   { label: '匯率', value: 'ExchangeRate-API' },
@@ -137,7 +137,7 @@ function renderCloudBackup() {
   const state = getCloudBackupState();
   if (!state.on) {
     return `
-      <p class="list-footnote backup-explain">設一組通關密語（至少 ${MIN_PASSPHRASE_LENGTH} 個字），之後資料有變動會自動存一份到雲端，不用再記得按。換手機時輸入同一組密語就拿得回來。密語忘了就拿不回雲端那一份，請記好。</p>
+      <p class="list-footnote backup-explain">設一組通關密語（至少 ${MIN_PASSPHRASE_LENGTH} 個字），之後資料有變動會自動存一份到雲端，不用再記得按。內容會先在手機上用這組密語加密再傳，雲端存的是看不懂的亂碼。換手機時輸入同一組密語就拿得回來。密語忘了就誰也解不開，請記好；密語越長越難猜越安全。</p>
       <form class="list-row routine-add-form" id="cloud-on-form">
         <input type="password" class="row-input routine-add-input" id="cloud-passphrase" placeholder="通關密語" minlength="${MIN_PASSPHRASE_LENGTH}" autocomplete="new-password" required aria-label="通關密語">
         <button type="submit" class="section-action">開啟</button>
@@ -157,6 +157,7 @@ function renderCloudBackup() {
       <span>自動備份中<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}</small></span>
       <button type="button" class="section-action" id="cloud-off-btn">關閉</button>
     </div>
+    ${state.unencrypted ? '<p class="list-footnote backup-explain">現在傳上去的內容還沒加密。按「關閉」，再用同一組密語重新開啟，之後就會先加密再傳（開啟時選「用這支手機的」）。</p>' : ''}
     ${state.error ? `<p class="list-footnote backup-explain">上次沒傳成功（${escapeHtml(state.error)}）。連得上的時候會自動再試。</p>` : ''}
     <button type="button" class="section-action" id="cloud-restore-btn">用雲端那一份還原這支手機</button>
   `;

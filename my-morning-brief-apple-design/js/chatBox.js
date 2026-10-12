@@ -99,18 +99,15 @@ async function buildAppStateContext() {
 const ACTION_EXECUTORS = {
   postpone_task: (args) => {
     if (!args.instanceId || !VALID_POSTPONE_OPTIONS.includes(args.option)) return null;
-    postponeTask(getTodayStr(), args.instanceId, args.option);
-    return '已經幫你延後了。';
+    return postponeTask(getTodayStr(), args.instanceId, args.option) ? '已經幫你延後了。' : null;
   },
   skip_task: (args) => {
     if (!args.instanceId) return null;
-    skipTask(getTodayStr(), args.instanceId);
-    return '已標記跳過。';
+    return skipTask(getTodayStr(), args.instanceId) ? '已標記跳過。' : null;
   },
   toggle_task_done: (args) => {
     if (!args.instanceId) return null;
-    toggleDone(getTodayStr(), args.instanceId);
-    return '已更新完成狀態。';
+    return toggleDone(getTodayStr(), args.instanceId) ? '已更新完成狀態。' : null;
   },
   set_task_weekday_schedule: (args) => {
     const validDays = Array.isArray(args.weekdays) && args.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
@@ -212,7 +209,7 @@ export async function sendChatMessage(userText) {
     }
     // AI 說做了、但參數沒通過這邊的檢查而沒有真的執行時，要讓使用者知道
     if (done.length < requested.length) {
-      reply += `\n（有 ${requested.length - done.length} 個動作沒有成功執行，請換個說法再試一次。）`;
+      reply += `\n（有 ${requested.length - done.length} 個動作沒有成功執行，可能是那一項已經做完、延後或不做了，或是我沒聽懂；請看一下清單再說一次。）`;
     }
 
     conversationHistory.push({ role: 'assistant', content: reply });

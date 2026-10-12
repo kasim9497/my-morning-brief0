@@ -149,6 +149,13 @@ function loadStore() {
     };
   } catch (e) {
     console.warn('[taskEngine] localStorage 讀取失敗，使用空白狀態：', e);
+    // 接下來的存檔會用空白狀態蓋掉這個 key，所以先把讀不出來的那份原樣留一份（也會跟著雲端備份走）
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) localStorage.setItem(`${STORAGE_KEY}.unreadable`, raw);
+    } catch (e2) {
+      // 連留都留不住（空間滿了）就沒辦法了
+    }
     return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [], labelOverrides: {} };
   }
 }
@@ -362,18 +369,24 @@ export function undoTaskAction(dateStr, instanceId) {
 
 // ── 狀態變更 ────────────────────────────────────────────────────────
 
+// 這三個都回傳「有沒有真的改到」：AI 助理靠這個決定能不能跟使用者說做好了
+
 export function toggleDone(dateStr, instanceId) {
   const entry = store.days[dateStr]?.[instanceId];
-  if (!entry) return;
+  // 延後或不做的要先復原才能打勾，不然延過去的那筆和這筆會變成同一件事算兩次
+  if (!entry || (entry.status !== 'pending' && entry.status !== 'done')) return false;
   entry.status = entry.status === 'done' ? 'pending' : 'done';
   saveStore(store);
+  return true;
 }
 
 export function skipTask(dateStr, instanceId) {
   const entry = store.days[dateStr]?.[instanceId];
-  if (!entry) return;
+  // 只有還沒做的可以標成不做：做完的被改成不做，那一天的紀錄就不對了
+  if (!entry || entry.status !== 'pending') return false;
   entry.status = 'skipped';
   saveStore(store);
+  return true;
 }
 
 /**
@@ -383,13 +396,13 @@ export function skipTask(dateStr, instanceId) {
  */
 export function postponeTask(dateStr, instanceId, option) {
   const entry = store.days[dateStr]?.[instanceId];
-  if (!entry) return;
+  if (!entry) return false;
   // 一定要擋已經不是 pending 的項目：UI 本身會把已延後/已跳過的任務停用，
   // 這條路走不到，但現在 AI 聊天框的 action executor 也會呼叫這個函式，
   // 沒有同樣的擋。如果對同一個 instance 重複呼叫，會用同一把
   // `defId__from_dateStr` key 覆寫掉目標日那筆「已經被延過去」的任務，
   // 把它的真實狀態（可能已經打勾完成或又被延到更後面）悄悄蓋掉
-  if (entry.status !== 'pending') return;
+  if (entry.status !== 'pending') return false;
 
   if (option === 'skipWeek') {
     entry.status = 'skipped';
@@ -409,12 +422,12 @@ export function postponeTask(dateStr, instanceId, option) {
       }
     }
     saveStore(store);
-    return;
+    return true;
   }
 
   const daysMap = { plus1: 1, plus2: 2, plus3: 3, nextWeek: 7 };
   const offset = daysMap[option];
-  if (!offset) return;
+  if (!offset) return false;
 
   const targetDateStr = addDays(dateStr, offset);
   entry.status = 'postponed';
@@ -429,4 +442,5 @@ export function postponeTask(dateStr, instanceId, option) {
   };
 
   saveStore(store);
+  return true;
 }

@@ -11,7 +11,8 @@ function loadCountdowns() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedDefault();
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : seedDefault();
+    // 空的清單是使用者自己刪光的，照樣尊重；只有從來沒存過才放預設那一筆
+    return Array.isArray(parsed) ? parsed : seedDefault();
   } catch (e) {
     console.warn('[countdown] localStorage 讀取失敗，使用預設值：', e);
     return seedDefault();

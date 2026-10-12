@@ -31,11 +31,17 @@ export function collectBackupData() {
   return data;
 }
 
-/** 用一份備份取代現在的資料。呼叫的人要自己重新載入頁面 */
+/**
+ * 用一份備份取代現在的資料，回傳有沒有換成功。呼叫的人要自己重新載入頁面。
+ * 備份是空的或格式不對就什麼都不動：先確認有東西可以放回去，才清手機上現有的。
+ */
 export function applyBackupData(data) {
-  // 先清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
+  const entries = data && typeof data === 'object' && !Array.isArray(data)
+    ? Object.entries(data).filter(([key, value]) => key.startsWith(KEY_PREFIX) && typeof value === 'string')
+    : [];
+  if (!entries.length) return false;
+  // 清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
   Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
-  for (const [key, value] of Object.entries(data)) {
-    if (key.startsWith(KEY_PREFIX) && typeof value === 'string') localStorage.setItem(key, value);
-  }
+  entries.forEach(([key, value]) => localStorage.setItem(key, value));
+  return true;
 }

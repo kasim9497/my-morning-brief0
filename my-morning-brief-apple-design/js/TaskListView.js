@@ -69,7 +69,8 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
         ? `<span class="task-status-tag">${statusText(t)}</span>`
         : '';
       const name = escapeHtml(t.label);
-      // 處理過的列只留「復原」；不能復原的（延過去那筆已經做完了）就沒有選單
+      // 處理過的列只留「復原」；不能復原的（延過去那筆已經做完了）就沒有選單。
+      // 做完的也沒有選單：要改成延後或不做，先把勾取消
       const menuHtml = isInactive
         ? `<option value="${UNDO_VALUE}">復原</option>`
         : `<option value="${SKIP_VALUE}">今天不做</option>${optionsHtml}`;
@@ -85,7 +86,7 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
             ${carriedTag}
             ${statusTag}
           </div>
-          <select class="task-postpone-select" data-instance="${t.instanceId}" aria-label="${name}：${isInactive ? '復原' : '延後或不做'}" ${isInactive && !t.canUndo ? 'disabled' : ''}>
+          <select class="task-postpone-select" data-instance="${t.instanceId}" aria-label="${name}：${isInactive ? '復原' : '延後或不做'}" ${isDone || (isInactive && !t.canUndo) ? 'disabled' : ''}>
             <option value="">⋯</option>
             ${menuHtml}
           </select>
