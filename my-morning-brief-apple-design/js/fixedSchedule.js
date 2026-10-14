@@ -8,9 +8,9 @@ const STORAGE_KEY = 'morningBrief.fixedSchedule.v1';
 
 // days：這一項屬於星期幾（0 = 週日）。沒有 days 的每天都算。
 const DEFAULTS = [
-  { id: 'weekdayBed', label: '平日就寢', note: '週一至週三', time: '01:20', days: [1, 2, 3] },
+  { id: 'weekdayBed', label: '平日就寢', note: '週一、週二', time: '01:20', days: [1, 2] },
   { id: 'weekdayWake', label: '平日起床', note: '週一至週三', time: '08:50', days: [1, 2, 3] },
-  { id: 'weekendBed', label: '假日就寢', note: '週四至週日', time: '01:00', days: [4, 5, 6, 0] },
+  { id: 'weekendBed', label: '假日就寢', note: '週三至週日', time: '01:00', days: [3, 4, 5, 6, 0] },
   { id: 'weekendWake', label: '假日起床', note: '週四至週日', time: '10:00', days: [4, 5, 6, 0] },
   { id: 'phoneCurfew', label: '手機宵禁', note: '每天', time: '23:00' },
   { id: 'shower', label: '洗澡', note: '每天', time: '23:30' },
@@ -35,10 +35,24 @@ function load() {
     saved = null;
   }
   // 舊格式只存 { id: 時間 }，那時候還不能新增刪除
+  if (saved && Array.isArray(saved.items)) moveWednesdayNight(saved.items);
   const items = saved && Array.isArray(saved.items)
     ? saved.items
     : DEFAULTS.map((item) => ({ ...item, time: (saved && saved[item.id]) || item.time, remind: false }));
   return [...items, ...TASK_REMINDERS.filter((extra) => !items.some((item) => item.id === extra.id))];
+}
+
+// 2026-10-15 使用者要求：週三晚上改成跟假日一樣睡。畫面上不能改星期，所以這裡幫手機上已經存好的那份改一次
+const WED_NIGHT_FLAG = 'chenxu.fixedSchedule.wedNightWeekend';
+function moveWednesdayNight(items) {
+  if (localStorage.getItem(WED_NIGHT_FLAG)) return;
+  localStorage.setItem(WED_NIGHT_FLAG, '1');
+  const weekday = items.find((item) => item.id === 'weekdayBed');
+  const weekend = items.find((item) => item.id === 'weekendBed');
+  if (!weekday || !weekend || String(weekday.days) !== '1,2,3' || String(weekend.days) !== '4,5,6,0') return;
+  Object.assign(weekday, { days: [1, 2], note: '週一、週二' });
+  Object.assign(weekend, { days: [3, 4, 5, 6, 0], note: '週三至週日' });
+  save(items);
 }
 
 function save(items) {
@@ -111,5 +125,6 @@ export function getBedItem(now = new Date()) {
 
 /** 今晚睡下去之後，隔天早上適用的那一項起床時間。沒有就回傳 null */
 export function getWakeItem(now = new Date()) {
-  return forNight(load().filter((item) => item.id.endsWith('Wake') || item.label.includes('起床')), nightOf(now));
+  // 起床項目的星期指的是那天早上（「週一至週三 08:50」是週一到週三早上），所以要找的是今晚的隔天
+  return forNight(load().filter((item) => item.id.endsWith('Wake') || item.label.includes('起床')), (nightOf(now) + 1) % 7);
 }

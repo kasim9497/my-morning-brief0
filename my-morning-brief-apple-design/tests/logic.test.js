@@ -273,6 +273,33 @@ test('提醒：挑最近的一項；凌晨的就寢時間算前一晚，所以�
   assert.equal(reminder.nextReminder([items[2]], new Date()), null);
 });
 
+test('週三晚上改成跟假日一樣：手機上已經存好的那份會被改一次，之後不再動', () => {
+  const old = [
+    { id: 'weekdayBed', label: '平日就寢', note: '週一至週三', time: '01:20', days: [1, 2, 3], remind: true },
+    { id: 'weekendBed', label: '假日就寢', note: '週四至週日', time: '01:00', days: [4, 5, 6, 0], remind: true },
+  ];
+  fakeStorage.delete('chenxu.fixedSchedule.wedNightWeekend');
+  localStorage.setItem('morningBrief.fixedSchedule.v1', JSON.stringify({ items: old }));
+  const bed = (id) => fixed.getFixedSchedule().find((i) => i.id === id);
+  assert.deepEqual(bed('weekdayBed').days, [1, 2]);
+  assert.deepEqual(bed('weekendBed').days, [3, 4, 5, 6, 0]);
+  // 週三晚上 23:00 看「今晚」是假日就寢
+  assert.equal(fixed.getBedItem(new Date(2026, 9, 14, 23, 0)).id, 'weekendBed');
+  // 明早起床看的是隔天早上：週日晚上 → 週一 08:50；週三晚上（含凌晨還沒睡）→ 週四 10:00
+  const wakes = [
+    { id: 'weekdayWake', label: '平日起床', time: '08:50', days: [1, 2, 3] },
+    { id: 'weekendWake', label: '假日起床', time: '10:00', days: [4, 5, 6, 0] },
+  ];
+  localStorage.setItem('morningBrief.fixedSchedule.v1', JSON.stringify({ items: wakes }));
+  assert.equal(fixed.getWakeItem(new Date(2026, 9, 11, 23, 0)).id, 'weekdayWake');
+  assert.equal(fixed.getWakeItem(new Date(2026, 9, 14, 23, 0)).id, 'weekendWake');
+  assert.equal(fixed.getWakeItem(new Date(2026, 9, 15, 1, 0)).id, 'weekendWake');
+  // 只改一次：之後存回舊的也不會再被改
+  localStorage.setItem('morningBrief.fixedSchedule.v1', JSON.stringify({ items: old }));
+  assert.deepEqual(bed('weekdayBed').days, [1, 2, 3]);
+  fakeStorage.delete('morningBrief.fixedSchedule.v1');
+});
+
 test('提前提醒：就寢預設提前 30 分鐘；減過午夜時星期跟著往前一天', () => {
   const bed = { id: 'weekdayBed', label: '平日就寢', time: '01:20', days: [1, 2, 3], remind: true };
   assert.deepEqual(fixed.alertOf(bed), { time: '00:50', weekdays: [2, 3, 4], body: '再 30 分鐘，01:20' });
