@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 const PRESSABLE_SELECTOR = [
   '.btn-action',
+  '.disclosure summary',
   '.option-btn',
   '.task-check',
   '.weekday-toggle',
@@ -321,8 +322,17 @@ function renderWeather(w) {
     </div>
     <div class="weather-line">${[range, rain].filter(Boolean).join(' · ')}</div>
     ${w.aiTip ? `<div class="weather-tip">${escapeHtml(w.aiTip)}</div>` : ''}
-    ${moreRows ? `<details class="add-details"><summary class="section-action">看更多</summary>${moreRows}</details>` : ''}
+    ${moreRows ? disclosure('體感和紫外線', '', moreRows) : ''}
   `;
+}
+
+// 卡片裡「點了才展開」的那一列：左邊標題、右邊摘要和箭頭（展開時箭頭轉下）。天氣和運勢共用
+const ICON_CHEVRON = '<svg class="disclosure-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,5 16,12 9,19"/></svg>';
+function disclosure(title, hint, body) {
+  return `<details class="disclosure">
+      <summary><span>${title}</span><span class="disclosure-hint">${hint}${ICON_CHEVRON}</span></summary>
+      <div class="disclosure-body">${body}</div>
+    </details>`;
 }
 
 /**
@@ -359,24 +369,22 @@ function renderHoroscope(h) {
   document.getElementById('horoscope-card-badge').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
 
   const details = h.details || {};
-  const catRows = [['整體', details.overall], ['工作', details.work], ['感情', details.love], ['財運', details.wealth], ['健康', details.health]]
+  // 「整體」跟上面那段總結講的是同一件事，不再列一次
+  const catRows = [['工作', details.work], ['感情', details.love], ['財運', details.wealth], ['健康', details.health]]
     .filter(([, text]) => text)
     .map(([name, text]) => `<div class="cat-item"><span class="cat-name">${name}</span><span>${escapeHtml(text)}</span></div>`)
+    .concat(h.luckyColor || h.luckyNumber ? [`<div class="cat-item"><span class="cat-name">幸運</span><span>${[h.luckyColor, h.luckyNumber && `數字 ${h.luckyNumber}`].filter(Boolean).map(escapeHtml).join(' · ')}</span></div>`] : [])
     .join('');
 
-  // 平常只看星等和一句話；幸運色和五個分項是「有空再看」的，收在下面點了才展開
+  // 平常只看星等、一段總結和天象提醒；分項和幸運色是「有空再看」的，收在下面點了才展開
   container.innerHTML = `
     <div class="stars" role="img" aria-label="今天的運勢 ${escapeHtml(h.ratingStars)}">${escapeHtml(h.ratingStars)}</div>
 
+    <div class="horoscope-summary">${escapeHtml(String(h.aiSummary || '').replace(/^處女座(今日|今天)?運勢[:：]\s*/, ''))}</div>
+
     ${transitAlertHtml}
 
-    <div class="horoscope-summary">${escapeHtml(h.aiSummary)}</div>
-
-    <details class="add-details horoscope-more">
-      <summary class="section-action">看分項</summary>
-      <div class="horoscope-meta">幸運色 ${escapeHtml(h.luckyColor)} · 幸運數字 ${escapeHtml(h.luckyNumber)}</div>
-      <div class="horoscope-categories">${catRows}</div>
-    </details>
+    ${catRows ? disclosure('分項運勢', '工作、感情、財運', `<div class="horoscope-categories">${catRows}</div>`) : ''}
   `;
 }
 
