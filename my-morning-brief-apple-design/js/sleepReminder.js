@@ -110,8 +110,9 @@ async function syncNative(native, items) {
     (alert.weekdays || [null]).forEach((weekday, j) => {
       notifications.push({
         id: index * 10 + j + 1,
-        title: item.label,
-        body: item.kind === 'tasks' ? '' : alert.body,
+        // 時間在上、名稱在下（跟 sw.js 的推播一樣）
+        title: item.kind === 'tasks' ? item.label : alert.body,
+        body: item.kind === 'tasks' ? '' : item.label,
         schedule: { on: weekday === null ? { hour, minute } : { weekday: weekday + 1, hour, minute } },
       });
     });
@@ -213,7 +214,8 @@ export function scheduleReminderIfEnabled() {
   if (!next) return;
   timerId = setTimeout(() => {
     try {
-      new Notification(next.item.label, { body: next.item.kind === 'tasks' ? '' : alertOf(next.item).body });
+      if (next.item.kind === 'tasks') new Notification(next.item.label);
+      else new Notification(alertOf(next.item).body, { body: next.item.label });
     } catch (e) {
       console.warn('[reminder] 顯示通知失敗：', e);
     }

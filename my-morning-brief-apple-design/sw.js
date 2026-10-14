@@ -52,7 +52,8 @@ self.addEventListener('push', (event) => {
       const fixed = due.filter((item) => !item.tasks);
       const tasks = due.find((item) => item.tasks);
       if (fixed.length) {
-        notes.push({ title: fixed.map((item) => item.label).join('、'), body: fixed[0].body || `${fixed[0].time} 到了`, tag: 'chenxu-reminder' });
+        // 時間放上面（粗體那行）、名稱放下面：使用者要一眼先看到還剩多久
+        notes.push({ title: fixed[0].body || `${fixed[0].time} 到了`, body: fixed.map((item) => item.label).join('、'), tag: 'chenxu-reminder' });
       }
       if (tasks) notes.push({ ...(await taskNote(tasks)), tag: 'chenxu-tasks' });
     } catch (e) {
