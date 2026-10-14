@@ -15,6 +15,10 @@ import {
 } from './taskEngine.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { saveTaskSnapshot } from './sleepReminder.js';
+import { switchTab } from './tabs.js';
+
+// 用過一次「⋯」選單就不再顯示那行說明。不是使用者紀錄，所以用 chenxu. 開頭
+const MENU_HINT_KEY = 'chenxu.hint.taskMenuUsed';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -99,9 +103,12 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
   const summaryHtml = summaryLabel === null
     ? ''
     : `<div class="task-summary">${escapeHtml(summaryLabel)}完成 ${summary.done} / ${summary.total} 項${summary.setAside ? `，另有 ${summary.setAside} 項延後或不做` : ''}</div>`;
+  const showHint = !localStorage.getItem(MENU_HINT_KEY) && tasks.some((t) => t.status === 'pending');
+  const hintHtml = showHint ? '<p class="list-footnote">每一項右邊的 ⋯ 可以延後幾天，或今天不做。用過一次這行就會消失。</p>' : '';
   container.innerHTML = tasks.length
-    ? `${summaryHtml}<div class="task-list">${rowsHtml}</div>`
-    : '<div class="countdown-empty">這一天沒有排任何作息</div>';
+    ? `${summaryHtml}<div class="task-list">${rowsHtml}</div>${hintHtml}`
+    : `<div class="countdown-empty">這一天沒有排任何作息</div>
+       <button type="button" class="section-action task-empty-action" data-action="go-routines">去設定每週安排</button>`;
 
   const rerender = () => {
     if (onChange) {
@@ -118,10 +125,14 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
     });
   });
 
+  // 沒有任務時：每週安排在設定頁最上面
+  container.querySelector('[data-action="go-routines"]')?.addEventListener('click', () => switchTab('settings'));
+
   container.querySelectorAll('.task-postpone-select').forEach((select) => {
     select.addEventListener('change', () => {
       const option = select.value;
       if (!option) return;
+      localStorage.setItem(MENU_HINT_KEY, '1');
       if (option === UNDO_VALUE) {
         undoTaskAction(dateStr, select.dataset.instance);
       } else if (option === SKIP_VALUE) {

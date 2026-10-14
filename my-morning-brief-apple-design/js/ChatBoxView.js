@@ -15,13 +15,27 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// 點了會填進輸入框（不會直接送出），可以改完再送
+const EXAMPLES = ['把今天的運動延到明天', '這週還有哪些沒做完？', '新增倒數：期末考 2027-01-10'];
+
 function renderMessages() {
   const container = document.getElementById('chat-messages');
   if (!container) return;
 
   const history = getConversationHistory();
   if (history.length === 0) {
-    container.innerHTML = '<div class="chat-empty">你好，我是你的 AI 助理。可以幫你延後今天的任務、調整作息設定、記錄追劇/讀書進度等，跟我說說看吧。</div>';
+    container.innerHTML = `<div class="chat-empty">
+        可以幫你延後今天的任務、調整每週安排、新增倒數、記錄追劇和讀書進度。點一句試試：
+        <div class="chat-examples">${EXAMPLES.map((text) => `<button type="button" class="section-action" data-example="${escapeHtml(text)}">${escapeHtml(text)}</button>`).join('')}</div>
+      </div>`;
+    container.querySelectorAll('[data-example]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById('chat-input');
+        if (!input) return;
+        input.value = btn.dataset.example;
+        input.focus();
+      });
+    });
     return;
   }
 

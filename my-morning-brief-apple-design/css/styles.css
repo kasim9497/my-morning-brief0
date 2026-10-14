@@ -1756,6 +1756,17 @@ body {
   padding: 1rem 0;
 }
 
+/* AI 助理剛打開時那幾句可以點的範例：一句一行，靠左 */
+.chat-examples {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 0.25rem;
+}
+
+/* 「這一天沒有排任何作息」下面那顆：置中，跟上面那行字對齊 */
+.task-empty-action { display: block; margin: 0 auto; }
+
 .chat-bubble {
   max-width: 80%;
   padding: 0.6rem 0.9rem;
