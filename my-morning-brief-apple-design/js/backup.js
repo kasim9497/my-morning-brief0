@@ -40,6 +40,15 @@ export function applyBackupData(data) {
     ? Object.entries(data).filter(([key, value]) => key.startsWith(KEY_PREFIX) && typeof value === 'string')
     : [];
   if (!entries.length) return false;
+  // 看起來是 JSON 的（{ 或 [ 開頭）要讀得出來，有一筆壞掉就整份不用，手機上的不動。
+  // 「.unreadable」是當初就讀不出來、特地留著的那份，不用檢查
+  try {
+    entries
+      .filter(([key, value]) => !key.endsWith('.unreadable') && /^[[{]/.test(value))
+      .forEach(([, value]) => JSON.parse(value));
+  } catch (e) {
+    return false;
+  }
   // 清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
   Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
   entries.forEach(([key, value]) => localStorage.setItem(key, value));

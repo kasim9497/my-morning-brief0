@@ -524,6 +524,7 @@ test('任務操作回傳有沒有真的改到；做完的不能標成不做；�
   const backup = await import('../js/backup.js');
   assert.equal(backup.applyBackupData({}), false);
   assert.equal(backup.applyBackupData({ 'other.key': 'x' }), false);
+  assert.equal(backup.applyBackupData({ 'morningBrief.a': '{"ok":1}', 'morningBrief.b': '{壞掉的' }), false, '有一筆壞掉就整份不用');
   assert.ok(localStorage.getItem('morningBrief.taskEngine.v1'), '空的備份不會清掉手機上的資料');
 
   // 任務資料壞掉時：重新載入的模組會用空白狀態，但原本那份要留著
