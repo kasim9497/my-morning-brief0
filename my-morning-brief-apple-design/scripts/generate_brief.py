@@ -448,7 +448,7 @@ def generate_offline_synthesis(weather, error):
         "horoscopeTransitAlert": None,
     }
 
-HOROSCOPE_STYLE = 2
+HOROSCOPE_STYLE = 3  # 3 = 各段不重複（2026-10-15）
 
 PUBLISHED_TODAY_URL = os.environ.get(
     "PUBLISHED_TODAY_URL", "https://kasim9497.github.io/my-morning-brief0/data/today.json"
