@@ -243,8 +243,11 @@ test('睡眠紀錄：同一晚按兩次只留最後一次；凌晨上床算前�
   assert.equal(sleepLog.logWake(log[1].id, at(10, 9, 35)), true);
   assert.equal(sleepLog.pendingWake(at(10, 9, 40)), null, '按過就不再問');
   assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('實際 09:35 起床，共 8.5 小時'));
+  // 按過「我起床了」之後同一晚又記一筆（起來又睡回去）：前一段留著
+  sleepLog.logSleep(at(10, 10, 0), at(10, 11, 30), 1);
+  assert.equal(sleepLog.getSleepLog().filter((e) => e.wokeAt).length, 1, '有起床時間的那筆沒被蓋掉');
   assert.ok(report.includes('3/9（二）晚上：01:05 上床'));
-  log.forEach((entry) => sleepLog.removeSleepEntry(entry.id));
+  sleepLog.getSleepLog().forEach((entry) => sleepLog.removeSleepEntry(entry.id));
   assert.equal(sleepLog.getSleepLog().length, 0);
   assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('這一週沒有記錄'));
 });

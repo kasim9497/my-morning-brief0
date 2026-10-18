@@ -144,8 +144,9 @@ function renderLoggedPanel() {
 
 // 最近 7 晚。本週摘要會把同樣這幾筆交給 Claude
 function renderSleepLogCard() {
-  const entries = getSleepLog().slice(-7).reverse();
-  const pending = pendingWake();
+  const log = getSleepLog();
+  const entries = log.slice(-7).reverse();
+  const pending = pendingWake(new Date(), log);
   const rowsHtml = entries.map((entry) => {
     const night = nightOf(entry);
     const [, m, d] = night.split('-').map(Number);
@@ -173,6 +174,13 @@ function renderSleepLogCard() {
 function renderView() {
   const container = document.getElementById('view-sleep');
   if (!container) return;
+
+  // 「記下來了」那張只留到隔天：App 放在背景一整天再打開時，直接回到選擇畫面
+  if (step === 'logged' && Date.now() - Date.parse(loggedEntry.bedAt) > 6 * 3600000) {
+    mode = null;
+    step = 'input';
+    loggedEntry = null;
+  }
 
   let calculatorHtml;
   if (mode === null) {
@@ -278,9 +286,12 @@ function bindEvents(container) {
   const confirmBtn = document.getElementById('sleep-confirm-btn');
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
-      const option = calcResult.options.find((opt) => opt.cycles === selectedCycles);
+      // 沒改上床時間的話，用按下去這一刻重算：算完拖了一陣子才按、或 App 在背景放到隔天再按，
+      // 都不會記成當初按「計算」的時間（隔天按的話還會蓋掉前一晚那筆）
+      const result = bedTimeInput ? calcResult : calcFromNow(new Date());
+      const option = result.options.find((opt) => opt.cycles === selectedCycles);
       if (!option) return;
-      loggedEntry = logSleep(calcResult.now, option.at, option.cycles);
+      loggedEntry = logSleep(result.now, option.at, option.cycles);
       step = 'logged';
       renderView();
     });

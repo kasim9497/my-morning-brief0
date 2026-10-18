@@ -8,7 +8,8 @@
 const STORAGE_KEY = 'morningBrief.sleepLog.v1';
 // 留兩個月就夠看趨勢，不要讓備份越長越大
 const KEEP = 60;
-// 同一晚按了兩次確認（改主意、重新算過）只留最後一次
+// 同一晚按了兩次確認（改主意、重新算過）只留最後一次；已經按過「我起床了」的那筆不算重複
+// （半夜起來又睡回去，前一段要留著）
 const SAME_NIGHT_MS = 6 * 3600 * 1000;
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -33,7 +34,7 @@ export function getSleepLog() {
 
 /** 記一筆。bedAt、wakeAt 是 Date */
 export function logSleep(bedAt, wakeAt, cycles) {
-  const list = getSleepLog().filter((entry) => Math.abs(Date.parse(entry.bedAt) - bedAt.getTime()) >= SAME_NIGHT_MS);
+  const list = getSleepLog().filter((entry) => entry.wokeAt || Math.abs(Date.parse(entry.bedAt) - bedAt.getTime()) >= SAME_NIGHT_MS);
   const entry = {
     id: `sleep_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     bedAt: bedAt.toISOString(),
@@ -58,8 +59,8 @@ export function logWake(id, at = new Date()) {
  * 現在該不該問「起床了嗎」：最新一筆還沒按過，而且上床已經 2 到 16 小時。
  * 太早（剛躺下）不問，太晚（已經過了一整天）也不問，那一筆就只留鬧鐘時間
  */
-export function pendingWake(now = new Date()) {
-  const last = getSleepLog().at(-1);
+export function pendingWake(now = new Date(), log = getSleepLog()) {
+  const last = log.at(-1);
   if (!last || last.wokeAt) return null;
   const elapsed = now.getTime() - Date.parse(last.bedAt);
   return elapsed >= 2 * 3600000 && elapsed <= 16 * 3600000 ? last : null;

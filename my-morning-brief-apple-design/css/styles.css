@@ -15,6 +15,7 @@
   --bg-float-active: rgba(118, 118, 128, 0.16);
   --bg-sheet: rgba(255, 255, 255, 0.96);
   --bg-segment-active: #ffffff;
+  --text-on-accent: #ffffff;     /* 藍、綠、紅底上的字和圖示 */
 
   --text-main: #1c1c1e;
   /* 兩個灰都要在白卡和灰底上有 4.5:1 以上的對比（原本的 #8e8e93 在白底只有 3.3:1） */
@@ -1557,7 +1558,7 @@ body {
   padding: 4px;
   border-radius: 50%;
   background: var(--apple-blue);
-  color: #ffffff;
+  color: var(--text-on-accent);
 }
 
 .sleep-logged-text { font-size: var(--text-body); color: var(--text-main); line-height: 1.5; }

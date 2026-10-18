@@ -134,9 +134,6 @@ function setupCalendarTabRefresh() {
   if (todayBtn) todayBtn.addEventListener('click', () => { renderTaskList(); renderBackupReminder(); });
 }
 
-/**
- * 太久沒備份時，在今日頁最上面提醒一次。資料只存在這支手機，掉了就沒了
- */
 function renderWakePrompt() {
   const card = document.getElementById('wake-prompt');
   if (!card) return;
@@ -155,9 +152,16 @@ function setupWakePrompt() {
   });
   window.addEventListener('chenxu:woke-up', renderWakePrompt);
   // iPhone 上晨序常常是從背景叫回來、不是重新載入，所以回到前景時再看一次
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderWakePrompt(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    renderWakePrompt();
+    renderSleepView();
+  });
 }
 
+/**
+ * 太久沒備份時，在今日頁最上面提醒一次。資料只存在這支手機，掉了就沒了
+ */
 function renderBackupReminder() {
   const card = document.getElementById('backup-reminder');
   if (!card) return;
@@ -394,7 +398,7 @@ function renderHoroscope(h) {
   const details = h.details || {};
   // 主畫面只放總結的第一句（字比任務小，不要搶走注意力），剩下的放進「分項運勢」最上面
   const summary = String(h.aiSummary || '').replace(/^處女座(今日|今天)?運勢[:：]\s*/, '');
-  const firstEnd = summary.indexOf('。') + 1;
+  const firstEnd = summary.search(/[。！？](?![」』])/) + 1;
   const lead = firstEnd > 0 ? summary.slice(0, firstEnd) : summary;
   const rest = firstEnd > 0 ? summary.slice(firstEnd).trim() : '';
 
@@ -510,9 +514,6 @@ function formatShortDate(dateStr) {
   return `${Number(m)}/${Number(d)}`;
 }
 
-/**
- * Render Scooter Driving License Quiz Widget
- */
 // 收起來的那一列：一眼看出今天做到哪
 function renderQuizFold() {
   const title = document.getElementById('quiz-fold-title');
@@ -535,6 +536,9 @@ function renderQuizFold() {
   }
 }
 
+/**
+ * Render Scooter Driving License Quiz Widget
+ */
 function renderDrivingQuiz() {
   saveQuizProgress();
   const container = document.getElementById('quiz-widget-content');

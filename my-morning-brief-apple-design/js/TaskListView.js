@@ -38,15 +38,15 @@ const ICON_CHECK = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24
 
 const shortDate = (dateStr) => `${Number(dateStr.slice(5, 7))}月${Number(dateStr.slice(8, 10))}日`;
 
-/** 跳過或延後的那一列要寫清楚去了哪裡，不然看不出這件事還在不在 */
 // 「追劇：至少看完一集」→ 名稱「追劇」＋小字「至少看完一集」。手機上一行只放得下七八個字，
-// 整句擠在一起會斷在詞的中間
+// 整句擠在一起會斷在詞的中間。夾在數字中間的半形冒號是時間（「23:00 關手機」），不拆
 function labelHtml(label) {
-  const match = /^([^：:]{1,8})[：:]\s*(.+)$/.exec(label || '');
+  const match = /^([^：:]{1,8}?)(?:：|(?<!\d):(?!\d))\s*(.+)$/.exec(label || '');
   if (!match) return escapeHtml(label);
   return `${escapeHtml(match[1])}<small class="task-detail">${escapeHtml(match[2])}</small>`;
 }
 
+/** 跳過或延後的那一列要寫清楚去了哪裡，不然看不出這件事還在不在 */
 function statusText(t) {
   if (t.status === 'postponed') return t.movedTo ? `已延到 ${shortDate(t.movedTo)}` : '已延後';
   if (t.status === 'skipped') return t.skippedWeek ? '這週不做' : '今天不做';
