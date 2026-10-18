@@ -12,6 +12,7 @@ import { getTasksForDate, getTodayStr, addDays, getWeekday } from './taskEngine.
 import { getMediaItems, getTypeInfo } from './mediaTracker.js';
 import { getMistakes } from './quizMistakes.js';
 import { getFixedSchedule } from './fixedSchedule.js';
+import { getSleepLog, nightOf, clockOf, hoursOf } from './sleepLog.js';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const STATUS_TEXT = { pending: '沒做', postponed: '延後', skipped: '跳過' };
@@ -43,11 +44,14 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
     return `- ${m.title}：${m.completedUnits}/${m.totalUnits} ${unit}，目標日 ${m.targetDate}，${m.progress.status}`;
   });
   const mistakes = getMistakes();
+  const sleepLines = getSleepLog()
+    .filter((entry) => dates.includes(nightOf(entry)))
+    .map((entry) => `- ${shortDate(nightOf(entry))}晚上：${clockOf(entry.bedAt)} 上床，預計 ${clockOf(entry.wakeAt)} 起床（${entry.cycles} 個睡眠週期，${hoursOf(entry)} 小時）`);
   const scheduleLine = getFixedSchedule().filter((item) => !item.kind).map((item) => `${item.label} ${item.time}`).join('、');
 
   const sections = [
     `以下是我 ${shortDate(dates[0])} 到 ${shortDate(dates[6])} 這一週在生活排程 App「晨序」裡的紀錄。`,
-    '請幫我分析這一週的狀況：哪些習慣做得穩、哪些常漏掉、可能的原因，最後給我 3 個下週可以調整的具體建議。',
+    '請幫我分析這一週的狀況：哪些習慣做得穩、哪些常漏掉、可能的原因；睡眠的部分看上床時間穩不穩定、睡得夠不夠、跟我設定的就寢時間差多少。最後給我 3 個下週可以調整的具體建議。',
     '',
     '【每天的任務】',
     ...dayLines,
@@ -56,6 +60,9 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
     ...taskLines,
     '',
     `【我設定的作息時間】${scheduleLine}`,
+    '',
+    '【睡眠】（我在睡眠計算機按「確認現在睡」時記的；起床時間是我選的鬧鐘時間，不是實際醒來的時間）',
+    ...(sleepLines.length ? sleepLines : ['- 這一週沒有記錄']),
   ];
   if (mediaLines.length) sections.push('', '【追劇／讀書進度】', ...mediaLines);
   sections.push('', `【駕照筆試】錯題本目前有 ${mistakes.length} 題${mistakes.length ? `，錯最多次的是「${[...mistakes].sort((a, b) => b.wrongCount - a.wrongCount)[0].question}」` : ''}`);

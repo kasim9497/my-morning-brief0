@@ -1541,10 +1541,28 @@ body {
   background: var(--apple-blue-subtle);
 }
 
+/* 選中的那張右上角打勾 */
+.sleep-option-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--apple-blue);
+  color: #ffffff;
+}
+
+.sleep-logged-text { font-size: var(--text-body); color: var(--text-main); line-height: 1.5; }
+/* 最近的睡眠：「01:05 → 08:50」靠右，數字等寬才對得齊 */
+.sleep-log-times { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-main); white-space: nowrap; }
+#sleep-confirm-btn:disabled { opacity: 0.5; }
+
 .sleep-option-badge {
   position: absolute;
   top: -9px;
-  right: 10px;
+  left: 10px; /* 右上角留給選中的打勾 */
   background: var(--apple-blue);
   color: #ffffff;
   font-size: var(--text-caption2);

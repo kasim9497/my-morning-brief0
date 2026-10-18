@@ -28,11 +28,11 @@
 
 前端的模組（都在 `js/`）：
 
-- 資料與邏輯：`taskEngine.js`（任務與作息）、`fixedSchedule.js`（固定時間點）、`sleepCalculator.js`、`sleepReminder.js`（提醒怎麼發）、`quizMistakes.js`（錯題本）、`countdown.js`、`mediaTracker.js`、`backup.js` + `cloudBackup.js`、`weeklyReport.js`、`chatBox.js`、`services/dataService.js`
+- 資料與邏輯：`taskEngine.js`（任務與作息）、`fixedSchedule.js`（固定時間點）、`sleepCalculator.js`、`sleepLog.js`（睡眠紀錄）、`sleepReminder.js`（提醒怎麼發）、`quizMistakes.js`（錯題本）、`countdown.js`、`mediaTracker.js`、`backup.js` + `cloudBackup.js`、`weeklyReport.js`、`chatBox.js`、`services/dataService.js`
 - 畫面：`app.js`（今日頁和初始化）、`tabs.js`、`TaskListView.js`、`CalendarView.js`、`CountdownView.js`、`SleepView.js`、`FixedScheduleView.js`、`SettingsView.js`、`ChatBoxView.js`、`taskIcons.js`、`swipeRow.js`、`motion.js`
 - `config.js`：Worker 的網址。`sw.js`（在網站根目錄）：只處理推播的 service worker。
 
-五個分頁：今日（任務 → 倒數 → 天氣、運勢、匯率 → 題庫 → 語錄）、週曆、倒數、睡眠（計算機 + 作息與提醒）、設定（每週安排、追劇讀書、本週摘要、雲端備份）。
+五個分頁：今日（任務 → 倒數 → 天氣、運勢、匯率 → 題庫 → 語錄）、週曆、倒數、睡眠（計算機 + 最近的睡眠 + 作息與提醒）、設定（每週安排、追劇讀書、本週摘要、雲端備份）。
 
 ## 一定要遵守的規則
 
@@ -69,7 +69,7 @@
 
 ## 測試與部署
 
-- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（39 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
+- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（40 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
 - 測試不可以依賴「今天是星期幾」或「某一天剛好排了什麼」。2026-10-09 就因為這樣停了一天。要用任務的測試自己建項目；改完用假日期多跑幾天（做法在 history 最後一段）。
 - 改了 `taskEngine.js`／`sleepCalculator.js`／`quizMistakes.js`／`fixedSchedule.js`／`cloudBackup.js`／Worker 的 `push.js`、`backup.js` 之後要跑測試。改了行為就同步改測試，不要為了讓它過而刪測試。
 - push 之前：`git stash push -- .claude/launch.json; git pull --rebase origin main; git stash pop`。Actions 會自己 commit 匯率歷史回 repo，不先拉會被拒絕。`.claude/launch.json` 和最外層那份題庫 PDF 不要 commit。
@@ -98,6 +98,7 @@
 - 每天 07:30 之前打開，天氣和匯率會標「昨天的資料」，沒有運勢。這是對的。
 - 提醒可以設「提前幾分鐘」（`fixedSchedule.js` 的 `alertOf`），就寢預設提前 30 分鐘。「作息與提醒」最下面兩項是待辦通知（`kind: 'tasks'`），內容由 `sw.js` 讀手機上存的任務清單，不經過後端。
 - 就寢的星期指「哪一晚」，凌晨 5 點前響的算前一晚：「週一、週二 01:20」在週二、週三凌晨響。起床的星期指「那天早上」。2026-10-15 使用者要求週三晚上改成跟假日一樣（`moveWednesdayNight` 幫已存的資料改一次）。
+- 睡眠紀錄（2026-10-18）：「我現在要睡」選一個起床時間、按「確認現在睡」記一筆，同一晚只留最後一次。起床時間是選的鬧鐘時間，不是實際醒來時間。本週摘要會附上最近 7 晚。
 - 運勢的文字是免費模型寫的，只有天象是算的。
 - 日本語錄的中文是我翻的；柳宗悅和諺語的比例偏高。
 

@@ -46,7 +46,7 @@ export function calcFromNow(now = new Date(), reference = now) {
   const sleepTime = new Date(now.getTime() + FALL_ASLEEP_MIN * 60000);
   const options = buildOptions((cycles) => {
     const wakeTime = new Date(sleepTime.getTime() + cycles * SLEEP_CYCLE_MIN * 60000);
-    return { time: formatTime(wakeTime), label: dayLabel(wakeTime, reference) };
+    return { time: formatTime(wakeTime), label: dayLabel(wakeTime, reference), at: wakeTime };
   });
   return { now, sleepTime, options };
 }

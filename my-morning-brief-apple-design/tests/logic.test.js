@@ -24,6 +24,7 @@ const tasks = await import('../js/taskEngine.js');
 const media = await import('../js/mediaTracker.js');
 const countdown = await import('../js/countdown.js');
 const weekly = await import('../js/weeklyReport.js');
+const sleepLog = await import('../js/sleepLog.js');
 const mistakes = await import('../js/quizMistakes.js');
 const fixed = await import('../js/fixedSchedule.js');
 const reminder = await import('../js/sleepReminder.js');
@@ -216,6 +217,28 @@ test('本週摘要：涵蓋七天、列出每天和每項任務的完成數，�
   assert.ok(report.includes('- 吃保健食品：1/7'));
   assert.ok(report.includes('平均步數 8000'));
   assert.ok(!weekly.buildWeeklyReport('', '2027-03-10').includes('健康」App 補充'));
+});
+
+test('睡眠紀錄：同一晚按兩次只留最後一次；凌晨上床算前一晚；本週摘要會列出來', () => {
+  const at = (d, h, m) => new Date(2027, 2, d, h, m);
+  sleepLog.logSleep(at(8, 23, 30), at(9, 7, 15), 5);
+  sleepLog.logSleep(at(9, 0, 40), at(9, 8, 25), 5); // 同一晚改主意，晚一點才睡
+  sleepLog.logSleep(at(10, 1, 5), at(10, 8, 50), 5);
+  const log = sleepLog.getSleepLog();
+  assert.equal(log.length, 2);
+  assert.equal(sleepLog.nightOf(log[0]), '2027-03-08', '00:40 上床算 3/8 晚上');
+  assert.equal(sleepLog.clockOf(log[0].bedAt), '00:40');
+  assert.equal(sleepLog.hoursOf(log[1]), 7.8);
+
+  const { options } = sleep.calcFromNow(at(10, 1, 5));
+  assert.equal(sleep.formatTime(options[1].at), options[1].time, '計算結果帶著確切的起床時刻');
+
+  const report = weekly.buildWeeklyReport('', '2027-03-10');
+  assert.ok(report.includes('3/8（一）晚上：00:40 上床，預計 08:25 起床（5 個睡眠週期，7.8 小時）'));
+  assert.ok(report.includes('3/9（二）晚上：01:05 上床'));
+  log.forEach((entry) => sleepLog.removeSleepEntry(entry.id));
+  assert.equal(sleepLog.getSleepLog().length, 0);
+  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('這一週沒有記錄'));
 });
 
 test('錯題本：複習答對後隔 2 天、5 天再出，第三次答對才移除；中途答錯就重來', () => {

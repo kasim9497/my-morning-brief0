@@ -307,7 +307,7 @@ export function renderSettingsView() {
       <div class="card">
         <textarea class="countdown-input weekly-note" id="weekly-health-note" rows="3" placeholder="想一起分析的健康數據（選填）。例如：平均步數 8,200、平均睡眠 6.5 小時"></textarea>
         <button type="button" class="btn-action btn-primary btn-block" id="weekly-share-btn">整理這一週，交給 Claude</button>
-        <p class="list-footnote" id="weekly-status">會把最近 7 天的任務、追劇讀書進度和錯題整理成一段文字。iPhone「健康」App 的數字要自己看了填在上面。</p>
+        <p class="list-footnote" id="weekly-status">會把最近 7 天的任務、睡眠紀錄、追劇讀書進度和錯題整理成一段文字。iPhone「健康」App 的數字要自己看了填在上面。</p>
       </div>
 
       <div class="section-head">

@@ -2,13 +2,15 @@
  * 睡眠畫面：90 分鐘週期計算機 + 作息與提醒。
  * 兩塊用的是同一份作息時間：計算機「我要幾點起床」預設帶明早的起床時間，
  * 算出來的上床時間點一下就寫進今晚的就寢時間；提醒照那張清單上的開關響。
- * 資料/邏輯在 sleepCalculator.js／fixedSchedule.js／sleepReminder.js
+ * 「我現在要睡」選一個起床時間、按確認，會記進睡眠紀錄（sleepLog.js），本週摘要會一起交給 Claude。
+ * 資料/邏輯在 sleepCalculator.js／fixedSchedule.js／sleepReminder.js／sleepLog.js
  */
 
 import { calcFromNow, calcFromWakeTime, formatTime, RECOMMENDED_CYCLES } from './sleepCalculator.js';
 import { getSleepReminderConfig, setSleepReminderConfig } from './sleepReminder.js';
 import { getWakeItem } from './fixedSchedule.js';
 import { renderFixedScheduleCard, bindFixedSchedule } from './FixedScheduleView.js';
+import { getSleepLog, logSleep, removeSleepEntry, nightOf, clockOf, hoursOf } from './sleepLog.js';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -21,11 +23,16 @@ function escapeHtml(str) {
 }
 
 let mode = null; // null = 選擇模式畫面；'now' | 'wake'
-let step = 'input'; // 'input' | 'results'
+let step = 'input'; // 'input' | 'results' | 'logged'（按了確認現在睡）
+let loggedEntry = null;
 let wakeTimeInput = '';
 let bedTimeInput = ''; // 「我現在要睡」可以改成別的上床時間；空的就是現在
 let calcResult = null;
 let selectedCycles = null;
+
+const ICON_CHECK = '<svg class="sleep-option-check" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12.5 10,17 19,7.5"/></svg>';
+const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const ICON_MOON = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>';
 const ICON_SUN = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>';
@@ -98,8 +105,9 @@ function renderResultsPanel() {
       const isSelected = opt.cycles === selectedCycles;
       const dayLabelHtml = opt.label ? `<span class="sleep-option-day">・${opt.label}</span>` : '';
       return `
-        <button type="button" class="sleep-option ${opt.cycles === RECOMMENDED_CYCLES ? 'is-recommended' : ''} ${isSelected ? 'is-selected' : ''}" data-action="pick-cycle" data-cycles="${opt.cycles}" data-time="${opt.time}">
+        <button type="button" class="sleep-option ${opt.cycles === RECOMMENDED_CYCLES ? 'is-recommended' : ''} ${isSelected ? 'is-selected' : ''}" data-action="pick-cycle" data-cycles="${opt.cycles}" data-time="${opt.time}" aria-pressed="${isSelected}">
           ${opt.cycles === RECOMMENDED_CYCLES ? '<span class="sleep-option-badge">推薦</span>' : ''}
+          ${isSelected ? ICON_CHECK : ''}
           <time>${opt.time}${dayLabelHtml}</time>
           <span>${opt.hours} 小時</span>
           <span>${opt.cycles} 個睡眠週期</span>
@@ -116,7 +124,46 @@ function renderResultsPanel() {
       </div>
       <div class="sleep-results-subtitle">${resultHint(isWakeMode)}</div>
       <div class="sleep-options">${cardsHtml}</div>
+      ${!isWakeMode ? `<button type="button" class="btn-action btn-primary sleep-calc-btn" id="sleep-confirm-btn" ${selectedCycles ? '' : 'disabled'}>${selectedCycles ? (bedTimeInput ? `確認 ${bedTimeInput} 睡` : '確認現在睡') : '先選一個起床時間'}</button>` : ''}
       <button type="button" class="btn-action sleep-recalc-btn" id="sleep-recalc-btn">重新計算</button>
+    </div>
+  `;
+}
+
+function renderLoggedPanel() {
+  return `
+    <div class="card tint-indigo">
+      <div class="card-header">
+        <h3 class="card-title">記下來了</h3>
+      </div>
+      <p class="sleep-logged-text">${clockOf(loggedEntry.bedAt)} 上床，${clockOf(loggedEntry.wakeAt)} 起床，${hoursOf(loggedEntry)} 小時。晚安。</p>
+      <button type="button" class="btn-action sleep-recalc-btn" id="sleep-done-btn">完成</button>
+    </div>
+  `;
+}
+
+// 最近 7 晚。本週摘要會把同樣這幾筆交給 Claude
+function renderSleepLogCard() {
+  const entries = getSleepLog().slice(-7).reverse();
+  const rowsHtml = entries.map((entry) => {
+    const night = nightOf(entry);
+    const [, m, d] = night.split('-').map(Number);
+    const weekday = WEEKDAYS[new Date(`${night}T12:00:00`).getDay()];
+    return `
+      <div class="list-row">
+        <span>${m}/${d}（${weekday}）晚上<small class="row-note">${entry.cycles} 個週期 · ${hoursOf(entry)} 小時</small></span>
+        <span class="sleep-log-times">${clockOf(entry.bedAt)} → ${clockOf(entry.wakeAt)}</span>
+        <button type="button" class="countdown-delete" data-action="sleep-log-delete" data-id="${entry.id}" aria-label="刪除 ${m}/${d} 這一筆">${ICON_TRASH}</button>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="section-head">
+      <h2 class="section-title">最近的睡眠</h2>
+    </div>
+    <div class="card">
+      ${rowsHtml || '<p class="list-footnote">在上面「我現在要睡」選一個起床時間，按「確認現在睡」就會記在這裡。</p>'}
+      ${rowsHtml ? '<p class="list-footnote">起床時間是你選的那個，不是實際醒來的時間。設定 →「本週摘要」會把這些一起交給 Claude 分析。</p>' : ''}
     </div>
   `;
 }
@@ -128,6 +175,8 @@ function renderView() {
   let calculatorHtml;
   if (mode === null) {
     calculatorHtml = renderModeSelector();
+  } else if (step === 'logged') {
+    calculatorHtml = renderLoggedPanel();
   } else if (step === 'input') {
     calculatorHtml = renderInputPanel();
   } else {
@@ -140,6 +189,7 @@ function renderView() {
         <h2 class="section-title">睡眠計算機</h2>
       </div>
       ${calculatorHtml}
+      ${renderSleepLogCard()}
       ${renderFixedScheduleCard()}
     </main>
   `;
@@ -219,6 +269,36 @@ function bindEvents(container) {
         const reminderConfig = getSleepReminderConfig();
         setSleepReminderConfig(reminderConfig.enabled, btn.dataset.time);
       }
+      renderView();
+    });
+  });
+
+  const confirmBtn = document.getElementById('sleep-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      const option = calcResult.options.find((opt) => opt.cycles === selectedCycles);
+      if (!option) return;
+      loggedEntry = logSleep(calcResult.now, option.at, option.cycles);
+      step = 'logged';
+      renderView();
+    });
+  }
+
+  const doneBtn = document.getElementById('sleep-done-btn');
+  if (doneBtn) {
+    doneBtn.addEventListener('click', () => {
+      mode = null;
+      step = 'input';
+      calcResult = null;
+      selectedCycles = null;
+      loggedEntry = null;
+      renderView();
+    });
+  }
+
+  container.querySelectorAll('[data-action="sleep-log-delete"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      removeSleepEntry(btn.dataset.id);
       renderView();
     });
   });
