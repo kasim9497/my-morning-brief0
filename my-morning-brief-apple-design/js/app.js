@@ -11,6 +11,7 @@ import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView } from './SleepView.js';
+import { pendingWake, logWake, clockOf } from './sleepLog.js';
 import { scheduleReminderIfEnabled, saveTaskSnapshot } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   setupSectionLinks();
   renderBackupReminder();
+  setupWakePrompt();
   setupInstantPressListeners();
   setupScrollShadow();
   renderTaskList();
@@ -135,6 +137,27 @@ function setupCalendarTabRefresh() {
 /**
  * 太久沒備份時，在今日頁最上面提醒一次。資料只存在這支手機，掉了就沒了
  */
+function renderWakePrompt() {
+  const card = document.getElementById('wake-prompt');
+  if (!card) return;
+  const pending = pendingWake();
+  card.hidden = !pending;
+  if (pending) document.getElementById('wake-prompt-text').textContent = `昨晚 ${clockOf(pending.bedAt)} 睡，預計 ${clockOf(pending.wakeAt)} 起`;
+}
+
+function setupWakePrompt() {
+  renderWakePrompt();
+  document.getElementById('wake-now-btn')?.addEventListener('click', () => {
+    const pending = pendingWake();
+    if (pending) logWake(pending.id);
+    renderWakePrompt();
+    renderSleepView();
+  });
+  window.addEventListener('chenxu:woke-up', renderWakePrompt);
+  // iPhone 上晨序常常是從背景叫回來、不是重新載入，所以回到前景時再看一次
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderWakePrompt(); });
+}
+
 function renderBackupReminder() {
   const card = document.getElementById('backup-reminder');
   if (!card) return;
@@ -263,7 +286,7 @@ function triggerCardStagger() {
     setTimeout(() => {
       card.style.animationDelay = '0ms'; // already handled by setTimeout
       card.classList.add('card-enter');
-    }, i * 75); // 75ms stagger between cards
+    }, Math.min(i, 4) * 40); // 每天都會打開好幾次，不要讓人等：只錯開前幾張，第 5 張之後一起出來
   });
 }
 

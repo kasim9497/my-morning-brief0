@@ -64,6 +64,14 @@
         </div>
       </article>
 
+      <!-- 昨晚按過「確認現在睡」、早上還沒按「我起床了」時才出現（js/app.js 的 renderWakePrompt） -->
+      <article class="card col-span-2" id="wake-prompt" hidden>
+        <div class="list-row backup-reminder-row">
+          <span id="wake-prompt-text"></span>
+          <button type="button" class="section-action" id="wake-now-btn">我起床了</button>
+        </div>
+      </article>
+
       <!-- 沒開雲端備份、或雲端備份太久沒成功才會出現（js/app.js 的 renderBackupReminder） -->
       <article class="card col-span-2" id="backup-reminder" hidden>
         <div class="list-row backup-reminder-row">

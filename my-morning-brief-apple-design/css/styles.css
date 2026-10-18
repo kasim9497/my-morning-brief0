@@ -406,7 +406,7 @@ body {
 .card[hidden] { display: none; }
 
 .card.card-enter {
-  animation: cardEnter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cardEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .card-header {

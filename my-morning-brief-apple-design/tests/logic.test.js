@@ -234,7 +234,15 @@ test('睡眠紀錄：同一晚按兩次只留最後一次；凌晨上床算前�
   assert.equal(sleep.formatTime(options[1].at), options[1].time, '計算結果帶著確切的起床時刻');
 
   const report = weekly.buildWeeklyReport('', '2027-03-10');
-  assert.ok(report.includes('3/8（一）晚上：00:40 上床，預計 08:25 起床（5 個睡眠週期，7.8 小時）'));
+  assert.ok(report.includes('3/8（一）晚上：00:40 上床，預計 08:25 起床（5 個睡眠週期），共 7.8 小時'));
+
+  // 我起床了：只在上床 2 到 16 小時之間問；按了之後時數用實際的
+  assert.equal(sleepLog.pendingWake(at(10, 2, 0)), null, '剛躺下不問');
+  assert.equal(sleepLog.pendingWake(at(10, 9, 0)).id, log[1].id);
+  assert.equal(sleepLog.pendingWake(at(11, 9, 0)), null, '過了一整天不問');
+  assert.equal(sleepLog.logWake(log[1].id, at(10, 9, 35)), true);
+  assert.equal(sleepLog.pendingWake(at(10, 9, 40)), null, '按過就不再問');
+  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('實際 09:35 起床，共 8.5 小時'));
   assert.ok(report.includes('3/9（二）晚上：01:05 上床'));
   log.forEach((entry) => sleepLog.removeSleepEntry(entry.id));
   assert.equal(sleepLog.getSleepLog().length, 0);

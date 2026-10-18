@@ -1,7 +1,7 @@
 /**
  * 睡眠紀錄：在睡眠計算機選了起床時間、按「確認現在睡」時記一筆（幾點上床、選了幾點起床）。
  * 本週摘要會把最近 7 晚的紀錄一起交給 Claude 分析。
- * 起床時間是使用者選的鬧鐘時間，不是實際醒來的時間。
+ * 早上按「我起床了」會再記實際起床的時間（wokeAt）；沒按的那幾天只有選的鬧鐘時間（wakeAt）。
  * 資料存 localStorage（key 用 morningBrief. 開頭，會被備份涵蓋）
  */
 
@@ -44,6 +44,27 @@ export function logSleep(bedAt, wakeAt, cycles) {
   return entry;
 }
 
+/** 早上按「我起床了」 */
+export function logWake(id, at = new Date()) {
+  const list = getSleepLog();
+  const entry = list.find((item) => item.id === id);
+  if (!entry) return false;
+  entry.wokeAt = at.toISOString();
+  save(list);
+  return true;
+}
+
+/**
+ * 現在該不該問「起床了嗎」：最新一筆還沒按過，而且上床已經 2 到 16 小時。
+ * 太早（剛躺下）不問，太晚（已經過了一整天）也不問，那一筆就只留鬧鐘時間
+ */
+export function pendingWake(now = new Date()) {
+  const last = getSleepLog().at(-1);
+  if (!last || last.wokeAt) return null;
+  const elapsed = now.getTime() - Date.parse(last.bedAt);
+  return elapsed >= 2 * 3600000 && elapsed <= 16 * 3600000 ? last : null;
+}
+
 export function removeSleepEntry(id) {
   save(getSleepLog().filter((entry) => entry.id !== id));
 }
@@ -60,7 +81,7 @@ export function clockOf(iso) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** 從上床到預計起床幾小時（含入睡的那 15 分鐘） */
+/** 從上床到起床幾小時（含入睡的那 15 分鐘）。有按「我起床了」用實際的，沒有就用選的鬧鐘時間 */
 export function hoursOf(entry) {
-  return +((Date.parse(entry.wakeAt) - Date.parse(entry.bedAt)) / 3600000).toFixed(1);
+  return +((Date.parse(entry.wokeAt || entry.wakeAt) - Date.parse(entry.bedAt)) / 3600000).toFixed(1);
 }

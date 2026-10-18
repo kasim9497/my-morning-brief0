@@ -10,7 +10,7 @@ import { calcFromNow, calcFromWakeTime, formatTime, RECOMMENDED_CYCLES } from '.
 import { getSleepReminderConfig, setSleepReminderConfig } from './sleepReminder.js';
 import { getWakeItem } from './fixedSchedule.js';
 import { renderFixedScheduleCard, bindFixedSchedule } from './FixedScheduleView.js';
-import { getSleepLog, logSleep, removeSleepEntry, nightOf, clockOf, hoursOf } from './sleepLog.js';
+import { getSleepLog, logSleep, logWake, pendingWake, removeSleepEntry, nightOf, clockOf, hoursOf } from './sleepLog.js';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -145,14 +145,15 @@ function renderLoggedPanel() {
 // 最近 7 晚。本週摘要會把同樣這幾筆交給 Claude
 function renderSleepLogCard() {
   const entries = getSleepLog().slice(-7).reverse();
+  const pending = pendingWake();
   const rowsHtml = entries.map((entry) => {
     const night = nightOf(entry);
     const [, m, d] = night.split('-').map(Number);
     const weekday = WEEKDAYS[new Date(`${night}T12:00:00`).getDay()];
     return `
       <div class="list-row">
-        <span>${m}/${d}（${weekday}）晚上<small class="row-note">${entry.cycles} 個週期 · ${hoursOf(entry)} 小時</small></span>
-        <span class="sleep-log-times">${clockOf(entry.bedAt)} → ${clockOf(entry.wakeAt)}</span>
+        <span>${m}/${d}（${weekday}）晚上<small class="row-note">${entry.wokeAt ? `預計 ${clockOf(entry.wakeAt)} · ` : ''}${hoursOf(entry)} 小時</small></span>
+        <span class="sleep-log-times">${clockOf(entry.bedAt)} → ${clockOf(entry.wokeAt || entry.wakeAt)}</span>
         <button type="button" class="countdown-delete" data-action="sleep-log-delete" data-id="${entry.id}" aria-label="刪除 ${m}/${d} 這一筆">${ICON_TRASH}</button>
       </div>
     `;
@@ -162,8 +163,9 @@ function renderSleepLogCard() {
       <h2 class="section-title">最近的睡眠</h2>
     </div>
     <div class="card">
+      ${pending ? `<button type="button" class="btn-action btn-primary btn-block" data-action="woke-up">我起床了</button>` : ''}
       ${rowsHtml || '<p class="list-footnote">在上面「我現在要睡」選一個起床時間，按「確認現在睡」就會記在這裡。</p>'}
-      ${rowsHtml ? '<p class="list-footnote">起床時間是你選的那個，不是實際醒來的時間。設定 →「本週摘要」會把這些一起交給 Claude 分析。</p>' : ''}
+      ${rowsHtml ? '<p class="list-footnote">早上按「我起床了」會記下實際起床的時間；沒按的那天就照你選的鬧鐘時間算。設定 →「本週摘要」會把這些一起交給 Claude 分析。</p>' : ''}
     </div>
   `;
 }
@@ -295,6 +297,14 @@ function bindEvents(container) {
       renderView();
     });
   }
+
+  container.querySelector('[data-action="woke-up"]')?.addEventListener('click', () => {
+    const pending = pendingWake();
+    if (pending) logWake(pending.id);
+    renderView();
+    // 今日頁那一列也要收起來
+    window.dispatchEvent(new CustomEvent('chenxu:woke-up'));
+  });
 
   container.querySelectorAll('[data-action="sleep-log-delete"]').forEach((btn) => {
     btn.addEventListener('click', () => {

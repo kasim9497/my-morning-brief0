@@ -46,7 +46,7 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
   const mistakes = getMistakes();
   const sleepLines = getSleepLog()
     .filter((entry) => dates.includes(nightOf(entry)))
-    .map((entry) => `- ${shortDate(nightOf(entry))}晚上：${clockOf(entry.bedAt)} 上床，預計 ${clockOf(entry.wakeAt)} 起床（${entry.cycles} 個睡眠週期，${hoursOf(entry)} 小時）`);
+    .map((entry) => `- ${shortDate(nightOf(entry))}晚上：${clockOf(entry.bedAt)} 上床，預計 ${clockOf(entry.wakeAt)} 起床（${entry.cycles} 個睡眠週期）${entry.wokeAt ? `，實際 ${clockOf(entry.wokeAt)} 起床` : ''}，共 ${hoursOf(entry)} 小時`);
   const scheduleLine = getFixedSchedule().filter((item) => !item.kind).map((item) => `${item.label} ${item.time}`).join('、');
 
   const sections = [
@@ -61,7 +61,7 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
     '',
     `【我設定的作息時間】${scheduleLine}`,
     '',
-    '【睡眠】（我在睡眠計算機按「確認現在睡」時記的；起床時間是我選的鬧鐘時間，不是實際醒來的時間）',
+    '【睡眠】（上床時間是我在睡眠計算機按「確認現在睡」時記的；有「實際起床」的是我早上按了「我起床了」，沒有的那天只有我選的鬧鐘時間）',
     ...(sleepLines.length ? sleepLines : ['- 這一週沒有記錄']),
   ];
   if (mediaLines.length) sections.push('', '【追劇／讀書進度】', ...mediaLines);
