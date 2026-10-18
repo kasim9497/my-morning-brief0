@@ -374,6 +374,7 @@ function renderDailyQuote(q) {
   container.innerHTML = `
     <div class="quote-text">「${escapeHtml(q.text)}」</div>
     <div class="quote-author">— ${escapeHtml(q.author)}${q.source ? ` ${escapeHtml(q.source)}` : ''}</div>
+    ${q.note ? `<p class="quote-note">${escapeHtml(q.note)}</p>` : ''}
   `;
 }
 

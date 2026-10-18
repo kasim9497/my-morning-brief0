@@ -331,6 +331,16 @@ body {
   margin-top: 0.5rem;
 }
 
+/* 諺語下面的白話解釋：跟語錄本身用細線隔開，看得出是 App 補的，不是原文 */
+.quote-note {
+  font-size: var(--text-subhead);
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* GRID — 手機單欄；平板以上兩欄，.col-span-2 和區塊標題佔整排 */
 
 .dashboard-grid {

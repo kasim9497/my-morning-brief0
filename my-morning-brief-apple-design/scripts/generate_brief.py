@@ -173,8 +173,9 @@ def load_quotes():
             data = json.load(f)
         featured_authors = set(data.get("featured_authors", []))
         return [
-            {"text": r[0], "author": r[1], "source": r[2], "featured": r[1] in featured_authors}
-            for r in data.get("quotes", []) if len(r) == 3 and r[0]
+            # 第四欄（可有可無）是 App 自己寫的白話解釋，目前只有日本諺語有
+            {"text": r[0], "author": r[1], "source": r[2], "note": r[3] if len(r) > 3 else "", "featured": r[1] in featured_authors}
+            for r in data.get("quotes", []) if len(r) in (3, 4) and r[0]
         ]
     except Exception as e:
         print(f"Failed to read quotes file ({e}), using fallback quote.")
@@ -197,7 +198,7 @@ def get_daily_quote(now_tw):
         pick = featured[(day // 3 * 2 + day % 3 - 1) % len(featured)]
     else:
         pick = others[(day // 3) % len(others)]
-    return {"text": pick["text"], "author": pick["author"], "source": pick["source"]}
+    return {"text": pick["text"], "author": pick["author"], "source": pick["source"], "note": pick["note"]}
 
 def rating_to_stars(rating):
     """把 1-5 的數字評分轉成星星字串，取代原本寫死的 ★★★★☆"""
