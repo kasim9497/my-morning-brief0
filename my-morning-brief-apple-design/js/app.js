@@ -392,6 +392,12 @@ function renderHoroscope(h) {
   document.getElementById('horoscope-card-badge').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
 
   const details = h.details || {};
+  // 主畫面只放總結的第一句（字比任務小，不要搶走注意力），剩下的放進「分項運勢」最上面
+  const summary = String(h.aiSummary || '').replace(/^處女座(今日|今天)?運勢[:：]\s*/, '');
+  const firstEnd = summary.indexOf('。') + 1;
+  const lead = firstEnd > 0 ? summary.slice(0, firstEnd) : summary;
+  const rest = firstEnd > 0 ? summary.slice(firstEnd).trim() : '';
+
   // 「整體」跟上面那段總結講的是同一件事，不再列一次
   const catRows = [['工作', details.work], ['感情', details.love], ['財運', details.wealth], ['健康', details.health]]
     .filter(([, text]) => text)
@@ -403,11 +409,11 @@ function renderHoroscope(h) {
   container.innerHTML = `
     <div class="stars" role="img" aria-label="今天的運勢 ${escapeHtml(h.ratingStars)}">${escapeHtml(h.ratingStars)}</div>
 
-    <div class="horoscope-summary">${escapeHtml(String(h.aiSummary || '').replace(/^處女座(今日|今天)?運勢[:：]\s*/, ''))}</div>
+    <div class="horoscope-summary">${escapeHtml(lead)}</div>
 
     ${transitAlertHtml}
 
-    ${catRows ? disclosure('分項運勢', '工作、感情、財運', `<div class="horoscope-categories">${catRows}</div>`) : ''}
+    ${catRows || rest ? disclosure('分項運勢', '工作、感情、財運', `${rest ? `<p class="horoscope-rest">${escapeHtml(rest)}</p>` : ''}<div class="horoscope-categories">${catRows}</div>`) : ''}
   `;
 }
 
@@ -507,6 +513,28 @@ function formatShortDate(dateStr) {
 /**
  * Render Scooter Driving License Quiz Widget
  */
+// 收起來的那一列：一眼看出今天做到哪
+function renderQuizFold() {
+  const title = document.getElementById('quiz-fold-title');
+  const hint = document.getElementById('quiz-fold-hint');
+  if (!title || !hint) return;
+  const answered = quizState.questions.filter((q) => quizState.userAnswers[q.id]);
+  const correct = answered.filter((q) => quizState.userAnswers[q.id] === q.answer).length;
+  if (quizState.finished) {
+    title.textContent = '今天做完了';
+    hint.textContent = `答對 ${quizState.dailyScore} / ${quizState.dailyQuestions.length}`;
+  } else if (quizState.mode === 'review') {
+    title.textContent = '複習錯題';
+    hint.textContent = `第 ${quizState.currentIndex + 1} / ${quizState.questions.length} 題`;
+  } else if (!answered.length) {
+    title.textContent = '開始今天的題目';
+    hint.textContent = `${quizState.questions.length} 題`;
+  } else {
+    title.textContent = `做到第 ${quizState.currentIndex + 1} 題`;
+    hint.textContent = `答對 ${correct} / ${answered.length}`;
+  }
+}
+
 function renderDrivingQuiz() {
   saveQuizProgress();
   const container = document.getElementById('quiz-widget-content');
@@ -519,6 +547,7 @@ function renderDrivingQuiz() {
   const dueCount = getDueMistakes().length;
   const dailyTotal = quizState.dailyQuestions.length;
   document.getElementById('quiz-card-badge').textContent = `每日 ${dailyTotal} 題`;
+  renderQuizFold();
 
   // 跑完了：顯示今天的成績，不會自己從第一題重來
   if (quizState.finished) {

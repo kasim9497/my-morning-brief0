@@ -39,6 +39,14 @@ const ICON_CHECK = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24
 const shortDate = (dateStr) => `${Number(dateStr.slice(5, 7))}月${Number(dateStr.slice(8, 10))}日`;
 
 /** 跳過或延後的那一列要寫清楚去了哪裡，不然看不出這件事還在不在 */
+// 「追劇：至少看完一集」→ 名稱「追劇」＋小字「至少看完一集」。手機上一行只放得下七八個字，
+// 整句擠在一起會斷在詞的中間
+function labelHtml(label) {
+  const match = /^([^：:]{1,8})[：:]\s*(.+)$/.exec(label || '');
+  if (!match) return escapeHtml(label);
+  return `${escapeHtml(match[1])}<small class="task-detail">${escapeHtml(match[2])}</small>`;
+}
+
 function statusText(t) {
   if (t.status === 'postponed') return t.movedTo ? `已延到 ${shortDate(t.movedTo)}` : '已延後';
   if (t.status === 'skipped') return t.skippedWeek ? '這週不做' : '今天不做';
@@ -86,7 +94,7 @@ export function renderTaskListInto(container, dateStr, summaryLabel = '今天', 
           </button>
           <div class="task-label">
             ${renderTaskIcon(t.icon, t.tint)}
-            <span class="task-text">${escapeHtml(t.label)}</span>
+            <span class="task-text">${labelHtml(t.label)}</span>
             ${carriedTag}
             ${statusTag}
           </div>

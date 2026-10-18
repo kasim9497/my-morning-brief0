@@ -465,10 +465,13 @@ body {
 }
 
 .horoscope-summary {
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
   color: var(--text-main);
   line-height: 1.5;
 }
+
+/* 總結第一句之後的部分，放在展開後的最上面 */
+.horoscope-rest { font-size: var(--text-subhead); color: var(--text-main); line-height: 1.5; padding: 0.625rem 0; border-bottom: 1px solid var(--border-subtle); }
 
 /* 展開後的分項：一項一列、細線分隔，名稱固定寬度讓內文對齊 */
 .horoscope-categories {
@@ -502,6 +505,9 @@ body {
 .disclosure-chevron { width: 14px; height: 14px; transition: transform 0.2s ease; }
 .disclosure[open] .disclosure-chevron { transform: rotate(90deg); }
 .disclosure-body .list-row:first-child { border-top: 1px solid var(--border-subtle); }
+/* 題庫那一列直接接在卡片標題下面，不用上面那條線；展開後跟題目隔一點 */
+.quiz-fold { margin-top: 0; border-top: none; }
+.quiz-fold[open] > summary { margin-bottom: 0.5rem; }
 
 /* METRIC：卡片裡的大數字 + 小單位（匯率、倒數共用），右邊可以配一組小長條圖 */
 
@@ -2296,6 +2302,14 @@ button, select, [role="button"] {
 .task-text {
   flex: 1 1 8em;
   min-width: 0;
+}
+
+/* 冒號後面那段說明（「至少看完一集」）：名稱下面一行的小字 */
+.task-detail {
+  display: block;
+  font-size: var(--text-footnote);
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 
 /* 作息時間的一列：名稱｜時間｜提醒開關。名稱吃掉剩下的寬度，時間和開關靠右 */
