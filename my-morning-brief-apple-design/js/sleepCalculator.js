@@ -1,13 +1,13 @@
 /**
- * 睡眠計算機核心邏輯：90 分鐘睡眠週期
- * 入睡緩衝固定 15 分鐘（先寫死，不開放使用者調整，之後真的要加再開放）
+ * 睡眠計算機：從上床時間推起床時間，或從起床時間推上床時間。
+ *
+ * 2026-10-19 改：不再照 90 分鐘週期算。使用者白天很睏、會比鬧鐘早醒又睡不回去，
+ * 現階段的目標是先給夠「睡眠機會」（上床到起床的時間），建議 8.5 小時，選項從 7.5 到 9 小時。
+ * 不另外加入睡緩衝：這裡算的就是待在床上的時間。
  */
 
-export const SLEEP_CYCLE_MIN = 90;
-export const FALL_ASLEEP_MIN = 15;
-export const MIN_CYCLES = 3;
-export const MAX_CYCLES = 6;
-export const RECOMMENDED_CYCLES = 4;
+export const SLEEP_HOURS = [7.5, 8, 8.5, 9];
+export const RECOMMENDED_HOURS = 8.5;
 
 function pad(n) {
   return String(n).padStart(2, '0');
@@ -30,37 +30,27 @@ function dayLabel(target, reference) {
   return null;
 }
 
-function buildOptions(pickTime) {
-  const options = [];
-  for (let cycles = MIN_CYCLES; cycles <= MAX_CYCLES; cycles++) {
-    options.push({ cycles, hours: +((cycles * SLEEP_CYCLE_MIN) / 60).toFixed(1), ...pickTime(cycles) });
-  }
-  return options;
-}
-
 /**
- * 「我現在要睡」：上床時間 + 15 分鐘入睡緩衝，往後推算各週期數對應的起床時間。
+ * 「我現在要睡」：上床時間往後推 7.5～9 小時的起床時間。
  * now 也可以是之後才要上床的時間；這時候把真正的現在傳給 reference，「明天」才標得對
  */
 export function calcFromNow(now = new Date(), reference = now) {
-  const sleepTime = new Date(now.getTime() + FALL_ASLEEP_MIN * 60000);
-  const options = buildOptions((cycles) => {
-    const wakeTime = new Date(sleepTime.getTime() + cycles * SLEEP_CYCLE_MIN * 60000);
-    return { time: formatTime(wakeTime), label: dayLabel(wakeTime, reference), at: wakeTime };
+  const options = SLEEP_HOURS.map((hours) => {
+    const wakeTime = new Date(now.getTime() + hours * 3600000);
+    return { hours, time: formatTime(wakeTime), label: dayLabel(wakeTime, reference), at: wakeTime };
   });
-  return { now, sleepTime, options };
+  return { now, options };
 }
 
-/** 「我要幾點起床」：指定起床時間，往回推算各週期數對應的建議上床時間 */
+/** 「我要幾點起床」：指定起床時間，往回推 7.5～9 小時的上床時間 */
 export function calcFromWakeTime(wakeTimeStr, now = new Date()) {
   const [h, m] = wakeTimeStr.split(':').map(Number);
   const wakeDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
   if (wakeDate <= now) wakeDate.setDate(wakeDate.getDate() + 1); // 取「下一次發生」的那個時間點
 
-  const options = buildOptions((cycles) => {
-    const sleepTime = new Date(wakeDate.getTime() - cycles * SLEEP_CYCLE_MIN * 60000);
-    const bedTime = new Date(sleepTime.getTime() - FALL_ASLEEP_MIN * 60000);
-    return { time: formatTime(bedTime), label: dayLabel(bedTime, now) };
+  const options = SLEEP_HOURS.map((hours) => {
+    const bedTime = new Date(wakeDate.getTime() - hours * 3600000);
+    return { hours, time: formatTime(bedTime), label: dayLabel(bedTime, now) };
   });
   return { wakeDate, options };
 }

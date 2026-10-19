@@ -325,6 +325,13 @@ body {
   line-height: 1.5;
 }
 
+.quote-translation {
+  font-size: var(--text-body);
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
 .quote-author {
   font-size: var(--text-footnote);
   color: var(--text-muted);
@@ -516,9 +523,9 @@ body {
 .disclosure-chevron { width: 14px; height: 14px; transition: transform 0.2s ease; }
 .disclosure[open] .disclosure-chevron { transform: rotate(90deg); }
 .disclosure-body .list-row:first-child { border-top: 1px solid var(--border-subtle); }
-/* 題庫那一列直接接在卡片標題下面，不用上面那條線；展開後跟題目隔一點 */
-.quiz-fold { margin-top: 0; border-top: none; }
-.quiz-fold[open] > summary { margin-bottom: 0.5rem; }
+/* 「關於晨序」整張卡片就是那一列，不用上面那條線 */
+.about-fold { margin-top: 0; border-top: none; }
+
 
 /* METRIC：卡片裡的大數字 + 小單位（匯率、倒數共用），右邊可以配一組小長條圖 */
 
@@ -1571,6 +1578,21 @@ body {
   color: var(--text-on-accent);
 }
 
+/* 早上那一塊：答兩題，答完就收起來 */
+.morning-row { border-bottom: none; }
+.morning-row .btn-action { flex-shrink: 0; }
+.morning-questions { display: flex; flex-direction: column; align-items: stretch; gap: 0.375rem; padding-bottom: 0.5rem; }
+.morning-title { font-size: var(--text-body); font-weight: 600; color: var(--text-main); }
+.morning-label { font-size: var(--text-footnote); color: var(--text-muted); margin-top: 0.375rem; }
+.morning-questions .section-action { align-self: flex-start; }
+
+/* 最近的睡眠按了編輯：日期一行，下面一行是開始｜結束｜刪除（手機上四樣擠一行放不下） */
+.sleep-edit-row { flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0; }
+.sleep-edit-row > span { flex-basis: 100%; font-size: var(--text-subhead); color: var(--text-muted); }
+.list-row.sleep-edit-row .countdown-input { flex: 1 1 auto; padding-left: 0.5rem; padding-right: 0.5rem; }
+.nap-form { display: flex; flex-direction: column; }
+.nap-form .btn-action { margin-top: 0.5rem; }
+
 .sleep-logged-text { font-size: var(--text-body); color: var(--text-main); line-height: 1.5; }
 /* 最近的睡眠：「01:05 → 08:50」靠右，數字等寬才對得齊 */
 .sleep-log-times { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-main); white-space: nowrap; }
@@ -1743,6 +1765,7 @@ body {
   line-height: 1.45;
   margin-top: 0.5rem;
 }
+.list-footnote[hidden] { display: none; }
 
 /* iOS 樣式的開關，底下還是一個 checkbox */
 .ios-switch {

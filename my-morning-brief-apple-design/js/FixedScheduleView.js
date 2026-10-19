@@ -32,9 +32,8 @@ function escapeHtml(str) {
 
 function footnote() {
   if (isPushSyncPending()) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。在傳上去之前，提醒會照舊的時間響。連上後再打開晨序會自動重試。';
-  return canRemindInBackground()
-    ? '打開右邊的開關，時間到會跳通知，晨序關著也會。按「編輯」可以設提前幾分鐘。待辦那兩項會列出當天還沒做的事。'
-    : '打開右邊的開關，時間到會提醒。iPhone 要先把晨序「加入主畫面」，從主畫面打開才收得到。';
+  // 平常不顯示說明；只有收不到背景通知（不是從主畫面打開）時提醒一句
+  return canRemindInBackground() ? '' : '要從主畫面的晨序圖示打開，才收得到通知。';
 }
 
 export function renderFixedScheduleCard() {
@@ -73,7 +72,7 @@ export function renderFixedScheduleCard() {
         <input type="time" class="countdown-input" id="fixed-add-time" required aria-label="時間">
         <button type="submit" class="section-action">加入</button>
       </form>
-      <p class="list-footnote" id="reminder-footnote">${footnote()}</p>
+      <p class="list-footnote" id="reminder-footnote" ${footnote() ? '' : 'hidden'}>${footnote()}</p>
     </div>
   `;
 }
@@ -140,6 +139,8 @@ export function bindFixedSchedule(container, rerender) {
 if (typeof window !== 'undefined') {
   window.addEventListener('chenxu:reminder-sync', () => {
     const el = document.getElementById('reminder-footnote');
-    if (el) el.textContent = footnote();
+    if (!el) return;
+    el.textContent = footnote();
+    el.hidden = !el.textContent;
   });
 }

@@ -64,12 +64,9 @@
         </div>
       </article>
 
-      <!-- 昨晚按過「確認現在睡」、早上還沒按「我起床了」時才出現（js/app.js 的 renderWakePrompt） -->
+      <!-- 早上那一塊（我起床了 → 怎麼醒的、精神），跟睡眠頁同一個（js/SleepView.js 的 renderMorningCheck） -->
       <article class="card col-span-2" id="wake-prompt" hidden>
-        <div class="list-row backup-reminder-row">
-          <span id="wake-prompt-text"></span>
-          <button type="button" class="section-action" id="wake-now-btn">我起床了</button>
-        </div>
+        <div id="wake-prompt-content"></div>
       </article>
 
       <!-- 沒開雲端備份、或雲端備份太久沒成功才會出現（js/app.js 的 renderBackupReminder） -->
@@ -138,13 +135,9 @@
           <h3 class="card-title">機車駕照筆試</h3>
           <span class="card-badge" id="quiz-card-badge"></span>
         </div>
-        <!-- 預設收起來，只露出「做到第幾題」那一列；點了才展開（js/app.js 的 renderDrivingQuiz 更新那一列的字） -->
-        <details class="disclosure quiz-fold">
-          <summary><span id="quiz-fold-title">今天的題目</span><span class="disclosure-hint"><span id="quiz-fold-hint"></span><svg class="disclosure-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,5 16,12 9,19"/></svg></span></summary>
-          <div id="quiz-widget-content">
-            <!-- Rendered dynamically -->
-          </div>
-        </details>
+        <div id="quiz-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
       </article>
 
       <!-- 今日語錄（放在最後，有空再看）：職人精神/執行力主題，固定輪替，不是 AI 生成（避免捏造語錄） -->

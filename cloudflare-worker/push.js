@@ -20,6 +20,10 @@ const MAX_ITEMS = 30;
 // 只往真的推播服務送，不讓這個 Worker 被拿來對任意網址發請求
 const PUSH_HOSTS = /(^|\.)push\.apple\.com$|^fcm\.googleapis\.com$|(^|\.)push\.services\.mozilla\.com$|(^|\.)notify\.windows\.com$/;
 const VAPID_SUBJECT = 'https://kasim9497.github.io/my-morning-brief0/';
+// Cloudflare 的排程不保證每一分鐘都準時跑（會晚、偶爾整分鐘跳過）。只比對「剛好這一分鐘」的話，
+// 那一分鐘沒跑到提醒就漏了。所以往回看幾分鐘，沒推過的補推；推過的記在 sent 裡不重推
+const CATCH_UP_MIN = 5;
+const SENT_KEEP = 30;
 
 const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64url = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
@@ -85,21 +89,42 @@ export function cleanSubscription(body) {
   return { endpoint, tz: typeof body.tz === 'string' ? body.tz.slice(0, 64) : 'UTC', items };
 }
 
-/** 這個訂閱在 now 這一分鐘有沒有該響的項目（照手機自己的時區算） */
-export function isDue(sub, now = new Date()) {
+/** 某個時刻在手機那個時區是幾月幾日、幾點幾分、星期幾；認不得的時區回傳 null */
+function localParts(tz, date) {
   let parts;
   try {
     parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: sub.tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-    }).formatToParts(now);
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(date);
   } catch (e) {
-    return false; // 認不得的時區名稱
+    return null;
   }
   const get = (type) => parts.find((p) => p.type === type).value;
-  const time = `${get('hour')}:${get('minute')}`;
-  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
-  return sub.items.some((item) => item.time === time && (!item.weekdays || item.weekdays.includes(weekday)));
+  return {
+    day: `${get('year')}-${get('month')}-${get('day')}`,
+    time: `${get('hour')}:${get('minute')}`,
+    weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')),
+  };
 }
+
+/**
+ * 這個訂閱現在該推、但還沒推過的是哪幾個時間（「2026-10-19 23:00」這種字串）。
+ * 往回看 CATCH_UP_MIN 分鐘，排程晚到或跳過的那一分鐘也補得到
+ */
+export function dueKeys(sub, now = new Date()) {
+  const keys = [];
+  for (let back = 0; back <= CATCH_UP_MIN; back++) {
+    const p = localParts(sub.tz, new Date(now.getTime() - back * 60000));
+    if (!p) return [];
+    const key = `${p.day} ${p.time}`;
+    const due = sub.items.some((item) => item.time === p.time && (!item.weekdays || item.weekdays.includes(p.weekday)));
+    if (due && !(sub.sent || []).includes(key) && !keys.includes(key)) keys.push(key);
+  }
+  return keys;
+}
+
+export const isDue = (sub, now = new Date()) => dueKeys(sub, now).length > 0;
 
 async function loadSubs(env) {
   return (await env.PUSH_KV.get(KV_KEY, 'json')) || {};
@@ -124,7 +149,8 @@ export async function handlePushRequest(body, env) {
     if (!subs[sub.endpoint] && Object.keys(subs).length >= MAX_SUBS) {
       return { status: 429, payload: { error: '已經有太多裝置訂閱提醒了' } };
     }
-    subs[sub.endpoint] = { tz: sub.tz, items: sub.items };
+    // sent 要留著：改完時間剛好在提醒的那幾分鐘內，才不會重推一次
+    subs[sub.endpoint] = { tz: sub.tz, items: sub.items, sent: (subs[sub.endpoint] && subs[sub.endpoint].sent) || [] };
   } else {
     delete subs[sub.endpoint]; // 所有提醒都關掉了
   }
@@ -139,7 +165,8 @@ export async function sendDuePushes(env, now = new Date()) {
   const subs = await loadSubs(env);
   let changed = false;
   for (const [endpoint, sub] of Object.entries(subs)) {
-    if (!isDue({ ...sub, endpoint }, now)) continue;
+    const keys = dueKeys(sub, now);
+    if (!keys.length) continue;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -151,6 +178,10 @@ export async function sendDuePushes(env, now = new Date()) {
         changed = true;
       } else if (!res.ok) {
         console.log('push failed', res.status, await res.text());
+      } else {
+        // 推成功才記；只有真的推了才寫 KV（免費額度一天 1000 次寫入，不能每分鐘寫）
+        sub.sent = [...(sub.sent || []), ...keys].slice(-SENT_KEEP);
+        changed = true;
       }
     } catch (e) {
       console.log('push error', e.message);

@@ -10,8 +10,7 @@ import { renderTaskList } from './TaskListView.js';
 import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
-import { renderSleepView } from './SleepView.js';
-import { pendingWake, logWake, clockOf } from './sleepLog.js';
+import { renderSleepView, renderMorningCheck } from './SleepView.js';
 import { scheduleReminderIfEnabled, saveTaskSnapshot } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
@@ -137,20 +136,17 @@ function setupCalendarTabRefresh() {
 function renderWakePrompt() {
   const card = document.getElementById('wake-prompt');
   if (!card) return;
-  const pending = pendingWake();
-  card.hidden = !pending;
-  if (pending) document.getElementById('wake-prompt-text').textContent = `昨晚 ${clockOf(pending.bedAt)} 睡，預計 ${clockOf(pending.wakeAt)} 起`;
+  const html = renderMorningCheck();
+  card.hidden = !html;
+  document.getElementById('wake-prompt-content').innerHTML = html;
 }
 
 function setupWakePrompt() {
   renderWakePrompt();
-  document.getElementById('wake-now-btn')?.addEventListener('click', () => {
-    const pending = pendingWake();
-    if (pending) logWake(pending.id);
+  // 按鈕的處理在 SleepView.js；紀錄變了它會發這個事件
+  window.addEventListener('chenxu:sleep-changed', () => {
     renderWakePrompt();
-    renderSleepView();
   });
-  window.addEventListener('chenxu:woke-up', renderWakePrompt);
   // iPhone 上晨序常常是從背景叫回來、不是重新載入，所以回到前景時再看一次
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
@@ -365,6 +361,13 @@ function disclosure(title, hint, body) {
 /**
  * Render Daily Quote（職人精神/執行力主題，固定輪替，不是 AI 生成）
  */
+// 「石の上にも三年——冰冷的石頭…」：日文原文一行、中文翻譯另起一行。擠在同一段的話，手機上會在中間隨便斷行
+function quoteTextHtml(text) {
+  const [original, translation] = String(text).split('——');
+  if (!translation) return `<div class="quote-text">「${escapeHtml(text)}」</div>`;
+  return `<div class="quote-text">${escapeHtml(original)}</div><div class="quote-translation">${escapeHtml(translation)}</div>`;
+}
+
 function renderDailyQuote(q) {
   const container = document.getElementById('quote-banner-content');
   if (!container) return;
@@ -372,7 +375,7 @@ function renderDailyQuote(q) {
   container.closest('.card').hidden = !q;
   if (!q) return;
   container.innerHTML = `
-    <div class="quote-text">「${escapeHtml(q.text)}」</div>
+    ${quoteTextHtml(q.text)}
     <div class="quote-author">— ${escapeHtml(q.author)}${q.source ? ` ${escapeHtml(q.source)}` : ''}</div>
     ${q.note ? `<p class="quote-note">${escapeHtml(q.note)}</p>` : ''}
   `;
@@ -515,28 +518,6 @@ function formatShortDate(dateStr) {
   return `${Number(m)}/${Number(d)}`;
 }
 
-// 收起來的那一列：一眼看出今天做到哪
-function renderQuizFold() {
-  const title = document.getElementById('quiz-fold-title');
-  const hint = document.getElementById('quiz-fold-hint');
-  if (!title || !hint) return;
-  const answered = quizState.questions.filter((q) => quizState.userAnswers[q.id]);
-  const correct = answered.filter((q) => quizState.userAnswers[q.id] === q.answer).length;
-  if (quizState.finished) {
-    title.textContent = '今天做完了';
-    hint.textContent = `答對 ${quizState.dailyScore} / ${quizState.dailyQuestions.length}`;
-  } else if (quizState.mode === 'review') {
-    title.textContent = '複習錯題';
-    hint.textContent = `第 ${quizState.currentIndex + 1} / ${quizState.questions.length} 題`;
-  } else if (!answered.length) {
-    title.textContent = '開始今天的題目';
-    hint.textContent = `${quizState.questions.length} 題`;
-  } else {
-    title.textContent = `做到第 ${quizState.currentIndex + 1} 題`;
-    hint.textContent = `答對 ${correct} / ${answered.length}`;
-  }
-}
-
 /**
  * Render Scooter Driving License Quiz Widget
  */
@@ -552,7 +533,6 @@ function renderDrivingQuiz() {
   const dueCount = getDueMistakes().length;
   const dailyTotal = quizState.dailyQuestions.length;
   document.getElementById('quiz-card-badge').textContent = `每日 ${dailyTotal} 題`;
-  renderQuizFold();
 
   // 跑完了：顯示今天的成績，不會自己從第一題重來
   if (quizState.finished) {

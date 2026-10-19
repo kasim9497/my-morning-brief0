@@ -27,9 +27,9 @@ async function dueItems() {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   return items.filter((item) => {
     const [h, m] = item.time.split(':').map(Number);
-    // 推播可能晚幾分鐘才到；跨過午夜的也算（23:59 的提醒在 00:01 到）
+    // 推播可能晚幾分鐘才到（後端也會補推排程漏掉的分鐘）；跨過午夜的也算（23:59 的提醒在 00:01 到）
     const late = (nowMinutes - (h * 60 + m) + 1440) % 1440;
-    return late <= 5;
+    return late <= 10;
   });
 }
 
@@ -53,9 +53,11 @@ self.addEventListener('push', (event) => {
       const tasks = due.find((item) => item.tasks);
       if (fixed.length) {
         // 時間放上面（粗體那行）、名稱放下面：使用者要一眼先看到還剩多久
-        notes.push({ title: fixed[0].body || `${fixed[0].time} 到了`, body: fixed.map((item) => item.label).join('、'), tag: 'chenxu-reminder' });
+        // tag 每個時間各用一個：同一個 tag 的新通知會「安靜地」換掉還留在通知中心的舊通知，不會響也不會跳出來，
+        // 前一則沒滑掉的話，這一則看起來就像沒通知
+        notes.push({ title: fixed[0].body || `${fixed[0].time} 到了`, body: fixed.map((item) => item.label).join('、'), tag: `chenxu-${fixed[0].time}` });
       }
-      if (tasks) notes.push({ ...(await taskNote(tasks)), tag: 'chenxu-tasks' });
+      if (tasks) notes.push({ ...(await taskNote(tasks)), tag: `chenxu-tasks-${tasks.time}` });
     } catch (e) {
       // 讀不到時間表也要顯示通知：iOS 規定每一則推播都必須讓使用者看到東西
     }
