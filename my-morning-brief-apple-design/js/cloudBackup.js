@@ -92,7 +92,7 @@ export function getCloudBackupState() {
   return {
     on: !!localStorage.getItem(TOKEN_KEY),
     savedAt: localStorage.getItem(SAVED_AT_KEY),
-    // 加密功能出來之前就開啟的手機：還在傳沒加密的，要重新輸入一次密語才有鑰匙
+    // 加密功能出來之前就開啟的手機：沒有鑰匙，上傳暫停中，要重新輸入一次密語才有鑰匙
     unencrypted: !!localStorage.getItem(TOKEN_KEY) && !localStorage.getItem(CRYPT_KEY),
     conflictSavedAt,
     error: lastError,
@@ -111,9 +111,15 @@ export async function uploadNow({ force = false } = {}) {
   if (!force && !conflictSavedAt && hash === localStorage.getItem(HASH_KEY)) return;
   // 還在等使用者決定用哪一份的時候，不要自己上傳
   if (conflictSavedAt && !force) return;
+  // 加密功能出來之前開啟的手機沒有鑰匙：寧可先停，也不把沒加密的內容傳出去。設定頁會叫使用者重新開啟一次
+  const cryptKey = localStorage.getItem(CRYPT_KEY);
+  if (!cryptKey) {
+    lastError = '還沒有加密的鑰匙，先暫停上傳';
+    changed();
+    return;
+  }
   try {
-    const cryptKey = localStorage.getItem(CRYPT_KEY);
-    const result = await call({ mode: 'backup-put', token, data: cryptKey ? await encrypt(data, cryptKey) : data, baseSavedAt: localStorage.getItem(SAVED_AT_KEY), force });
+    const result = await call({ mode: 'backup-put', token, data: await encrypt(data, cryptKey), baseSavedAt: localStorage.getItem(SAVED_AT_KEY), force });
     if (result.conflict) {
       conflictSavedAt = result.savedAt;
     } else {
@@ -173,7 +179,7 @@ export async function restoreFromCloud() {
     }
   }
   // 備份是空的或格式不對時什麼都不會動
-  if (!applyBackupData(data)) return '雲端那一份是空的或格式不對，這支手機的資料沒有動。';
+  if (!applyBackupData(data)) return '雲端那一份沒辦法還原（空的、格式不對，或手機空間不夠），這支手機的資料沒有動。';
   conflictSavedAt = null;
   localStorage.setItem(SAVED_AT_KEY, result.savedAt);
   localStorage.setItem(HASH_KEY, fingerprint(collectBackupData()));

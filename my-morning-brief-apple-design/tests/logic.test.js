@@ -587,14 +587,16 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.match(await cloud.restoreFromCloud(), /解不開/);
   assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
 
-  // 加密功能出來之前開啟的手機（沒有鑰匙）：照舊傳得上去，設定頁會提示；沒加密的舊備份也還原得回來
+  // 加密功能出來之前開啟的手機（沒有鑰匙）：不上傳沒加密的內容，設定頁會提示
   fakeStorage.delete('chenxu.cloudBackup.key');
   assert.equal(cloud.getCloudBackupState().unencrypted, true);
   assert.match(await cloud.restoreFromCloud(), /加密的/);
+  const beforeLegacy = JSON.stringify([...kv.entries()]);
+  localStorage.setItem('morningBrief.note', '沒有鑰匙時改的');
   await cloud.uploadNow({ force: true });
-  localStorage.setItem('morningBrief.note', '被改掉的');
-  assert.equal(await cloud.restoreFromCloud(), null);
-  assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
+  assert.equal(JSON.stringify([...kv.entries()]), beforeLegacy, '沒有鑰匙就什麼都不傳');
+  assert.ok(cloud.getCloudBackupState().error);
+  localStorage.setItem('morningBrief.note', 'A 手機的新資料');
 
   // 密語不對拿不到別人的資料
   clearSync();
@@ -634,6 +636,54 @@ test('任務操作回傳有沒有真的改到；做完的不能標成不做；�
   assert.equal(localStorage.getItem('morningBrief.taskEngine.v1.unreadable'), '{壞掉的');
   localStorage.setItem('morningBrief.taskEngine.v1', good);
   fakeStorage.delete('morningBrief.taskEngine.v1.unreadable');
+});
+
+test('手機空間滿了：存不進去的改動會退回、回報失敗；還原寫到一半失敗會放回原本的資料', async () => {
+  const backup = await import('../js/backup.js');
+  const media = await import('../js/mediaTracker.js');
+  const realSet = localStorage.setItem;
+  const day = '2027-06-02';
+  const id = tasks.addCustomTask('空間測試');
+  tasks.setTaskWeekdaySchedule(id, [0, 1, 2, 3, 4, 5, 6]);
+  const find = () => tasks.getTasksForDate(day).find((t) => t.defId === id);
+  const instance = find().instanceId;
+
+  localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  assert.equal(tasks.toggleDone(day, instance), false, '存不進去就不能說做好了');
+  assert.equal(media.addMediaItem('存不進去的劇', 'drama', 10, '2027-07-01'), false);
+  localStorage.setItem = realSet;
+  assert.equal(find().status, 'pending', '畫面退回改之前的樣子');
+  assert.ok(!media.getMediaItems().some((m) => m.title === '存不進去的劇'));
+  tasks.removeRoutineTask(id);
+
+  // 還原：寫到第二筆就失敗 → 手機上原本的資料原封不動
+  localStorage.setItem('morningBrief.keepA', '{"a":1}');
+  const original = JSON.stringify(backup.collectBackupData());
+  let writes = 0;
+  localStorage.setItem = (k, v) => { if (++writes === 2) throw new Error('QuotaExceededError'); realSet(k, v); };
+  assert.equal(backup.applyBackupData({ 'morningBrief.x': '{"x":1}', 'morningBrief.y': '{"y":2}', 'morningBrief.z': '{"z":3}' }), false);
+  localStorage.setItem = realSet;
+  assert.equal(JSON.stringify(backup.collectBackupData()), original);
+  fakeStorage.delete('morningBrief.keepA');
+});
+
+test('AI 的動作照實際結果回報：找不到、數字不合理就不算做好', async () => {
+  const media = await import('../js/mediaTracker.js');
+  assert.equal(media.logProgress('不存在的', 3), false);
+  assert.equal(media.postponeTarget('不存在的', 3), false);
+  assert.equal(media.removeMediaItem('不存在的'), false);
+  assert.equal(media.addMediaItem('日期亂填', 'drama', 10, '下週'), false);
+  assert.equal(media.addMediaItem('負數', 'drama', -1, '2027-07-01'), false);
+  assert.equal(media.addMediaItem('正常的', 'drama', 10, '2027-07-01'), true);
+  const item = media.getMediaItems().find((m) => m.title === '正常的');
+  assert.equal(media.logProgress(item.id, -2), false);
+  assert.equal(media.postponeTarget(item.id, 0), false);
+  assert.equal(media.logProgress(item.id, 2), true);
+  assert.equal(media.removeMediaItem(item.id), true);
+  assert.equal(countdown.addCountdown('沒日期', ''), false);
+  assert.equal(countdown.removeCountdown('不存在的'), false);
+  assert.equal(tasks.setTaskIntervalSchedule('不存在的', 3), false);
+  assert.equal(tasks.setTaskWeekdaySchedule('不存在的', [1]), false);
 });
 
 test('連續新增：同一瞬間加的幾項不會撞到同一個編號', () => {

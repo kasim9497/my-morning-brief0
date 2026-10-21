@@ -41,7 +41,8 @@
 - 不是使用者紀錄的東西（同步狀態、一次性旗標、題庫今天做到哪）用 `chenxu.` 開頭，才不會被備份帶走、也不會在還原時被清掉。
 - 新編號不要只用 `Date.now()`：AI 助理一次加好幾項時會在同一毫秒撞號。後面加亂數字（照 `taskEngine.js` 的 `addCustomTask`）。
 - 不要用程式默默清使用者的資料，除非他明確要求。
-- `taskEngine.js` 的 `toggleDone`／`skipTask`／`postponeTask` 回傳有沒有真的改到；AI 助理（`chatBox.js`）靠這個決定能不能說「做好了」。新增給 AI 用的動作時照這個做。
+- 會改資料的函式都回傳有沒有真的改到（找不到、數字不合理、存不進去都是 false）：`taskEngine.js`、`mediaTracker.js`、`countdown.js`。存檔寫不進去（空間滿了）時把記憶體退回最後一次存成功的樣子，並發 `chenxu:save-failed`（app.js 跳一次提示）。AI 助理（`chatBox.js`）只照這些回傳值說「做好了」。新增給 AI 用的動作時照這個做。
+- 雲端還原（`backup.js` 的 `applyBackupData`）寫到一半失敗會放回原本的資料。沒有加密鑰匙的手機不上傳（不傳沒加密的內容）。
 - 這個 repo 是公開的。使用者的個人資料（出生資料、命盤等）不寫進任何會 commit 的檔案：放 `private/`（已在 .gitignore）或 GitHub Secret。運勢用的命盤是 Secret `BIRTH_CHART_SUMMARY`。
 
 **內容不可以編**
@@ -69,7 +70,7 @@
 
 ## 測試與部署
 
-- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（42 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
+- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（44 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
 - 測試不可以依賴「今天是星期幾」或「某一天剛好排了什麼」。2026-10-09 就因為這樣停了一天。要用任務的測試自己建項目；改完用假日期多跑幾天（做法在 history 最後一段）。
 - 改了 `taskEngine.js`／`sleepCalculator.js`／`quizMistakes.js`／`fixedSchedule.js`／`cloudBackup.js`／Worker 的 `push.js`、`backup.js` 之後要跑測試。改了行為就同步改測試，不要為了讓它過而刪測試。
 - push 之前：`git stash push -- .claude/launch.json; git pull --rebase origin main; git stash pop`。Actions 會自己 commit 匯率歷史回 repo，不先拉會被拒絕。`.claude/launch.json` 和最外層那份題庫 PDF 不要 commit。

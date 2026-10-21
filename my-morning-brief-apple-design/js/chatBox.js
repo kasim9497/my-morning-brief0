@@ -112,51 +112,42 @@ const ACTION_EXECUTORS = {
   set_task_weekday_schedule: (args) => {
     const validDays = Array.isArray(args.weekdays) && args.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
     if (!getConfigurableTaskIds().includes(args.defId) || !validDays) return null;
-    setTaskWeekdaySchedule(args.defId, args.weekdays);
-    return '作息設定已更新。';
+    return setTaskWeekdaySchedule(args.defId, args.weekdays) ? '作息設定已更新。' : null;
   },
   set_task_interval_schedule: (args) => {
-    if (!args.defId || !args.everyNDays) return null;
-    setTaskIntervalSchedule(args.defId, args.everyNDays);
-    return '作息設定已更新。';
+    // 「每兩週」這種要 AI 換成 14 天；超過設定頁能設的 1–30 天就不做
+    const n = Number(args.everyNDays);
+    if (!getConfigurableTaskIds().includes(args.defId) || !Number.isInteger(n) || n < 1 || n > 30) return null;
+    return setTaskIntervalSchedule(args.defId, n) ? '作息設定已更新。' : null;
   },
   add_countdown: (args) => {
-    if (!args.label || !args.targetDate) return null;
-    addCountdown(args.label, args.targetDate);
-    return `已新增倒數「${args.label}」。`;
+    return addCountdown(args.label, args.targetDate) ? `已新增倒數「${args.label}」。` : null;
   },
   // 刪除沒辦法復原：AI 可能認錯是哪一筆，先讓使用者確認
   remove_countdown: (args) => {
     if (!args.id) return null;
     const target = getCountdowns().find((c) => c.id === args.id);
     if (!target || !window.confirm(`要刪除倒數「${target.label}」嗎？`)) return null;
-    removeCountdown(args.id);
-    return '已刪除這個倒數。';
+    return removeCountdown(args.id) ? '已刪除這個倒數。' : null;
   },
   add_media_item: (args) => {
-    if (!args.title || !args.totalUnits || !args.targetDate) return null;
-    addMediaItem(args.title, args.type || 'drama', args.totalUnits, args.targetDate);
-    return `已新增追蹤「${args.title}」。`;
+    return addMediaItem(args.title, args.type || 'drama', args.totalUnits, args.targetDate) ? `已新增追蹤「${args.title}」。` : null;
   },
   log_media_progress: (args) => {
-    if (!args.id || !args.units) return null;
-    logProgress(args.id, args.units);
-    return '進度已記錄。';
+    return logProgress(args.id, args.units) ? '進度已記錄。' : null;
   },
   postpone_media_target: (args) => {
-    if (!args.id || !args.days) return null;
-    postponeTarget(args.id, args.days);
-    return '目標日已延後。';
+    return postponeTarget(args.id, args.days) ? '目標日已延後。' : null;
   },
   remove_media_item: (args) => {
     if (!args.id) return null;
     const target = getMediaItems().find((m) => m.id === args.id);
     if (!target || !window.confirm(`要刪除「${target.title}」的追蹤嗎？`)) return null;
-    removeMediaItem(args.id);
-    return '已刪除這筆追蹤。';
+    return removeMediaItem(args.id) ? '已刪除這筆追蹤。' : null;
   },
   set_sleep_reminder: (args) => {
-    setSleepReminderConfig(!!args.enabled, args.bedTime || '23:30');
+    // 作息裡沒有任何就寢項目時，什麼都改不到
+    if (!/^\d{2}:\d{2}$/.test(args.bedTime || '') || !setSleepReminderConfig(!!args.enabled, args.bedTime).exists) return null;
     return '就寢提醒設定已更新。';
   },
 };

@@ -157,7 +157,7 @@ function renderCloudBackup() {
       <span>自動備份中<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}</small></span>
       <button type="button" class="section-action" id="cloud-off-btn">關閉</button>
     </div>
-    ${state.unencrypted ? '<p class="list-footnote backup-explain">現在傳上去的內容還沒加密。按「關閉」，再用同一組密語重新開啟，之後就會先加密再傳（開啟時選「用這支手機的」）。</p>' : ''}
+    ${state.unencrypted ? '<p class="list-footnote backup-explain">備份暫停中：這支手機還沒有加密的鑰匙，為了不把沒加密的內容傳出去先停了。按「關閉」，再用同一組密語重新開啟（開啟時選「用這支手機的」）就會恢復。</p>' : ''}
     ${state.error ? `<p class="list-footnote backup-explain">上次沒傳成功（${escapeHtml(state.error)}）。連得上的時候會自動再試。</p>` : ''}
     <button type="button" class="section-action" id="cloud-verify-btn">檢查雲端那一份拿不拿得回來</button>
     <p class="list-footnote backup-explain" id="cloud-verify-result" hidden></p>

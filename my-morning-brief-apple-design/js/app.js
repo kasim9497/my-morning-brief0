@@ -141,6 +141,14 @@ function renderWakePrompt() {
   document.getElementById('wake-prompt-content').innerHTML = html;
 }
 
+// 存不進去（手機空間滿了）：各模組已經把畫面退回改之前的樣子，這裡跟使用者說一聲。一分鐘內只說一次
+let lastSaveWarning = 0;
+window.addEventListener('chenxu:save-failed', () => {
+  if (Date.now() - lastSaveWarning < 60000) return;
+  lastSaveWarning = Date.now();
+  window.alert('剛才的改動存不進去，可能是手機的儲存空間滿了。清一點空間再試一次。');
+});
+
 function setupWakePrompt() {
   renderWakePrompt();
   // 按鈕的處理在 SleepView.js；紀錄變了它會發這個事件

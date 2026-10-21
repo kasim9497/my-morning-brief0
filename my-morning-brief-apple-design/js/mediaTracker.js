@@ -25,11 +25,16 @@ function loadItems() {
   }
 }
 
+/** 存檔，回傳有沒有存成功；失敗時退回最後一次存成功的清單（同 taskEngine.js 的 saveStore） */
 function saveItems(list) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return true;
   } catch (e) {
     console.warn('[mediaTracker] localStorage 寫入失敗：', e);
+    items = loadItems();
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('chenxu:save-failed'));
+    return false;
   }
 }
 
@@ -113,7 +118,7 @@ export function getMediaItems() {
 export function addMediaItem(title, type, totalUnits, targetDate) {
   const trimmedTitle = (title || '').trim();
   const units = Number(totalUnits);
-  if (!trimmedTitle || !targetDate || !Number.isFinite(units) || units <= 0) return;
+  if (!trimmedTitle || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate || '') || !Number.isFinite(units) || units <= 0) return false;
 
   items.push({
     id: `media-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -124,30 +129,34 @@ export function addMediaItem(title, type, totalUnits, targetDate) {
     targetDate,
     completedUnits: 0,
   });
-  saveItems(items);
+  return saveItems(items);
 }
 
+// 這幾個都回傳有沒有真的改到：找不到那一項、數字不合理、或存不進去都是 false
 export function removeMediaItem(id) {
+  if (!items.some((item) => item.id === id)) return false;
   items = items.filter((item) => item.id !== id);
-  saveItems(items);
+  return saveItems(items);
 }
 
 /** 記錄今天看/讀了幾集/幾頁，累加進 completedUnits */
 export function logProgress(id, unitsToday) {
   const n = Number(unitsToday);
-  if (!Number.isFinite(n) || n <= 0) return;
+  if (!Number.isFinite(n) || n <= 0 || !items.some((item) => item.id === id)) return false;
   items = items.map((item) => {
     if (item.id !== id) return item;
     return { ...item, completedUnits: Math.min(item.totalUnits, item.completedUnits + Math.round(n)) };
   });
-  saveItems(items);
+  return saveItems(items);
 }
 
 /** 延後目標日 N 天（落後太多時使用者自己決定要不要延，而不是系統默默加量） */
 export function postponeTarget(id, days) {
+  const n = Number(days);
+  if (!Number.isInteger(n) || n <= 0 || n > 365 || !items.some((item) => item.id === id)) return false;
   items = items.map((item) => {
     if (item.id !== id) return item;
-    return { ...item, targetDate: addDaysStr(item.targetDate, days) };
+    return { ...item, targetDate: addDaysStr(item.targetDate, n) };
   });
-  saveItems(items);
+  return saveItems(items);
 }

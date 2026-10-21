@@ -160,11 +160,19 @@ function loadStore() {
   }
 }
 
-function saveStore(store) {
+/**
+ * 存檔，回傳有沒有存成功。寫不進去（手機空間滿了）時，把記憶體裡的狀態退回最後一次存成功的樣子：
+ * 不然畫面會顯示一個其實沒存到的改動，重新打開才發現不見了
+ */
+function saveStore(next) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    return true;
   } catch (e) {
     console.warn('[taskEngine] localStorage 寫入失敗：', e);
+    store = loadStore();
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('chenxu:save-failed'));
+    return false;
   }
 }
 
@@ -262,18 +270,20 @@ export function getRoutineConfig() {
   return JSON.parse(JSON.stringify(store.routineConfig));
 }
 
+/** 回傳有沒有真的改到（AI 助理靠這個決定能不能說做好了） */
 export function setTaskWeekdaySchedule(defId, weekdays) {
-  if (!getConfigurableTaskIds().includes(defId)) return;
+  if (!getConfigurableTaskIds().includes(defId)) return false;
   store.routineConfig[defId] = { mode: 'weekday', days: [...new Set(weekdays)].sort((a, b) => a - b) };
-  saveStore(store);
+  return saveStore(store);
 }
 
 /** anchorDate 預設今天：從設定的當下開始算「每 N 天」，不回頭補算過去 */
 export function setTaskIntervalSchedule(defId, everyNDays, anchorDate = getTodayStr()) {
-  if (!getConfigurableTaskIds().includes(defId)) return;
-  const n = Math.max(1, Math.round(Number(everyNDays) || 1));
+  if (!getConfigurableTaskIds().includes(defId)) return false;
+  // 跟設定頁的輸入框一樣只收 1–30
+  const n = Math.min(30, Math.max(1, Math.round(Number(everyNDays) || 1)));
   store.routineConfig[defId] = { mode: 'interval', everyNDays: n, anchorDate };
-  saveStore(store);
+  return saveStore(store);
 }
 
 function ensureDateInitialized(dateStr) {
@@ -363,8 +373,7 @@ export function undoTaskAction(dateStr, instanceId) {
     delete entry.skipWeek;
   }
   entry.status = 'pending';
-  saveStore(store);
-  return true;
+  return saveStore(store);
 }
 
 // ── 狀態變更 ────────────────────────────────────────────────────────
@@ -376,8 +385,7 @@ export function toggleDone(dateStr, instanceId) {
   // 延後或不做的要先復原才能打勾，不然延過去的那筆和這筆會變成同一件事算兩次
   if (!entry || (entry.status !== 'pending' && entry.status !== 'done')) return false;
   entry.status = entry.status === 'done' ? 'pending' : 'done';
-  saveStore(store);
-  return true;
+  return saveStore(store);
 }
 
 export function skipTask(dateStr, instanceId) {
@@ -385,8 +393,7 @@ export function skipTask(dateStr, instanceId) {
   // 只有還沒做的可以標成不做：做完的被改成不做，那一天的紀錄就不對了
   if (!entry || entry.status !== 'pending') return false;
   entry.status = 'skipped';
-  saveStore(store);
-  return true;
+  return saveStore(store);
 }
 
 /**
@@ -421,8 +428,7 @@ export function postponeTask(dateStr, instanceId, option) {
         other.skipWeek = true;
       }
     }
-    saveStore(store);
-    return true;
+    return saveStore(store);
   }
 
   const daysMap = { plus1: 1, plus2: 2, plus3: 3, nextWeek: 7 };
@@ -441,6 +447,5 @@ export function postponeTask(dateStr, instanceId, option) {
     carriedFrom: dateStr,
   };
 
-  saveStore(store);
-  return true;
+  return saveStore(store);
 }

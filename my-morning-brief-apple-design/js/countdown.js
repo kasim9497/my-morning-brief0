@@ -27,11 +27,16 @@ function seedDefault() {
   return seeded;
 }
 
+/** 存檔，回傳有沒有存成功；失敗時退回最後一次存成功的清單（同 taskEngine.js 的 saveStore） */
 function saveCountdowns(list) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return true;
   } catch (e) {
     console.warn('[countdown] localStorage 寫入失敗：', e);
+    countdowns = loadCountdowns();
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('chenxu:save-failed'));
+    return false;
   }
 }
 
@@ -63,12 +68,13 @@ export function getCountdowns() {
 
 export function addCountdown(label, targetDate) {
   const trimmedLabel = (label || '').trim();
-  if (!trimmedLabel || !targetDate) return;
+  if (!trimmedLabel || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate || '')) return false;
   countdowns.push({ id: `cd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, label: trimmedLabel, targetDate });
-  saveCountdowns(countdowns);
+  return saveCountdowns(countdowns);
 }
 
 export function removeCountdown(id) {
+  if (!countdowns.some((c) => c.id === id)) return false;
   countdowns = countdowns.filter((c) => c.id !== id);
-  saveCountdowns(countdowns);
+  return saveCountdowns(countdowns);
 }

@@ -49,8 +49,16 @@ export function applyBackupData(data) {
   } catch (e) {
     return false;
   }
-  // 清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）
-  Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
-  entries.forEach(([key, value]) => localStorage.setItem(key, value));
-  return true;
+  // 清掉現有的，備份裡沒有的項目才不會殘留（例如備份當時還沒有追劇清單）。
+  // 先留一份原本的：寫到一半失敗（手機空間不夠）就清掉寫了一半的、放回原本的，不會只剩半套資料
+  const before = collectBackupData();
+  try {
+    Object.keys(before).forEach((key) => localStorage.removeItem(key));
+    entries.forEach(([key, value]) => localStorage.setItem(key, value));
+    return true;
+  } catch (e) {
+    Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
+    Object.entries(before).forEach(([key, value]) => localStorage.setItem(key, value));
+    return false;
+  }
 }
