@@ -195,7 +195,7 @@ export default {
     }
 
     // 作息時間的推播提醒：取公鑰、存訂閱和時間表（cloudflare-worker/push.js）
-    if (body.mode === 'push-key' || body.mode === 'push-sync') {
+    if (body.mode === 'push-key' || body.mode === 'push-sync' || body.mode === 'push-test') {
       const result = await handlePushRequest(body, env);
       return json(result.payload, result.status);
     }

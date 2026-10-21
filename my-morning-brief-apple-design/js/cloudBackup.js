@@ -181,6 +181,39 @@ export async function restoreFromCloud() {
   return null;
 }
 
+/**
+ * 檢查雲端那一份真的拿得回來：下載、解密、跟這支手機現在的資料比對。不會改任何資料。
+ * 回傳 { ok, text }，text 直接給使用者看
+ */
+export async function verifyCloudBackup() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return { ok: false, text: '還沒開啟雲端備份。' };
+  let result;
+  try {
+    result = await call({ mode: 'backup-get', token });
+  } catch (e) {
+    return { ok: false, text: `連不上雲端（${e.message}），開 VPN 再試一次。` };
+  }
+  if (!result.exists) return { ok: false, text: '雲端沒有這組密語的備份。' };
+  let data = result.data;
+  if (data && data[ENCRYPTED_KEY]) {
+    const cryptKey = localStorage.getItem(CRYPT_KEY);
+    if (!cryptKey) return { ok: false, text: '雲端那一份是加密的，這支手機沒有鑰匙。關閉再用同一組密語重新開啟就有了。' };
+    try {
+      data = await decrypt(data, cryptKey);
+    } catch (e) {
+      return { ok: false, text: '雲端那一份解不開，可能壞掉了。這支手機的資料沒有動，按「用這支手機的」可以重傳一份。' };
+    }
+  }
+  const count = Object.keys(data || {}).filter((key) => key.startsWith('morningBrief.')).length;
+  if (!count) return { ok: false, text: '雲端那一份是空的。' };
+  const same = fingerprint(data) === fingerprint(collectBackupData());
+  return {
+    ok: true,
+    text: `雲端那一份解得開，有 ${count} 類資料，${same ? '跟這支手機現在的一模一樣。' : '比這支手機現在的舊一點（這裡有新的改動，幾分鐘內會自動傳上去）。'}`,
+  };
+}
+
 /** 關閉：這支手機不再自動上傳。雲端那一份留著 */
 export function turnOffCloudBackup() {
   [TOKEN_KEY, SAVED_AT_KEY, HASH_KEY, CRYPT_KEY].forEach((key) => localStorage.removeItem(key));

@@ -27,7 +27,7 @@ import {
   postponeTarget,
 } from './mediaTracker.js';
 
-import { getCloudBackupState, turnOnCloudBackup, turnOffCloudBackup, restoreFromCloud, uploadNow, MIN_PASSPHRASE_LENGTH } from './cloudBackup.js';
+import { getCloudBackupState, turnOnCloudBackup, turnOffCloudBackup, restoreFromCloud, uploadNow, verifyCloudBackup, MIN_PASSPHRASE_LENGTH } from './cloudBackup.js';
 import { renderTaskIcon } from './taskIcons.js';
 import { enableSwipeRows } from './swipeRow.js';
 import { buildWeeklyReport } from './weeklyReport.js';
@@ -159,6 +159,8 @@ function renderCloudBackup() {
     </div>
     ${state.unencrypted ? '<p class="list-footnote backup-explain">現在傳上去的內容還沒加密。按「關閉」，再用同一組密語重新開啟，之後就會先加密再傳（開啟時選「用這支手機的」）。</p>' : ''}
     ${state.error ? `<p class="list-footnote backup-explain">上次沒傳成功（${escapeHtml(state.error)}）。連得上的時候會自動再試。</p>` : ''}
+    <button type="button" class="section-action" id="cloud-verify-btn">檢查雲端那一份拿不拿得回來</button>
+    <p class="list-footnote backup-explain" id="cloud-verify-result" hidden></p>
     <button type="button" class="section-action" id="cloud-restore-btn">用雲端那一份還原這支手機</button>
   `;
 }
@@ -196,6 +198,15 @@ function bindCloudBackup() {
   };
   on('cloud-use-cloud', restore);
   on('cloud-restore-btn', restore);
+  on('cloud-verify-btn', async (e) => {
+    const button = e.currentTarget;
+    const out = document.getElementById('cloud-verify-result');
+    button.disabled = true;
+    out.hidden = false;
+    out.textContent = '檢查中…';
+    out.textContent = (await verifyCloudBackup()).text;
+    button.disabled = false;
+  });
 }
 
 export function renderSettingsView() {

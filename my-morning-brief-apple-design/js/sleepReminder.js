@@ -16,10 +16,13 @@ import { WORKER_URL } from './config.js';
 
 // 改了作息時間但還沒成功傳到後端時記著，設定頁會顯示，下次打開晨序會再試
 const PENDING_KEY = 'morningBrief.pushSyncPending';
+// 上次成功把時間表傳到後端的時間（這支手機的同步狀態，不是紀錄）
+const SYNCED_AT_KEY = 'chenxu.pushSyncedAt';
 // sw.js 讀這份來決定通知上要寫哪一項（推播本身不帶內容）
 const SCHEDULE_CACHE = 'chenxu-reminders';
 const SCHEDULE_URL = './reminder-schedule.json';
 const TASKS_URL = './reminder-tasks.json';
+const TEST_URL = './reminder-test.json';
 
 let timerId = null;
 
@@ -178,6 +181,35 @@ export async function saveTaskSnapshot() {
   await cache.put(TASKS_URL, new Response(JSON.stringify(days)));
 }
 
+/**
+ * 提醒現在的實際狀態（不是畫面上的開關）：瀏覽器給不給通知、收不收得到背景通知、
+ * 時間表上次什麼時候成功傳到後端、有沒有傳失敗還沒重試成功
+ */
+export function getReminderStatus() {
+  return {
+    permission: 'Notification' in globalThis ? Notification.permission : 'unsupported',
+    background: canRemindInBackground(),
+    native: isNativeApp(),
+    pending: isPushSyncPending(),
+    syncedAt: localStorage.getItem(SYNCED_AT_KEY),
+    anyOn: getFixedSchedule().some((item) => item.remind),
+  };
+}
+
+/** 馬上送一則測試推播，走跟真的提醒一樣的路。失敗會丟出錯誤，訊息可以直接給使用者看 */
+export async function sendTestPush() {
+  const registration = await navigator.serviceWorker.getRegistration('./sw.js');
+  const subscription = registration && await registration.pushManager.getSubscription();
+  if (!subscription) throw new Error('這支手機還沒訂閱推播，先打開任一個提醒');
+  const cache = await caches.open(SCHEDULE_CACHE);
+  await cache.put(TEST_URL, new Response(JSON.stringify({ until: Date.now() + 3 * 60000 })));
+  try {
+    await callWorker({ mode: 'push-test', subscription: subscription.toJSON() });
+  } catch (e) {
+    throw new Error(e instanceof TypeError ? '連不上伺服器，開 VPN 再試一次' : e.message);
+  }
+}
+
 function setPending(pending) {
   if (pending) localStorage.setItem(PENDING_KEY, '1');
   else localStorage.removeItem(PENDING_KEY);
@@ -203,7 +235,10 @@ export function scheduleReminderIfEnabled() {
 
   if (pushSupported()) {
     saveTaskSnapshot().catch(() => {});
-    syncPush(items).then(() => setPending(false)).catch((e) => {
+    syncPush(items).then(() => {
+      localStorage.setItem(SYNCED_AT_KEY, new Date().toISOString());
+      setPending(false);
+    }).catch((e) => {
       console.warn('[reminder] 推播同步失敗：', e);
       setPending(true);
     });

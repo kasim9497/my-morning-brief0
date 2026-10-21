@@ -142,6 +142,21 @@ export async function handlePushRequest(body, env) {
 
   if (body.mode === 'push-key') return { status: 200, payload: { publicKey: publicKeyOf(jwk) } };
 
+  // 設定頁的「送一則測試通知」：馬上推一次，走跟真的提醒完全一樣的路（後端 → Apple → 手機的 sw.js）。
+  // 只推給已經存在 KV 裡的訂閱，不能拿來對任意網址發推播
+  if (body.mode === 'push-test') {
+    const endpoint = body.subscription && body.subscription.endpoint;
+    const subs = await loadSubs(env);
+    if (!endpoint || !subs[endpoint]) return { status: 404, payload: { error: '後端沒有這支手機的訂閱，先打開任一個提醒' } };
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { TTL: '60', Urgency: 'high', Authorization: await vapidAuthorization(jwk, endpoint) },
+    });
+    return res.ok
+      ? { status: 200, payload: { ok: true } }
+      : { status: 502, payload: { error: `推播服務回了 ${res.status}` } };
+  }
+
   const sub = cleanSubscription(body);
   if (!sub) return { status: 400, payload: { error: '訂閱資料格式不對' } };
   const subs = await loadSubs(env);

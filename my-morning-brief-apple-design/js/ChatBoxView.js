@@ -3,7 +3,7 @@
  * 資料/邏輯都在 chatBox.js，這裡只負責畫面跟事件綁定
  */
 
-import { sendChatMessage, getConversationHistory } from './chatBox.js';
+import { sendChatMessage, getConversationHistory, didLastSendFail } from './chatBox.js';
 
 function escapeHtml(str) {
   if (!str || typeof str !== 'string') return '';
@@ -74,6 +74,8 @@ export function initChatBox() {
 
     await sendChatMessage(text);
     renderMessages();
+    // 沒送到：打的字放回去，開了 VPN 按一下送出就好，不用重打
+    if (didLastSendFail() && !input.value) input.value = text;
 
     if (sendBtn) sendBtn.disabled = false;
     input.focus();

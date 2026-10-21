@@ -11,7 +11,7 @@
 import { getTasksForDate, getTodayStr, addDays, getWeekday } from './taskEngine.js';
 import { getMediaItems, getTypeInfo } from './mediaTracker.js';
 import { getFixedSchedule } from './fixedSchedule.js';
-import { getSleepLog, nightOf, clockOf, hoursOf, minutesOf, isNap, WAKE_TYPES, ENERGY } from './sleepLog.js';
+import { getSleepLog, nightOf, clockOf, hoursOf, minutesOf, awakeMinutesOf, wakeCountOf, isNap, WAKE_TYPES, ENERGY } from './sleepLog.js';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const STATUS_TEXT = { pending: '沒做', postponed: '延後', skipped: '跳過' };
@@ -51,14 +51,18 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
       const woke = entry.wokeAt
         ? `實際 ${clockOf(entry.wokeAt)} 起床${entry.wakeType ? `（${WAKE_TYPES[entry.wakeType]}）` : ''}${entry.energy ? `，起床時精神：${ENERGY[entry.energy]}` : ''}`
         : '沒記實際起床時間';
-      return `- ${shortDate(nightOf(entry))}晚上：${clockOf(entry.bedAt)} 上床，鬧鐘設 ${clockOf(entry.wakeAt)}，${woke}，在床上 ${hoursOf(entry)} 小時${entry.wakeUps ? `，起床後又睡回去 ${entry.wakeUps} 次` : ''}`;
+      const wakes = (entry.wakes || []).map((w) => `${clockOf(w.at)} 醒來、${clockOf(w.back)} 又睡`);
+      const wakeText = wakeCountOf(entry)
+        ? `，中間醒來 ${wakeCountOf(entry)} 次${wakes.length ? `（${wakes.join('；')}，共醒著 ${awakeMinutesOf(entry)} 分鐘）` : ''}`
+        : '';
+      return `- ${shortDate(nightOf(entry))}晚上：${clockOf(entry.bedAt)} 上床，鬧鐘設 ${clockOf(entry.wakeAt)}${entry.cycles ? `（${entry.cycles} 個 90 分鐘週期）` : ''}，${woke}，在床上 ${hoursOf(entry)} 小時${wakeText}`;
     });
   const scheduleLine = getFixedSchedule().filter((item) => !item.kind).map((item) => `${item.label} ${item.time}`).join('、');
 
   const sections = [
     `以下是我 ${shortDate(dates[0])} 到 ${shortDate(dates[6])} 這一週在生活排程 App「晨序」裡的紀錄。`,
     '請幫我分析這一週的狀況：哪些習慣做得穩、哪些常漏掉、可能的原因。',
-    '睡眠請特別看：我最近白天很睏、下午坐著容易睡著，有時比鬧鐘早醒 30～60 分鐘又睡不回去。目前的試行目標是每晚給自己 8.5～9 小時的睡眠機會、起床時間固定、平日和週末差不超過一小時。請看這一週：睡眠機會有沒有達標、上床和起床時間穩不穩、提早醒的次數、起床時精神和睡得多久有沒有關係、不是故意的小睡有幾次。如果睡夠了還是常常很累、或不由自主睡著的次數沒減少，請直接提醒我去看醫生。',
+    '睡眠請特別看：我最近白天很睏、下午坐著容易睡著，有時比鬧鐘早醒 30～60 分鐘又睡不回去。目前的試行目標是每晚給自己 8.5～9 小時的睡眠機會、起床時間固定、平日和週末差不超過一小時。請看這一週：睡眠機會有沒有達標、上床和起床時間穩不穩、提早醒的次數、早上醒來又睡回去的次數、起床時精神和睡得多久有沒有關係。如果睡夠了還是常常很累、或不由自主睡著的次數沒減少，請直接提醒我去看醫生。',
     '最後給我 3 個下週可以調整的具體建議。',
     '',
     '【每天的任務】',
@@ -69,7 +73,7 @@ export function buildWeeklyReport(healthNote = '', today = getTodayStr()) {
     '',
     `【我設定的作息時間】${scheduleLine}`,
     '',
-    '【睡眠】（晚上的上床時間是我按「確認現在睡」時記的；實際起床、怎麼醒的、精神是我早上自己記的；小睡是事後補記的）',
+    '【睡眠】（上床時間是我按「確認現在睡」時記的；實際起床、怎麼醒的、精神、中間醒來又睡回去，是我早上自己記的）',
     ...(sleepLines.length ? sleepLines : ['- 這一週沒有記錄']),
   ];
   if (mediaLines.length) sections.push('', '【追劇／讀書進度】', ...mediaLines);

@@ -1585,13 +1585,17 @@ body {
 .morning-title { font-size: var(--text-body); font-weight: 600; color: var(--text-main); }
 .morning-label { font-size: var(--text-footnote); color: var(--text-muted); margin-top: 0.375rem; }
 .morning-questions .section-action { align-self: flex-start; }
+.morning-questions .btn-block { margin-top: 0.5rem; }
+.morning-wake { padding: 0; min-height: 40px; }
+/* 補記中間醒來：醒來｜又睡著｜加入，一行三格 */
+.morning-wake-add { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: end; }
+.morning-wake-add label { display: flex; flex-direction: column; gap: 0.25rem; font-size: var(--text-footnote); color: var(--text-muted); min-width: 0; }
+.morning-wake-add .countdown-input { flex: none; width: 100%; min-width: 0; } /* flex: none：直排時 .countdown-input 的 flex-basis 160px 會變成高度 */
 
 /* 最近的睡眠按了編輯：日期一行，下面一行是開始｜結束｜刪除（手機上四樣擠一行放不下） */
 .sleep-edit-row { flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0; }
 .sleep-edit-row > span { flex-basis: 100%; font-size: var(--text-subhead); color: var(--text-muted); }
 .list-row.sleep-edit-row .countdown-input { flex: 1 1 auto; padding-left: 0.5rem; padding-right: 0.5rem; }
-.nap-form { display: flex; flex-direction: column; }
-.nap-form .btn-action { margin-top: 0.5rem; }
 
 .sleep-logged-text { font-size: var(--text-body); color: var(--text-main); line-height: 1.5; }
 /* 最近的睡眠：「01:05 → 08:50」靠右，數字等寬才對得齊 */

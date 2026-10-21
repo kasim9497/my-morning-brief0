@@ -10,8 +10,8 @@ import {
   scheduleReminderIfEnabled,
   requestNotificationPermission,
   permissionHelp,
-  canRemindInBackground,
-  isPushSyncPending,
+  getReminderStatus,
+  sendTestPush,
 } from './sleepReminder.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
@@ -30,11 +30,26 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+const whenText = (iso) => {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+// 提醒的實際狀態，照真正的情況寫（權限、背景通知、時間表有沒有傳上去），不是看開關
 function footnote() {
-  if (isPushSyncPending()) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。在傳上去之前，提醒會照舊的時間響。連上後再打開晨序會自動重試。';
-  // 平常不顯示說明；只有收不到背景通知（不是從主畫面打開）時提醒一句
-  return canRemindInBackground() ? '' : '要從主畫面的晨序圖示打開，才收得到通知。';
+  const s = getReminderStatus();
+  if (!s.background) return '要從主畫面的晨序圖示打開，才收得到通知。';
+  if (s.permission === 'denied') return '通知被關掉了：到 iPhone 設定 → 通知 → 晨序，把「允許通知」打開。';
+  if (s.pending) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。傳上去之前會照舊的時間響，連上後打開晨序會自動重試。';
+  if (!s.anyOn) return '';
+  if (s.native) return '通知正常（App 版，用 iPhone 內建的通知）';
+  return s.syncedAt ? `通知正常 · 時間表 ${whenText(s.syncedAt)} 傳上去的` : '';
 }
+
+const canTest = () => {
+  const s = getReminderStatus();
+  return s.background && !s.native && s.permission === 'granted' && s.anyOn;
+};
 
 export function renderFixedScheduleCard() {
   // 今晚睡覺和明早起床適用的是哪兩項，標出來——睡眠計算機用的就是這兩個時間
@@ -73,6 +88,7 @@ export function renderFixedScheduleCard() {
         <button type="submit" class="section-action">加入</button>
       </form>
       <p class="list-footnote" id="reminder-footnote" ${footnote() ? '' : 'hidden'}>${footnote()}</p>
+      ${canTest() ? '<button type="button" class="section-action" id="reminder-test-btn">送一則測試通知</button>' : ''}
     </div>
   `;
 }
@@ -126,6 +142,20 @@ export function bindFixedSchedule(container, rerender) {
   container.querySelector('#fixed-edit-btn').addEventListener('click', () => {
     editing = !editing;
     rerender();
+  });
+
+  container.querySelector('#reminder-test-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const note = container.querySelector('#reminder-footnote');
+    btn.disabled = true;
+    try {
+      await sendTestPush();
+      note.textContent = '測試通知送出了，幾秒內應該會跳出來。沒跳的話，截圖這一頁給 Claude。';
+    } catch (err) {
+      note.textContent = `測試沒送出：${err.message}`;
+    }
+    note.hidden = false;
+    btn.disabled = false;
   });
 
   container.querySelector('#fixed-add-form').addEventListener('submit', (e) => {

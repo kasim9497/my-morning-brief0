@@ -11,6 +11,8 @@
 const SCHEDULE_CACHE = 'chenxu-reminders';
 const SCHEDULE_URL = './reminder-schedule.json';
 const TASKS_URL = './reminder-tasks.json';
+// 設定頁按「送一則測試通知」時寫的，幾分鐘內收到的推播如果沒有對到任何提醒，就是那則測試
+const TEST_URL = './reminder-test.json';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
@@ -61,7 +63,12 @@ self.addEventListener('push', (event) => {
     } catch (e) {
       // 讀不到時間表也要顯示通知：iOS 規定每一則推播都必須讓使用者看到東西
     }
-    if (!notes.length) notes.push({ title: '作息提醒', body: '', tag: 'chenxu-reminder' });
+    if (!notes.length) {
+      const test = await readJson(TEST_URL).catch(() => null);
+      notes.push(test && test.until > Date.now()
+        ? { title: '測試通知', body: '收到這則，提醒就是通的', tag: 'chenxu-test' }
+        : { title: '作息提醒', body: '', tag: 'chenxu-reminder' });
+    }
     await Promise.all(notes.map((note) => self.registration.showNotification(note.title, { body: note.body, icon: 'icons/icon-192.png', tag: note.tag })));
   })());
 });

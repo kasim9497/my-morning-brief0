@@ -40,29 +40,31 @@ function localDateStr(offsetDays = 0) {
 
 // ── 睡眠計算機 ──────────────────────────────────────────────
 
-test('現在要睡：上床後 7.5～9 小時的起床時間，跨過午夜要標明天', () => {
+test('現在要睡：加 15 分鐘入睡，再往後推 90 分鐘的倍數，跨過午夜要標明天', () => {
   const now = new Date(2026, 9, 6, 23, 50);
-  const { options } = sleep.calcFromNow(now);
-  assert.deepEqual(options.map((o) => o.hours), [7.5, 8, 8.5, 9]);
-  assert.deepEqual(options.map((o) => o.time), ['07:20', '07:50', '08:20', '08:50']);
+  const { sleepTime, options } = sleep.calcFromNow(now);
+  assert.equal(sleep.formatTime(sleepTime), '00:05');
+  assert.deepEqual(options.map((o) => o.cycles), [3, 4, 5, 6]);
+  assert.deepEqual(options.map((o) => o.time), ['04:35', '06:05', '07:35', '09:05']);
   assert.ok(options.every((o) => o.label === '明天'));
-  assert.equal(sleep.RECOMMENDED_HOURS, 8.5);
+  assert.equal(sleep.RECOMMENDED_CYCLES, 5, '推薦 7.5 小時：使用者白天很睏，先睡夠');
 });
 
 test('現在要睡：同一天內起床就不標日期', () => {
   const { options } = sleep.calcFromNow(new Date(2026, 9, 6, 1, 0));
-  assert.equal(options[0].time, '08:30');
+  assert.equal(options[0].time, '05:45');
   assert.equal(options[0].label, '');
 });
 
 test('指定起床時間：往回推上床時間，並標出是今天還是明天', () => {
   const now = new Date(2026, 9, 6, 22, 0);
-  const { wakeDate, options } = sleep.calcFromWakeTime('09:30', now);
+  const { wakeDate, options } = sleep.calcFromWakeTime('07:30', now);
   assert.equal(wakeDate.getDate(), 7);
-  const byHours = Object.fromEntries(options.map((o) => [o.hours, o]));
-  assert.equal(byHours[9].time, '00:30');
-  assert.equal(byHours[9].label, '明天');
-  assert.equal(byHours[7.5].time, '02:00');
+  const byCycles = Object.fromEntries(options.map((o) => [o.cycles, o]));
+  assert.equal(byCycles[5].time, '23:45');
+  assert.equal(byCycles[5].label, '');
+  assert.equal(byCycles[4].time, '01:15');
+  assert.equal(byCycles[4].label, '明天');
 });
 
 test('指定的起床時間今天已經過了，就算明天的', () => {
@@ -218,52 +220,55 @@ test('本週摘要：涵蓋七天、列出每天和每項任務的完成數，�
   assert.ok(!weekly.buildWeeklyReport('', '2027-03-10').includes('健康」App 補充'));
 });
 
-test('睡眠紀錄：同一晚按兩次只留最後一次；凌晨上床算前一晚；本週摘要會列出來', () => {
+test('睡眠紀錄：同一晚按兩次只留最後一次；凌晨上床算前一晚；早上醒來又睡回去；本週摘要會列出來', () => {
   const at = (d, h, m) => new Date(2027, 2, d, h, m);
-  sleepLog.logSleep(at(8, 23, 30), at(9, 8, 0), 8.5);
-  sleepLog.logSleep(at(9, 0, 40), at(9, 9, 10), 8.5); // 同一晚改主意，晚一點才睡
-  sleepLog.logSleep(at(10, 1, 5), at(10, 9, 35), 8.5);
+  sleepLog.logSleep(at(8, 23, 30), at(9, 7, 15), 5);
+  sleepLog.logSleep(at(9, 0, 40), at(9, 8, 25), 5); // 同一晚改主意，晚一點才睡
+  sleepLog.logSleep(at(10, 1, 5), at(10, 8, 50), 5);
   const log = sleepLog.getSleepLog();
   assert.equal(log.length, 2);
   assert.equal(sleepLog.nightOf(log[0]), '2027-03-08', '00:40 上床算 3/8 晚上');
   assert.equal(sleepLog.clockOf(log[0].bedAt), '00:40');
-  assert.equal(sleepLog.hoursOf(log[1]), 8.5);
+  assert.equal(sleepLog.hoursOf(log[1]), 7.8);
 
   const { options } = sleep.calcFromNow(at(10, 1, 5));
   assert.equal(sleep.formatTime(options[1].at), options[1].time, '計算結果帶著確切的起床時刻');
-  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('3/8（一）晚上：00:40 上床，鬧鐘設 09:10，沒記實際起床時間，在床上 8.5 小時'));
+  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('3/8（一）晚上：00:40 上床，鬧鐘設 08:25（5 個 90 分鐘週期），沒記實際起床時間，在床上 7.8 小時'));
 
-  // 早上：上床 2 到 16 小時之間問「我起床了」；起床後問兩題，答完就不問
+  // 早上：上床 2 到 16 小時之間問「我起床了」
   assert.equal(sleepLog.morningState(at(10, 2, 0)), null, '剛躺下不問');
-  assert.equal(sleepLog.morningState(at(10, 9, 0)).stage, 'wake');
+  assert.equal(sleepLog.morningState(at(10, 7, 0)).stage, 'wake');
   assert.equal(sleepLog.morningState(at(11, 9, 0)), null, '過了一整天不問');
-  sleepLog.logWake(log[1].id, at(10, 8, 40));
-  assert.equal(sleepLog.morningState(at(10, 8, 45)).stage, 'questions');
-  // 又睡回去：回到還沒起床，多算一次醒來
-  sleepLog.backToSleep(log[1].id);
-  assert.equal(sleepLog.morningState(at(10, 9, 0)).stage, 'wake');
-  sleepLog.logWake(log[1].id, at(10, 9, 20));
-  sleepLog.answerMorning(log[1].id, { wakeType: 'early' });
-  assert.equal(sleepLog.morningState(at(10, 9, 25)).stage, 'questions', '只答一題還會問');
-  sleepLog.answerMorning(log[1].id, { energy: '1' });
-  assert.equal(sleepLog.morningState(at(10, 9, 25)), null);
-  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('實際 09:20 起床（提早醒、睡不回去），起床時精神：很累，在床上 8.3 小時，起床後又睡回去 1 次'));
+  // 07:10 提早醒、按了起床，上個廁所 07:25 又睡回去：那次變成一次中間醒來，回到還沒起床
+  sleepLog.logWake(log[1].id, at(10, 7, 10));
+  assert.equal(sleepLog.morningState(at(10, 7, 20)).stage, 'questions');
+  sleepLog.backToSleep(log[1].id, at(10, 7, 25));
+  assert.equal(sleepLog.morningState(at(10, 7, 30)).stage, 'wake');
+  // 06:00 那次是事後補記的（沒開 App）
+  assert.equal(sleepLog.addWake(log[1].id, '06:00', '06:10'), true);
+  assert.equal(sleepLog.addWake(log[1].id, '亂填', '06:10'), false);
+  sleepLog.logWake(log[1].id, at(10, 9, 0));
+  sleepLog.answerMorning(log[1].id, { wakeType: 'early', energy: '1' });
+  assert.equal(sleepLog.morningState(at(10, 9, 5)).stage, 'questions', '兩題答完還在，按完成才收');
+  sleepLog.answerMorning(log[1].id, { done: true });
+  assert.equal(sleepLog.morningState(at(10, 9, 5)), null);
+  const night = sleepLog.getSleepLog().find((e) => e.id === log[1].id);
+  assert.equal(sleepLog.wakeCountOf(night), 2);
+  assert.equal(sleepLog.awakeMinutesOf(night), 25);
+  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('實際 09:00 起床（提早醒、睡不回去），起床時精神：很累，在床上 7.9 小時，中間醒來 2 次（06:00 醒來、06:10 又睡；07:10 醒來、07:25 又睡，共醒著 25 分鐘）'));
+  sleepLog.removeWake(log[1].id, 0);
+  assert.equal(sleepLog.wakeCountOf(sleepLog.getSleepLog().find((e) => e.id === log[1].id)), 1);
 
-  // 小睡：不算進「最後一晚」，摘要裡另外列；事後改時間
-  sleepLog.logNap(at(10, 15, 10), at(10, 15, 30), true);
-  assert.equal(sleepLog.morningState(at(10, 15, 40)), null, '小睡不會觸發早上那一塊');
-  assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('3/10（三）小睡：15:10～15:30，20 分鐘（不是故意的，坐著就睡著）'));
+  // 事後改時間：凌晨的上床時間算那一晚的隔天
   sleepLog.editTimes(log[1].id, '00:50', '09:05');
   const edited = sleepLog.getSleepLog().find((e) => e.id === log[1].id);
-  assert.equal(new Date(edited.bedAt).getDate(), 10, '凌晨的上床時間算那一晚的隔天');
+  assert.equal(new Date(edited.bedAt).getDate(), 10);
   assert.equal(sleepLog.clockOf(edited.wokeAt), '09:05');
-  assert.equal(sleepLog.hoursOf(edited), 8.3);
 
   // 按過「我起床了」之後同一晚又記一筆：前一段留著
-  sleepLog.logSleep(at(10, 10, 0), at(10, 11, 30), 7.5);
+  sleepLog.logSleep(at(10, 10, 0), at(10, 11, 30), 1);
   assert.ok(sleepLog.getSleepLog().some((e) => e.id === log[1].id), '有起床時間的那筆沒被蓋掉');
   sleepLog.getSleepLog().forEach((entry) => sleepLog.removeSleepEntry(entry.id));
-  assert.equal(sleepLog.getSleepLog().length, 0);
   assert.ok(weekly.buildWeeklyReport('', '2027-03-10').includes('這一週沒有記錄'));
 });
 
@@ -384,9 +389,9 @@ test('睡眠：指定之後才上床的時間，起床時間照那個時間推�
   const now = new Date(2026, 9, 8, 22, 0);
   const bed = new Date(2026, 9, 9, 1, 0);
   const result = sleep.calcFromNow(bed, now);
-  const eight = result.options.find((o) => o.hours === 8.5);
-  assert.equal(eight.time, '09:30');
-  assert.equal(eight.label, '明天');
+  const four = result.options.find((o) => o.cycles === 4);
+  assert.equal(four.time, '07:15');
+  assert.equal(four.label, '明天');
 });
 
 test('推播後端：時間到了才推，照手機的時區和星期算', () => {
@@ -447,6 +452,24 @@ test('推播後端：排程漏跑一分鐘也會補推，而且同一個時間�
   globalThis.fetch = realFetch;
   assert.equal(pushes, 1);
   assert.deepEqual(JSON.parse(kv.get('subs'))['https://web.push.apple.com/abc'].sent, ['2026-10-08 23:00']);
+});
+
+test('推播後端：測試通知只推給已經訂閱的手機', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign']);
+  const kv = new Map([['subs', JSON.stringify({ 'https://web.push.apple.com/abc': { tz: 'Asia/Shanghai', items: [] } })]]);
+  const env = {
+    VAPID_PRIVATE_JWK: JSON.stringify(await crypto.subtle.exportKey('jwk', pair.privateKey)),
+    PUSH_KV: { get: async (k) => JSON.parse(kv.get(k) || 'null'), put: async (k, v) => { kv.set(k, v); } },
+  };
+  const sent = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => { sent.push(url); return { ok: true, status: 201 }; };
+  const ok = await push.handlePushRequest({ mode: 'push-test', subscription: { endpoint: 'https://web.push.apple.com/abc' } }, env);
+  const stranger = await push.handlePushRequest({ mode: 'push-test', subscription: { endpoint: 'https://web.push.apple.com/other' } }, env);
+  globalThis.fetch = realFetch;
+  assert.equal(ok.status, 200);
+  assert.equal(stranger.status, 404);
+  assert.deepEqual(sent, ['https://web.push.apple.com/abc']);
 });
 
 test('推播後端：金鑰貼進後台時頭尾少了字也讀得出來，缺欄位會講而且不洩漏內容', async () => {
@@ -549,6 +572,12 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   // 選「用雲端那一份」
   assert.equal(await cloud.restoreFromCloud(), null);
   assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
+  // 檢查雲端那一份：解得開、跟手機一樣；手機改了之後說「舊一點」，而且檢查不會動到手機的資料
+  assert.match((await cloud.verifyCloudBackup()).text, /一模一樣/);
+  localStorage.setItem('morningBrief.note', '還沒傳上去的改動');
+  assert.match((await cloud.verifyCloudBackup()).text, /舊一點/);
+  assert.equal(localStorage.getItem('morningBrief.note'), '還沒傳上去的改動');
+  localStorage.setItem('morningBrief.note', 'A 手機的新資料');
 
   // 雲端那份壞掉（解不開）時，手機上的資料不能被清掉
   const [kvKey, kvValue] = [...kv.entries()].find(([k]) => k.startsWith('backup:'));

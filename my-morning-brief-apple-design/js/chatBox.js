@@ -125,8 +125,11 @@ const ACTION_EXECUTORS = {
     addCountdown(args.label, args.targetDate);
     return `已新增倒數「${args.label}」。`;
   },
+  // 刪除沒辦法復原：AI 可能認錯是哪一筆，先讓使用者確認
   remove_countdown: (args) => {
     if (!args.id) return null;
+    const target = getCountdowns().find((c) => c.id === args.id);
+    if (!target || !window.confirm(`要刪除倒數「${target.label}」嗎？`)) return null;
     removeCountdown(args.id);
     return '已刪除這個倒數。';
   },
@@ -147,6 +150,8 @@ const ACTION_EXECUTORS = {
   },
   remove_media_item: (args) => {
     if (!args.id) return null;
+    const target = getMediaItems().find((m) => m.id === args.id);
+    if (!target || !window.confirm(`要刪除「${target.title}」的追蹤嗎？`)) return null;
     removeMediaItem(args.id);
     return '已刪除這筆追蹤。';
   },
@@ -174,7 +179,12 @@ export function isChatConfigured() {
   return !!CHAT_WORKER_URL;
 }
 
+// 上一次是不是連不上後端（不是 AI 回答了「做不到」）。畫面靠這個決定要不要把打的字放回輸入框
+let lastSendFailed = false;
+export const didLastSendFail = () => lastSendFailed;
+
 export async function sendChatMessage(userText) {
+  lastSendFailed = false;
   conversationHistory.push({ role: 'user', content: userText });
 
   if (!CHAT_WORKER_URL) {
@@ -215,6 +225,7 @@ export async function sendChatMessage(userText) {
     conversationHistory.push({ role: 'assistant', content: reply });
     return reply;
   } catch (e) {
+    lastSendFailed = true;
     // fetch 本身失敗（TypeError）多半是網路連不到 workers.dev：這個網域在中國大陸常被擋
     const errText = e instanceof TypeError
       ? '連不上 AI 後端。workers.dev 這個網域在中國大陸常被擋，開 VPN 再試一次。'
