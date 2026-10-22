@@ -34,7 +34,10 @@ import { buildWeeklyReport } from './weeklyReport.js';
 
 const ICON_TRASH = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="4,7 20,7"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>';
 
-const APP_VERSION = '1.0.0';
+// 部署時每個 JS 網址會加上 ?v=<commit 編號>（見 morning_brief.yml），拿來當版本號：
+// 跟 GitHub 上最新的 commit 一樣，就代表手機上是最新版
+const BUILD = (typeof location !== 'undefined' && new URL(import.meta.url).searchParams.get('v')) || '本機';
+const APP_VERSION = `1.0.0（${BUILD}）`;
 
 const ABOUT_ROWS = [
   { label: '版本', value: APP_VERSION },
@@ -154,7 +157,7 @@ function renderCloudBackup() {
   }
   return `
     <div class="list-row">
-      <span>自動備份中<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}</small></span>
+      <span>${state.staleDays ? '有改動還沒備份' : '自動備份中'}<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}${state.staleDays ? `，之後的改動已經 ${state.staleDays} 天沒傳上去（開 VPN 打開晨序就會傳）` : ''}</small></span>
       <button type="button" class="section-action" id="cloud-off-btn">關閉</button>
     </div>
     ${state.unencrypted ? '<p class="list-footnote backup-explain">備份暫停中：這支手機還沒有加密的鑰匙，為了不把沒加密的內容傳出去先停了。按「關閉」，再用同一組密語重新開啟（開啟時選「用這支手機的」）就會恢復。</p>' : ''}
@@ -439,7 +442,10 @@ export function renderSettingsView() {
       const typeInput = document.getElementById('media-type-input');
       const unitsInput = document.getElementById('media-units-input');
       const targetInput = document.getElementById('media-target-input');
-      addMediaItem(titleInput.value, typeInput.value, unitsInput.value, targetInput.value);
+      if (!addMediaItem(titleInput.value, typeInput.value, unitsInput.value, targetInput.value)) {
+        window.alert('沒加進去：名稱、總集數（頁數）和目標日都要填。');
+        return;
+      }
       renderSettingsView();
     });
   }

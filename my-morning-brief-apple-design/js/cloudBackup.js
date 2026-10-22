@@ -96,7 +96,16 @@ export function getCloudBackupState() {
     unencrypted: !!localStorage.getItem(TOKEN_KEY) && !localStorage.getItem(CRYPT_KEY),
     conflictSavedAt,
     error: lastError,
+    // 開著、但有改動超過一天沒傳上去（多半是一直沒開 VPN）：開啟不等於有備份到
+    staleDays: staleDays(),
   };
+}
+
+function staleDays() {
+  const savedAt = Date.parse(localStorage.getItem(SAVED_AT_KEY));
+  if (!localStorage.getItem(TOKEN_KEY) || Number.isNaN(savedAt)) return 0;
+  const days = Math.floor((Date.now() - savedAt) / 86400000);
+  return days >= 1 && fingerprint(collectBackupData()) !== localStorage.getItem(HASH_KEY) ? days : 0;
 }
 
 /**

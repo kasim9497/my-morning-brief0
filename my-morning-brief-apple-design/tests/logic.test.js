@@ -576,6 +576,12 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.match((await cloud.verifyCloudBackup()).text, /一模一樣/);
   localStorage.setItem('morningBrief.note', '還沒傳上去的改動');
   assert.match((await cloud.verifyCloudBackup()).text, /舊一點/);
+  // 開著但有改動超過一天沒傳上去：設定頁要講「還沒備份」
+  const realSavedAt = localStorage.getItem('chenxu.cloudBackup.savedAt');
+  localStorage.setItem('chenxu.cloudBackup.savedAt', new Date(Date.now() - 2.5 * 86400000).toISOString());
+  assert.equal(cloud.getCloudBackupState().staleDays, 2);
+  localStorage.setItem('chenxu.cloudBackup.savedAt', realSavedAt);
+  assert.equal(cloud.getCloudBackupState().staleDays, 0, '一天內不算');
   assert.equal(localStorage.getItem('morningBrief.note'), '還沒傳上去的改動');
   localStorage.setItem('morningBrief.note', 'A 手機的新資料');
 

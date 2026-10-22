@@ -85,6 +85,11 @@
       </article>
 
       <!-- 抓不到今天的資料時只顯示這一列；下面標了 data-needs-data 的區塊整個收起來，不拿範例內容充數 -->
+      <!-- 任務資料讀不出來、另外存了一份 .unreadable 時才出現（js/app.js 的 renderDataWarning）。不會自己刪那份 -->
+      <article class="card col-span-2" id="data-warning" hidden>
+        <p class="list-footnote">有一份任務資料讀不出來，已經原封不動另外存著。截圖這一行給 Claude，請他幫忙救回來。</p>
+      </article>
+
       <article class="card col-span-2" id="stale-notice" hidden>
         <div class="list-row backup-reminder-row">
           <span>今天的天氣、匯率和題目還沒更新</span>
