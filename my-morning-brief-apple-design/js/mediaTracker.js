@@ -22,7 +22,7 @@ function keepUnreadable(raw) {
   }
 }
 
-const isValidItem = (item) => !!item && typeof item.id === 'string' && typeof item.title === 'string'
+export const isValidItem = (item) => !!item && typeof item.id === 'string' && typeof item.title === 'string'
   && Number.isFinite(item.totalUnits) && Number.isFinite(item.completedUnits) && /^\d{4}-\d{2}-\d{2}$/.test(item.targetDate || '');
 
 /** 有幾筆缺欄位的話，只拿好的那幾筆用，整份原樣另外留一份，不會因為一筆壞掉整個清單都不見 */

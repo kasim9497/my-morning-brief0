@@ -133,15 +133,31 @@ function isTaskActiveOnDate(config, dateStr, weekday) {
 
 const isPlainObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 
-/** 結構對不對：每一天是 { 編號: { defId, status } }，其他幾個欄位有的話型別要對。不對就整份當成讀不出來 */
-function isValidStore(parsed) {
+const STATUSES = ['pending', 'done', 'skipped', 'postponed'];
+const isWeekdays = (days) => Array.isArray(days) && days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+
+/** 一項作息的排法：舊格式是星期陣列；新格式是 { mode: 'weekday', days } 或 { mode: 'interval', everyNDays } */
+function isValidRoutine(value) {
+  if (Array.isArray(value)) return isWeekdays(value);
+  if (!isPlainObject(value)) return false;
+  if (value.mode === 'weekday') return isWeekdays(value.days);
+  return value.mode === 'interval' && Number.isInteger(value.everyNDays) && value.everyNDays >= 1;
+}
+
+/**
+ * 結構對不對：每一天是 { 編號: { defId, status } }、狀態只能是那四種、每項作息的排法要對，
+ * 其他幾個欄位有的話型別要對。不對就整份當成讀不出來（原樣另外留著）。雲端備份檢查也用這個
+ */
+export function isValidStore(parsed) {
   if (!isPlainObject(parsed)) return false;
   const days = parsed.days || {};
   if (!isPlainObject(days)) return false;
   const entriesOk = Object.values(days).every((entries) => isPlainObject(entries)
-    && Object.values(entries).every((entry) => isPlainObject(entry) && typeof entry.defId === 'string' && typeof entry.status === 'string'));
+    && Object.values(entries).every((entry) => isPlainObject(entry) && typeof entry.defId === 'string' && STATUSES.includes(entry.status)));
+  const routinesOk = parsed.routineConfig === undefined
+    || (isPlainObject(parsed.routineConfig) && Object.values(parsed.routineConfig).every(isValidRoutine));
   const optionalObjects = ['skipWeekUntil', 'customTasks', 'labelOverrides'].every((key) => parsed[key] === undefined || isPlainObject(parsed[key]));
-  return entriesOk && optionalObjects && (parsed.removedTaskIds === undefined || Array.isArray(parsed.removedTaskIds));
+  return entriesOk && routinesOk && optionalObjects && (parsed.removedTaskIds === undefined || Array.isArray(parsed.removedTaskIds));
 }
 
 // 讀不出來（或讀得出來但結構不對）的那份原樣另外存一份，不要被接下來的存檔蓋掉（也會跟著雲端備份走）

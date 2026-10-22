@@ -13,6 +13,32 @@
 
 import { WORKER_URL } from './config.js';
 import { collectBackupData, applyBackupData } from './backup.js';
+import { isValidStore } from './taskEngine.js';
+import { isValidItem } from './mediaTracker.js';
+import { isValidCountdownList } from './countdown.js';
+
+// 有自己格式規則的幾類資料：檢查雲端那一份時逐一驗。其他的（作息時間、睡眠紀錄…）只檢查讀不讀得出來
+const FORMAT_CHECKS = {
+  'morningBrief.taskEngine.v1': ['任務', isValidStore],
+  'morningBrief.mediaTracker.v1': ['追劇', (v) => Array.isArray(v) && v.every(isValidItem)],
+  'morningBrief.countdowns.v1': ['倒數', isValidCountdownList],
+};
+
+/** 備份裡每一類資料讀不讀得出來、格式對不對。回傳有問題的那幾類的名稱 */
+function badParts(data) {
+  return Object.entries(data)
+    .filter(([key]) => key.startsWith('morningBrief.') && !key.endsWith('.unreadable'))
+    .filter(([key, value]) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(value);
+      } catch (e) {
+        return /^[[{]/.test(value); // 看起來是 JSON 卻讀不出來才算壞
+      }
+      return FORMAT_CHECKS[key] ? !FORMAT_CHECKS[key][1](parsed) : false;
+    })
+    .map(([key]) => (FORMAT_CHECKS[key] ? FORMAT_CHECKS[key][0] : key.replace('morningBrief.', '')));
+}
 
 const TOKEN_KEY = 'chenxu.cloudBackup.token';
 const SAVED_AT_KEY = 'chenxu.cloudBackup.savedAt'; // 這支手機上次同步到的雲端版本
@@ -225,11 +251,14 @@ export async function verifyCloudBackup() {
   }
   const count = Object.keys(data || {}).filter((key) => key.startsWith('morningBrief.')).length;
   if (!count) return { ok: false, text: '雲端那一份是空的。' };
+  const bad = badParts(data);
+  if (bad.length) return { ok: false, text: `雲端那一份解得開，但「${bad.join('、')}」的格式不對，還原會出問題。這支手機的資料沒有動；按「用這支手機的」可以重傳一份。` };
   const same = fingerprint(data) === fingerprint(collectBackupData());
   localStorage.setItem(VERIFIED_AT_KEY, new Date().toISOString());
   return {
     ok: true,
-    text: `雲端那一份解得開，有 ${count} 類資料，${same ? '跟這支手機現在的一模一樣。' : '比這支手機現在的舊一點（這裡有新的改動，幾分鐘內會自動傳上去）。'}`,
+    // 檢查範圍：下載、解密、每一類資料讀得出來、任務／追劇／倒數的格式對。沒有真的拿去還原一次
+    text: `雲端那一份解得開、每一類資料的格式都對（共 ${count} 類），${same ? '跟這支手機現在的一模一樣。' : '比這支手機現在的舊一點（這裡有新的改動，幾分鐘內會自動傳上去）。'}`,
   };
 }
 

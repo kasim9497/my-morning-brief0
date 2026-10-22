@@ -575,6 +575,14 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   // 檢查雲端那一份：解得開、跟手機一樣；手機改了之後說「舊一點」，而且檢查不會動到手機的資料
   assert.match((await cloud.verifyCloudBackup()).text, /一模一樣/);
   assert.ok(cloud.getCloudBackupState().verifiedAt, '記住上次確認拿得回來的時間');
+  // 雲端那一份解得開、但倒數的格式不對：不算確認過
+  localStorage.setItem('morningBrief.countdowns.v1', JSON.stringify({ bad: true }));
+  await cloud.uploadNow({ force: true });
+  const verifiedBefore = cloud.getCloudBackupState().verifiedAt;
+  assert.match((await cloud.verifyCloudBackup()).text, /「倒數」的格式不對/);
+  assert.equal(cloud.getCloudBackupState().verifiedAt, verifiedBefore, '格式不對不更新確認時間');
+  fakeStorage.delete('morningBrief.countdowns.v1');
+  await cloud.uploadNow({ force: true });
   localStorage.setItem('morningBrief.note', '還沒傳上去的改動');
   assert.match((await cloud.verifyCloudBackup()).text, /舊一點/);
   // 開著但有改動超過一天沒傳上去：設定頁要講「還沒備份」
@@ -690,6 +698,19 @@ test('資料讀得出來但結構不對：任務整份另外留著；追劇只�
   assert.ok(localStorage.getItem('morningBrief.mediaTracker.v1.unreadable').includes('缺目標日'));
   if (goodMedia === null) fakeStorage.delete('morningBrief.mediaTracker.v1'); else localStorage.setItem('morningBrief.mediaTracker.v1', goodMedia);
   fakeStorage.delete('morningBrief.mediaTracker.v1.unreadable');
+});
+
+test('結構不對的資料：倒數不是清單、作息排法亂掉、任務狀態不認得，都原樣另外留著', async () => {
+  localStorage.setItem('morningBrief.countdowns.v1', JSON.stringify({ unexpected: 'data' }));
+  await import('../js/countdown.js?reload-not-list');
+  assert.ok(localStorage.getItem('morningBrief.countdowns.v1.unreadable').includes('unexpected'), '沒有被預設那一筆蓋掉');
+  fakeStorage.delete('morningBrief.countdowns.v1.unreadable');
+
+  assert.equal(tasks.isValidStore({ days: {}, routineConfig: { run: { mode: 'weekday', days: [1, 3] }, read: { mode: 'interval', everyNDays: 2 }, old: [0, 6] } }), true);
+  assert.equal(tasks.isValidStore({ days: {}, routineConfig: { run: { mode: 'weekday', days: '一三' } } }), false);
+  assert.equal(tasks.isValidStore({ days: {}, routineConfig: { run: { mode: 'interval', everyNDays: 0 } } }), false);
+  assert.equal(tasks.isValidStore({ days: { '2027-01-01': { a: { defId: 'a', status: '做完了' } } } }), false);
+  assert.equal(tasks.isValidStore({ days: { '2027-01-01': { a: { defId: 'a', status: 'done' } } } }), true);
 });
 
 test('AI 的動作照實際結果回報：找不到、數字不合理就不算做好', async () => {

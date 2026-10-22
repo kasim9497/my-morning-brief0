@@ -22,13 +22,20 @@ function loadCountdowns() {
     if (!raw) return seedDefault();
     const parsed = JSON.parse(raw);
     // 空的清單是使用者自己刪光的，照樣尊重；只有從來沒存過才放預設那一筆
-    return Array.isArray(parsed) ? parsed : seedDefault();
+    if (Array.isArray(parsed)) return parsed;
+    // 讀得出來但不是清單：結構壞了，不是第一次用。先原樣留一份，預設那一筆才不會把它蓋掉
+    keepUnreadable(raw);
+    return seedDefault();
   } catch (e) {
     console.warn('[countdown] localStorage 讀取失敗，使用預設值：', e);
     keepUnreadable(raw);
     return seedDefault();
   }
 }
+
+/** 給雲端備份檢查用：倒數清單的格式對不對 */
+export const isValidCountdownList = (list) => Array.isArray(list)
+  && list.every((c) => c && typeof c.id === 'string' && typeof c.label === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.targetDate || ''));
 
 function seedDefault() {
   const seeded = [
