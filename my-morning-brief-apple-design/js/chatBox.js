@@ -152,6 +152,22 @@ const ACTION_EXECUTORS = {
   },
 };
 
+// 沒做到時要跟使用者講是哪一件，用白話的名字
+const ACTION_LABELS = {
+  postpone_task: '延後任務',
+  skip_task: '標成今天不做',
+  toggle_task_done: '打勾',
+  set_task_weekday_schedule: '改每週安排',
+  set_task_interval_schedule: '改成每幾天一次',
+  add_countdown: '新增倒數',
+  remove_countdown: '刪除倒數',
+  add_media_item: '新增追劇／讀書',
+  log_media_progress: '記錄進度',
+  postpone_media_target: '延後目標日',
+  remove_media_item: '刪除追劇／讀書',
+  set_sleep_reminder: '改就寢提醒',
+};
+
 function executeAction(action) {
   if (!action || action.type === 'none' || !ACTION_EXECUTORS[action.type]) return null;
   try {
@@ -211,9 +227,10 @@ export async function sendChatMessage(userText) {
       window.dispatchEvent(new CustomEvent('chenxu:data-changed'));
     }
     // 有動作沒做到：模型的回覆是在執行之前寫的（常常是「已經幫你刪了」），不能留著。
-    // 改成照實際結果講：做到的列出來，沒做到的講幾個
+    // 改成照實際結果講：做到的列出來，沒做到的逐項講是哪幾件
     if (resp.ok && done.length < requested.length) {
-      reply = [...done, `有 ${requested.length - done.length} 件沒做到：可能是那一項已經做完、延後或不做了、你取消了，或是我沒聽懂。請看一下清單再說一次。`].join('\n');
+      const failed = requested.filter((_, i) => !results[i]).map((a) => ACTION_LABELS[a.type] || a.type);
+      reply = [...done, `沒做到：${failed.join('、')}。可能是那一項已經做完、延後或不做了、你取消了，或是我沒聽懂。請看一下清單再說一次。`].join('\n');
     }
 
     conversationHistory.push({ role: 'assistant', content: reply });

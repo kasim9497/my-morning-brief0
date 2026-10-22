@@ -22,12 +22,3 @@
 2. `cd` 進去 `my-morning-brief-apple-design` 這個資料夾
 3. 打指令：`python -m http.server 8000` （某些系統要打 `python3`）
 4. 瀏覽器開 `http://localhost:8000`
-
-## 關於 index_standalone.html
-
-這個資料夾裡還有一個 `index_standalone.html`，是單一檔案的舊版本備份，
-CSS／JS 全部包在同一個檔案裡，**可以直接雙擊打開**，不用伺服器。
-
-**但它目前沒有底部 Tab Bar（今日／週曆／倒數／設定）這個新功能**，
-是舊的、還沒同步更新的版本。要看新功能請用方法一或二打開 `index.html`，
-不要看 `index_standalone.html`，不然會以為改的東西沒生效。
