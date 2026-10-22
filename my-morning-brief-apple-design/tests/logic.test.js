@@ -574,6 +574,7 @@ test('雲端備份：開啟會上傳；換一支手機用同一組密語能還�
   assert.equal(localStorage.getItem('morningBrief.note'), 'A 手機的新資料');
   // 檢查雲端那一份：解得開、跟手機一樣；手機改了之後說「舊一點」，而且檢查不會動到手機的資料
   assert.match((await cloud.verifyCloudBackup()).text, /一模一樣/);
+  assert.ok(cloud.getCloudBackupState().verifiedAt, '記住上次確認拿得回來的時間');
   localStorage.setItem('morningBrief.note', '還沒傳上去的改動');
   assert.match((await cloud.verifyCloudBackup()).text, /舊一點/);
   // 開著但有改動超過一天沒傳上去：設定頁要講「還沒備份」
@@ -671,6 +672,24 @@ test('手機空間滿了：存不進去的改動會退回、回報失敗；還�
   localStorage.setItem = realSet;
   assert.equal(JSON.stringify(backup.collectBackupData()), original);
   fakeStorage.delete('morningBrief.keepA');
+});
+
+test('資料讀得出來但結構不對：任務整份另外留著；追劇只拿好的那幾筆，整份另外留著', async () => {
+  const goodTasks = localStorage.getItem('morningBrief.taskEngine.v1');
+  localStorage.setItem('morningBrief.taskEngine.v1', JSON.stringify({ days: '這不是物件' }));
+  await import('../js/taskEngine.js?reload-bad-shape');
+  assert.ok(localStorage.getItem('morningBrief.taskEngine.v1.unreadable').includes('這不是物件'));
+  localStorage.setItem('morningBrief.taskEngine.v1', goodTasks);
+  fakeStorage.delete('morningBrief.taskEngine.v1.unreadable');
+
+  const goodMedia = localStorage.getItem('morningBrief.mediaTracker.v1');
+  const ok = { id: 'm1', title: '好的', type: 'drama', totalUnits: 10, completedUnits: 2, startDate: '2027-01-01', targetDate: '2027-02-01' };
+  localStorage.setItem('morningBrief.mediaTracker.v1', JSON.stringify([ok, { id: 'm2', title: '缺目標日', totalUnits: 5, completedUnits: 0 }]));
+  const reloaded = await import('../js/mediaTracker.js?reload-bad-item');
+  assert.deepEqual(reloaded.getMediaItems().map((m) => m.id), ['m1']);
+  assert.ok(localStorage.getItem('morningBrief.mediaTracker.v1.unreadable').includes('缺目標日'));
+  if (goodMedia === null) fakeStorage.delete('morningBrief.mediaTracker.v1'); else localStorage.setItem('morningBrief.mediaTracker.v1', goodMedia);
+  fakeStorage.delete('morningBrief.mediaTracker.v1.unreadable');
 });
 
 test('AI 的動作照實際結果回報：找不到、數字不合理就不算做好', async () => {

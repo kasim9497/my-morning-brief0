@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   setupSectionLinks();
   renderBackupReminder();
-  document.getElementById('data-warning').hidden = !localStorage.getItem('morningBrief.taskEngine.v1.unreadable');
+  document.getElementById('data-warning').hidden = !Object.keys(localStorage).some((key) => key.startsWith('morningBrief.') && key.endsWith('.unreadable'));
   setupWakePrompt();
   setupInstantPressListeners();
   setupScrollShadow();

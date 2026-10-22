@@ -13,14 +13,32 @@ const TYPE_LABELS = {
   movie: { label: '電影', unit: '部' },
 };
 
-function loadItems() {
+// 讀不出來（或讀得出來但結構不對）的那份原樣另外存一份，不要被接下來的存檔蓋掉（也會跟著雲端備份走）
+function keepUnreadable(raw) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) localStorage.setItem(`${STORAGE_KEY}.unreadable`, raw);
+  } catch (e) {
+    // 連留都留不住（空間滿了）就沒辦法了
+  }
+}
+
+const isValidItem = (item) => !!item && typeof item.id === 'string' && typeof item.title === 'string'
+  && Number.isFinite(item.totalUnits) && Number.isFinite(item.completedUnits) && /^\d{4}-\d{2}-\d{2}$/.test(item.targetDate || '');
+
+/** 有幾筆缺欄位的話，只拿好的那幾筆用，整份原樣另外留一份，不會因為一筆壞掉整個清單都不見 */
+function loadItems() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) throw new Error('追劇清單不是陣列');
+    const valid = parsed.filter(isValidItem);
+    if (valid.length < parsed.length) keepUnreadable(raw);
+    return valid;
   } catch (e) {
     console.warn('[mediaTracker] localStorage 讀取失敗，使用空清單：', e);
+    keepUnreadable(raw);
     return [];
   }
 }

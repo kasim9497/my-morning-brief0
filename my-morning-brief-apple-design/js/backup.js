@@ -58,7 +58,14 @@ export function applyBackupData(data) {
     return true;
   } catch (e) {
     Object.keys(collectBackupData()).forEach((key) => localStorage.removeItem(key));
-    Object.entries(before).forEach(([key, value]) => localStorage.setItem(key, value));
+    // 清掉寫了一半的之後空間就夠放回原本的；萬一還是有一筆放不回去，其他的照樣放
+    Object.entries(before).forEach(([key, value]) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e2) {
+        console.warn('[backup] 放回原本的資料失敗：', key, e2);
+      }
+    });
     return false;
   }
 }

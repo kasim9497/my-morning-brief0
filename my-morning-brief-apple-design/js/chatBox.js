@@ -203,14 +203,17 @@ export async function sendChatMessage(userText) {
     // 一句話可能帶好幾個動作；Worker 還是舊版時只會有單一個 action
     const actions = Array.isArray(data?.actions) ? data.actions : (data?.action ? [data.action] : []);
     const requested = actions.filter((a) => a && a.type && a.type !== 'none');
-    const done = resp.ok ? requested.filter((a) => executeAction(a)) : [];
+    // 每個動作的實際結果（做到了是一句話，沒做到是 null）
+    const results = resp.ok ? requested.map((a) => executeAction(a)) : [];
+    const done = results.filter(Boolean);
     if (done.length > 0) {
       // 動作改的是 localStorage，畫面上的任務清單／週曆／倒數要跟著重畫
       window.dispatchEvent(new CustomEvent('chenxu:data-changed'));
     }
-    // AI 說做了、但參數沒通過這邊的檢查而沒有真的執行時，要讓使用者知道
-    if (done.length < requested.length) {
-      reply += `\n（有 ${requested.length - done.length} 個動作沒有成功執行，可能是那一項已經做完、延後或不做了，或是我沒聽懂；請看一下清單再說一次。）`;
+    // 有動作沒做到：模型的回覆是在執行之前寫的（常常是「已經幫你刪了」），不能留著。
+    // 改成照實際結果講：做到的列出來，沒做到的講幾個
+    if (resp.ok && done.length < requested.length) {
+      reply = [...done, `有 ${requested.length - done.length} 件沒做到：可能是那一項已經做完、延後或不做了、你取消了，或是我沒聽懂。請看一下清單再說一次。`].join('\n');
     }
 
     conversationHistory.push({ role: 'assistant', content: reply });

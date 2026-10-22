@@ -17,7 +17,8 @@ import { collectBackupData, applyBackupData } from './backup.js';
 const TOKEN_KEY = 'chenxu.cloudBackup.token';
 const SAVED_AT_KEY = 'chenxu.cloudBackup.savedAt'; // 這支手機上次同步到的雲端版本
 const HASH_KEY = 'chenxu.cloudBackup.hash';        // 那一次上傳的內容指紋，沒變就不用再傳
-const CRYPT_KEY = 'chenxu.cloudBackup.key';        // 加解密用的鑰匙。2026-10-12 之前開啟的手機沒有這個
+const CRYPT_KEY = 'chenxu.cloudBackup.key';
+const VERIFIED_AT_KEY = 'chenxu.cloudBackup.verifiedAt'; // 上次「檢查雲端那一份」確認解得開的時間        // 加解密用的鑰匙。2026-10-12 之前開啟的手機沒有這個
 const ENCRYPTED_KEY = 'morningBrief.encrypted.v1';
 const CHECK_EVERY_MS = 5 * 60 * 1000;
 export const MIN_PASSPHRASE_LENGTH = 8;
@@ -98,6 +99,8 @@ export function getCloudBackupState() {
     error: lastError,
     // 開著、但有改動超過一天沒傳上去（多半是一直沒開 VPN）：開啟不等於有備份到
     staleDays: staleDays(),
+    // 傳上去成功不等於拿得回來：上次真的下載、解密成功是什麼時候
+    verifiedAt: localStorage.getItem(VERIFIED_AT_KEY),
   };
 }
 
@@ -223,6 +226,7 @@ export async function verifyCloudBackup() {
   const count = Object.keys(data || {}).filter((key) => key.startsWith('morningBrief.')).length;
   if (!count) return { ok: false, text: '雲端那一份是空的。' };
   const same = fingerprint(data) === fingerprint(collectBackupData());
+  localStorage.setItem(VERIFIED_AT_KEY, new Date().toISOString());
   return {
     ok: true,
     text: `雲端那一份解得開，有 ${count} 類資料，${same ? '跟這支手機現在的一模一樣。' : '比這支手機現在的舊一點（這裡有新的改動，幾分鐘內會自動傳上去）。'}`,
@@ -231,7 +235,7 @@ export async function verifyCloudBackup() {
 
 /** 關閉：這支手機不再自動上傳。雲端那一份留著 */
 export function turnOffCloudBackup() {
-  [TOKEN_KEY, SAVED_AT_KEY, HASH_KEY, CRYPT_KEY].forEach((key) => localStorage.removeItem(key));
+  [TOKEN_KEY, SAVED_AT_KEY, HASH_KEY, CRYPT_KEY, VERIFIED_AT_KEY].forEach((key) => localStorage.removeItem(key));
   conflictSavedAt = null;
   lastError = null;
   changed();

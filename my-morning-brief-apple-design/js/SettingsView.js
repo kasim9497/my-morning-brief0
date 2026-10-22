@@ -157,7 +157,7 @@ function renderCloudBackup() {
   }
   return `
     <div class="list-row">
-      <span>${state.staleDays ? '有改動還沒備份' : '自動備份中'}<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}${state.staleDays ? `，之後的改動已經 ${state.staleDays} 天沒傳上去（開 VPN 打開晨序就會傳）` : ''}</small></span>
+      <span>${state.staleDays ? '有改動還沒備份' : '自動備份中'}<small class="row-note">${state.savedAt ? `上次存到雲端：${whenText(state.savedAt)}` : '還沒傳上去'}${state.staleDays ? `，之後的改動已經 ${state.staleDays} 天沒傳上去（開 VPN 打開晨序就會傳）` : ''}<br>${state.verifiedAt ? `上次確認拿得回來：${whenText(state.verifiedAt)}` : '還沒確認過拿不拿得回來'}</small></span>
       <button type="button" class="section-action" id="cloud-off-btn">關閉</button>
     </div>
     ${state.unencrypted ? '<p class="list-footnote backup-explain">備份暫停中：這支手機還沒有加密的鑰匙，為了不把沒加密的內容傳出去先停了。按「關閉」，再用同一組密語重新開啟（開啟時選「用這支手機的」）就會恢復。</p>' : ''}
@@ -209,6 +209,11 @@ function bindCloudBackup() {
     out.textContent = '檢查中…';
     out.textContent = (await verifyCloudBackup()).text;
     button.disabled = false;
+    // 「上次確認拿得回來」那行要跟著更新，但保留剛才的檢查結果
+    const text = out.textContent;
+    refreshCloudBackup();
+    const again = document.getElementById('cloud-verify-result');
+    if (again) { again.hidden = false; again.textContent = text; }
   });
 }
 
@@ -319,9 +324,12 @@ export function renderSettingsView() {
         <h2 class="section-title">本週摘要</h2>
       </div>
       <div class="card">
-        <textarea class="countdown-input weekly-note" id="weekly-health-note" rows="3" placeholder="想一起分析的健康數據（選填）。例如：平均步數 8,200、平均睡眠 6.5 小時"></textarea>
-        <button type="button" class="btn-action btn-primary btn-block" id="weekly-share-btn">整理這一週，交給 Claude</button>
-        <p class="list-footnote" id="weekly-status"></p>
+        <details class="disclosure about-fold">
+          <summary><span>整理這一週，交給 Claude</span><span class="disclosure-hint"><svg class="disclosure-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,5 16,12 9,19"/></svg></span></summary>
+          <textarea class="countdown-input weekly-note" id="weekly-health-note" rows="3" placeholder="想一起分析的健康數據（選填）。例如：平均步數 8,200"></textarea>
+          <button type="button" class="btn-action btn-primary btn-block" id="weekly-share-btn">整理好，交給 Claude</button>
+          <p class="list-footnote" id="weekly-status"></p>
+        </details>
       </div>
 
       <div class="section-head">

@@ -131,11 +131,35 @@ function isTaskActiveOnDate(config, dateStr, weekday) {
 
 // ── 儲存層 ──────────────────────────────────────────────────────────
 
-function loadStore() {
+const isPlainObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** 結構對不對：每一天是 { 編號: { defId, status } }，其他幾個欄位有的話型別要對。不對就整份當成讀不出來 */
+function isValidStore(parsed) {
+  if (!isPlainObject(parsed)) return false;
+  const days = parsed.days || {};
+  if (!isPlainObject(days)) return false;
+  const entriesOk = Object.values(days).every((entries) => isPlainObject(entries)
+    && Object.values(entries).every((entry) => isPlainObject(entry) && typeof entry.defId === 'string' && typeof entry.status === 'string'));
+  const optionalObjects = ['skipWeekUntil', 'customTasks', 'labelOverrides'].every((key) => parsed[key] === undefined || isPlainObject(parsed[key]));
+  return entriesOk && optionalObjects && (parsed.removedTaskIds === undefined || Array.isArray(parsed.removedTaskIds));
+}
+
+// 讀不出來（或讀得出來但結構不對）的那份原樣另外存一份，不要被接下來的存檔蓋掉（也會跟著雲端備份走）
+function keepUnreadable(raw) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) localStorage.setItem(`${STORAGE_KEY}.unreadable`, raw);
+  } catch (e) {
+    // 連留都留不住（空間滿了）就沒辦法了
+  }
+}
+
+function loadStore() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [], labelOverrides: {} };
     const parsed = JSON.parse(raw);
+    if (!isValidStore(parsed)) throw new Error('任務資料的結構不對');
     return {
       days: parsed.days || {},
       skipWeekUntil: parsed.skipWeekUntil || {},
@@ -149,13 +173,7 @@ function loadStore() {
     };
   } catch (e) {
     console.warn('[taskEngine] localStorage 讀取失敗，使用空白狀態：', e);
-    // 接下來的存檔會用空白狀態蓋掉這個 key，所以先把讀不出來的那份原樣留一份（也會跟著雲端備份走）
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) localStorage.setItem(`${STORAGE_KEY}.unreadable`, raw);
-    } catch (e2) {
-      // 連留都留不住（空間滿了）就沒辦法了
-    }
+    keepUnreadable(raw);
     return { days: {}, skipWeekUntil: {}, routineConfig: { ...DEFAULT_ROUTINE_CONFIG }, customTasks: {}, removedTaskIds: [], labelOverrides: {} };
   }
 }

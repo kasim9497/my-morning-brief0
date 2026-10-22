@@ -6,15 +6,26 @@
 const STORAGE_KEY = 'morningBrief.countdowns.v1';
 const DEFAULT_END_DATE = '2027-01-31';
 
-function loadCountdowns() {
+// 讀不出來（或讀得出來但結構不對）的那份原樣另外存一份，不要被接下來的存檔蓋掉（也會跟著雲端備份走）
+function keepUnreadable(raw) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) localStorage.setItem(`${STORAGE_KEY}.unreadable`, raw);
+  } catch (e) {
+    // 連留都留不住（空間滿了）就沒辦法了
+  }
+}
+
+function loadCountdowns() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedDefault();
     const parsed = JSON.parse(raw);
     // 空的清單是使用者自己刪光的，照樣尊重；只有從來沒存過才放預設那一筆
     return Array.isArray(parsed) ? parsed : seedDefault();
   } catch (e) {
     console.warn('[countdown] localStorage 讀取失敗，使用預設值：', e);
+    keepUnreadable(raw);
     return seedDefault();
   }
 }

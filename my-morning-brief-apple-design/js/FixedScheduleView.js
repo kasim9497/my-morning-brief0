@@ -35,15 +35,34 @@ const whenText = (iso) => {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
-// 提醒的實際狀態，照真正的情況寫（權限、背景通知、時間表有沒有傳上去），不是看開關
+/**
+ * 提醒的實際狀態分三件事講：iPhone 給不給通知、時間表有沒有傳到伺服器、手機真的收不收得到。
+ * 前兩件照真正的狀況寫；第三件只有手機自己知道，所以給一顆測試按鈕
+ */
+function statusRows() {
+  const s = getReminderStatus();
+  const permission = !s.background ? ['要從主畫面打開', true]
+    : s.native ? ['App 版內建通知', false]
+    : { granted: ['已允許', false], denied: ['被關掉了', true], default: ['還沒問過', true] }[s.permission] || ['這裡沒有通知', true];
+  const sync = s.native ? ['不需要', false]
+    : !s.anyOn ? ['沒有開任何提醒', false]
+    : s.pending ? ['沒傳上去，等連上再試', true]
+    : s.syncedAt ? [`${whenText(s.syncedAt)} 傳上去`, false]
+    : ['還沒傳', true];
+  const row = (label, [value, bad]) => `<div class="list-row reminder-status-row"><span>${label}</span><span class="reminder-status-value ${bad ? 'is-bad' : ''}">${value}</span></div>`;
+  return `
+    ${row('通知權限', permission)}
+    ${row('時間表同步', sync)}
+    ${s.native ? '' : '<div class="list-row reminder-status-row"><span>實際送達</span><button type="button" class="section-action" id="reminder-test-btn">送一則測試通知</button></div>'}`;
+}
+
+// 出問題時才講要怎麼處理
 function footnote() {
   const s = getReminderStatus();
   if (!s.background) return '要從主畫面的晨序圖示打開，才收得到通知。';
   if (s.permission === 'denied') return '通知被關掉了：到 iPhone 設定 → 通知 → 晨序，把「允許通知」打開。';
   if (s.pending) return '提醒的時間還沒傳上去（連不上伺服器，可能是沒開 VPN）。傳上去之前會照舊的時間響，連上後打開晨序會自動重試。';
-  if (!s.anyOn) return '還沒有打開任何提醒。';
-  if (s.native) return '通知正常（App 版，用 iPhone 內建的通知）';
-  return s.syncedAt ? `通知正常 · 時間表 ${whenText(s.syncedAt)} 傳上去的` : '';
+  return '';
 }
 
 // 按鈕一直都在（以前條件不合就整顆消失，使用者找不到、也不知道為什麼）；送不了的時候講原因
@@ -92,10 +111,32 @@ export function renderFixedScheduleCard() {
         <input type="time" class="countdown-input" id="fixed-add-time" required aria-label="時間">
         <button type="submit" class="section-action">加入</button>
       </form>
+      <div class="reminder-status" id="reminder-status">${statusRows()}</div>
       <p class="list-footnote" id="reminder-footnote" ${footnote() ? '' : 'hidden'}>${footnote()}</p>
-      ${getReminderStatus().native ? '' : '<button type="button" class="section-action" id="reminder-test-btn">送一則測試通知</button>'}
     </div>
   `;
+}
+
+function bindTestButton(container) {
+  container.querySelector('#reminder-test-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const note = container.querySelector('#reminder-footnote');
+    const blocker = testBlocker();
+    if (blocker) {
+      note.textContent = blocker;
+      note.hidden = false;
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await sendTestPush();
+      note.textContent = '伺服器已經送出。有跳出「測試通知」才算真的通了；等了 30 秒還沒跳，截圖這一頁給 Claude。';
+    } catch (err) {
+      note.textContent = `測試沒送出：${err.message}`;
+    }
+    note.hidden = false;
+    btn.disabled = false;
+  });
 }
 
 /** container 裡畫好卡片之後呼叫；rerender 是「整頁重畫」的函式 */
@@ -149,25 +190,7 @@ export function bindFixedSchedule(container, rerender) {
     rerender();
   });
 
-  container.querySelector('#reminder-test-btn')?.addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    const note = container.querySelector('#reminder-footnote');
-    const blocker = testBlocker();
-    if (blocker) {
-      note.textContent = blocker;
-      note.hidden = false;
-      return;
-    }
-    btn.disabled = true;
-    try {
-      await sendTestPush();
-      note.textContent = '測試通知送出了，幾秒內應該會跳出來。沒跳的話，截圖這一頁給 Claude。';
-    } catch (err) {
-      note.textContent = `測試沒送出：${err.message}`;
-    }
-    note.hidden = false;
-    btn.disabled = false;
-  });
+  bindTestButton(container);
 
   container.querySelector('#fixed-add-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -179,6 +202,12 @@ export function bindFixedSchedule(container, rerender) {
 // 提醒的時間有沒有成功傳到後端，是之後才知道的事；知道了就更新那行說明
 if (typeof window !== 'undefined') {
   window.addEventListener('chenxu:reminder-sync', () => {
+    // 同步結果是之後才知道的：更新狀態那三列和下面那行說明（測試按鈕跟著重畫，要重新綁）
+    const rows = document.getElementById('reminder-status');
+    if (rows) {
+      rows.innerHTML = statusRows();
+      bindTestButton(rows.closest('.card'));
+    }
     const el = document.getElementById('reminder-footnote');
     if (!el) return;
     el.textContent = footnote();

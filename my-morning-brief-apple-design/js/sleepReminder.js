@@ -25,6 +25,9 @@ const TASKS_URL = './reminder-tasks.json';
 const TEST_URL = './reminder-test.json';
 
 let timerId = null;
+// 推播同步一個接一個跑，而且每次都讀「輪到它時」的最新作息：連續改兩次時間時，
+// 先送出的那個請求如果比較晚回來，就不會把後端的時間表蓋回舊的
+let pushChain = Promise.resolve();
 
 /** 在 iOS App 外殼裡才有；網頁上是 undefined */
 function nativeNotifications() {
@@ -235,10 +238,10 @@ export function scheduleReminderIfEnabled() {
 
   if (pushSupported()) {
     saveTaskSnapshot().catch(() => {});
-    syncPush(items).then(() => {
+    pushChain = pushChain.then(() => syncPush(getFixedSchedule())).then(() => {
       localStorage.setItem(SYNCED_AT_KEY, new Date().toISOString());
       setPending(false);
-    }).catch((e) => {
+    }, (e) => {
       console.warn('[reminder] 推播同步失敗：', e);
       setPending(true);
     });

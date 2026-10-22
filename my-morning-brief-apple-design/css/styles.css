@@ -1770,6 +1770,12 @@ body {
 }
 .list-footnote[hidden] { display: none; }
 
+/* 作息與提醒底下的三列狀態：有問題的那一格用紅字 */
+.reminder-status { border-top: 1px solid var(--border-subtle); margin-top: 0.25rem; }
+.reminder-status-row { font-size: var(--text-subhead); }
+.reminder-status-value { color: var(--text-muted); text-align: right; }
+.reminder-status-value.is-bad { color: var(--apple-red-text); }
+
 /* iOS 樣式的開關，底下還是一個 checkbox */
 .ios-switch {
   appearance: none;
