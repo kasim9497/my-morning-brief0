@@ -29,6 +29,12 @@ export function initTabs() {
   }
 }
 
+/** iPhone 最上面狀態列的顏色跟著現在這一頁的底色（今日頁的底色每天不一樣） */
+export function syncThemeColor() {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.body).backgroundColor;
+}
+
 export function switchTab(tabName, animate = true) {
   if (!TABS.includes(tabName)) return;
   const direction = TABS.indexOf(tabName) - TABS.indexOf(currentTab);
@@ -50,6 +56,9 @@ export function switchTab(tabName, animate = true) {
   document.getElementById('header-date').hidden = tabName !== 'today';
 
   currentTab = tabName;
+  // 今日頁有自己的樣子（日曆的底色、不顯示大標題），樣式靠 body 上這個屬性分辨現在在哪一頁
+  document.body.dataset.tab = tabName;
+  syncThemeColor();
   localStorage.setItem('currentTab', tabName);
   window.scrollTo({ top: 0, behavior: 'instant' });
 }

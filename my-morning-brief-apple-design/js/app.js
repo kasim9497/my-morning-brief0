@@ -11,6 +11,8 @@ import { renderCalendarView } from './CalendarView.js';
 import { renderCountdownView, renderCountdownSummaryInto } from './CountdownView.js';
 import { renderSettingsView } from './SettingsView.js';
 import { renderSleepView, renderMorningCheck } from './SleepView.js';
+import { renderTodayView, setTodayWeather, setTodayGreeting, playTearOff } from './TodayView.js';
+import { recordQuizDay } from './quizHistory.js';
 import { scheduleReminderIfEnabled, saveTaskSnapshot } from './sleepReminder.js';
 import { initChatBox } from './ChatBoxView.js';
 import { daysSinceBackup, BACKUP_REMINDER_DAYS } from './backup.js';
@@ -63,6 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupInstantPressListeners();
   setupScrollShadow();
   renderTaskList();
+  renderTodayView();
+  // 睡眠紀錄、任務、AI 助理改了東西，日曆上的數字和宜忌要跟著重算
+  ['chenxu:sleep-changed', 'chenxu:data-changed', 'chenxu:tasks-changed'].forEach((name) => window.addEventListener(name, renderTodayView));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderTodayView(); });
   renderCalendarView();
   renderCountdownView();
   renderCountdownSummaryInto(document.getElementById('today-countdown-widget-content'));
@@ -88,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 const PRESSABLE_SELECTOR = [
   '.btn-action',
+  '.tally-cell',
   '.disclosure summary',
   '.option-btn',
   '.task-check',
@@ -241,6 +248,8 @@ async function loadAllBriefData() {
 
     await renderSafely('天氣', () => dataService.getWeather(), (w) => {
       renderWeather(w);
+      // 昨天的天氣不拿來寫今天的「宜」
+      setTodayWeather(staleLabel ? null : w);
       if (staleLabel) document.getElementById('weather-card-badge').textContent = staleLabel;
     });
     // 昨天的運勢今天沒有用，直接不顯示
@@ -267,9 +276,11 @@ async function loadAllBriefData() {
       quizState.score = 0;
     }
     renderDrivingQuiz();
+    renderTodayView();
 
     // §16: Staggered card entrance after all content is rendered
     triggerCardStagger();
+    playTearOff();
 
     // Debug Widget: populate after all data is loaded
     await renderDebugWidget(headerData);
@@ -320,6 +331,7 @@ function renderHeader({ user, meta }) {
   const hour = new Date().getHours();
   const hello = hour < 5 ? '夜深了' : hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
   setTodayTitle(`${hello}，${user.name}`);
+  setTodayGreeting(`${hello}，${user.name}`);
 }
 
 /**
@@ -688,7 +700,10 @@ function renderDrivingQuiz() {
         }
       }
       quizState.finished = true;
+      // 今天的十題做完了：記一筆，日曆上的題庫成績和連續天數跟著更新
+      if (quizState.mode !== 'review' || quizState.dailyQuestions.length) recordQuizDay(quizState.dailyScore, quizState.dailyQuestions.length);
       renderDrivingQuiz();
+      renderTodayView();
     });
   }
 }

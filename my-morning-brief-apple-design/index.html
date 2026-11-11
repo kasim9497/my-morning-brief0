@@ -17,7 +17,7 @@
   <!-- 思源黑體放在專案裡自己供應，不依賴 Google 的字體服務；Apple 裝置會直接用系統字體，不會抓這份 -->
   <link rel="stylesheet" href="fonts/noto-sans-tc/noto-sans-tc.css">
 </head>
-<body>
+<body data-tab="today">
 
   <!-- 導覽列（跨 tab 共用）：頂端透明，往下捲才浮出玻璃底和置中的小標題 -->
   <header class="masthead">
@@ -47,22 +47,10 @@
   <section id="view-today" class="view active">
 
   <main class="container">
-    <!-- 排序依「今天早上該先看什麼」：待辦（任務、倒數）→ 重點（天氣、星座、匯率）→ 練習（題庫）→ 語錄 -->
+    <!-- 今日頁是一張日曆：日期、宜／忌、三欄數字（js/TodayView.js）。下面才是各張卡片 -->
     <div class="dashboard-grid">
 
-
-
-      <div class="section-head">
-        <h2 class="section-title">待辦</h2>
-        <button type="button" class="section-action" data-goto="settings">編輯</button>
-      </div>
-
-      <!-- 沒有標題列：完成數在大標題下面那一行（TaskListView.js 的 renderTaskList），卡片裡只有清單 -->
-      <article class="card col-span-2 tint-orange">
-        <div id="tasklist-widget-content">
-          <!-- Rendered dynamically -->
-        </div>
-      </article>
+      <article class="leaf col-span-2" id="today-leaf" aria-label="今天"></article>
 
       <!-- 早上那一塊（我起床了 → 怎麼醒的、精神），跟睡眠頁同一個（js/SleepView.js 的 renderMorningCheck） -->
       <article class="card col-span-2" id="wake-prompt" hidden>
@@ -74,13 +62,6 @@
         <div class="list-row backup-reminder-row">
           <span id="backup-reminder-text"></span>
           <button type="button" class="section-action" id="backup-now-btn" data-goto="settings">開啟雲端備份</button>
-        </div>
-      </article>
-
-      <!-- 倒數摘要：只顯示，新增/刪除要去「倒數」頁 -->
-      <article class="card col-span-2 tint-red" aria-label="倒數">
-        <div id="today-countdown-widget-content">
-          <!-- Rendered dynamically -->
         </div>
       </article>
 
@@ -97,11 +78,34 @@
         </div>
       </article>
 
-      <div class="section-head" data-needs-data>
-        <h2 class="section-title">重點</h2>
+      <div class="section-head">
+        <h2 class="section-title">睡眠</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+        <span class="section-tag">最近七晚</span>
       </div>
 
-      <article class="card col-span-2 tint-teal" data-needs-data>
+      <article class="card col-span-2">
+        <div id="today-sleep-content"></div>
+      </article>
+
+      <div class="section-head" data-needs-data>
+        <h2 class="section-title">練習</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+        <span class="section-tag" id="quiz-card-badge"></span>
+      </div>
+
+      <article class="card quiz-card col-span-2" data-needs-data id="quiz-card">
+        <div id="quiz-widget-content">
+          <!-- Rendered dynamically -->
+        </div>
+      </article>
+
+      <div class="section-head" data-needs-data>
+        <h2 class="section-title">今天</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+      </div>
+
+      <article class="card col-span-2" data-needs-data>
         <div class="card-header">
           <h3 class="card-title">天氣</h3>
           <span class="card-badge" id="weather-card-badge">南京市栖霞區</span>
@@ -111,7 +115,7 @@
         </div>
       </article>
 
-      <article class="card tint-purple" data-needs-data id="horoscope-card">
+      <article class="card col-span-2" data-needs-data id="horoscope-card">
         <div class="card-header">
           <h3 class="card-title">處女座運勢</h3>
           <span class="card-badge" id="horoscope-card-badge"></span>
@@ -121,7 +125,7 @@
         </div>
       </article>
 
-      <article class="card tint-green" data-needs-data>
+      <article class="card" data-needs-data>
         <div class="card-header">
           <h3 class="card-title">人民幣匯率</h3>
           <span class="card-badge" id="rate-card-badge">1 人民幣兌新台幣</span>
@@ -131,27 +135,38 @@
         </div>
       </article>
 
-      <div class="section-head" data-needs-data>
-        <h2 class="section-title">練習</h2>
-      </div>
-
-      <article class="card quiz-card col-span-2 tint-blue" data-needs-data>
+      <!-- 倒數摘要：只顯示，新增/刪除要去「倒數」頁。跟匯率並排 -->
+      <article class="card" aria-label="倒數">
         <div class="card-header">
-          <h3 class="card-title">機車駕照筆試</h3>
-          <span class="card-badge" id="quiz-card-badge"></span>
+          <h3 class="card-title">倒數</h3>
         </div>
-        <div id="quiz-widget-content">
+        <div id="today-countdown-widget-content">
           <!-- Rendered dynamically -->
         </div>
       </article>
 
       <!-- 今日語錄（放在最後，有空再看）：職人精神/執行力主題，固定輪替，不是 AI 生成（避免捏造語錄） -->
-      <article class="card col-span-2 tint-indigo" data-needs-data>
-        <div class="card-header">
-          <h3 class="card-title">每日語錄</h3>
-        </div>
+      <article class="card col-span-2 quote-sheet" data-needs-data>
         <div id="quote-banner-content"></div>
       </article>
+
+      <div class="section-head">
+        <h2 class="section-title">作息</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+        <button type="button" class="section-action" data-goto="settings">編輯</button>
+      </div>
+
+      <!-- 任務清單縮成一格：有紀錄的事自動算完成（js/TodayView.js），其他的點開來打勾 -->
+      <article class="card col-span-2" id="routine-card">
+        <details class="disclosure about-fold">
+          <summary id="routine-summary"><span>今日作息</span></summary>
+          <div id="routine-auto"></div>
+          <div id="tasklist-widget-content">
+            <!-- Rendered dynamically -->
+          </div>
+        </details>
+      </article>
+
 
     </div>
   </main>

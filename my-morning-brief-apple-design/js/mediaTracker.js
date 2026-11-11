@@ -163,7 +163,7 @@ export function logProgress(id, unitsToday) {
   if (!Number.isFinite(n) || n <= 0 || !items.some((item) => item.id === id)) return false;
   items = items.map((item) => {
     if (item.id !== id) return item;
-    return { ...item, completedUnits: Math.min(item.totalUnits, item.completedUnits + Math.round(n)) };
+    return { ...item, completedUnits: Math.min(item.totalUnits, item.completedUnits + Math.round(n)), lastLoggedDate: todayStr() };
   });
   return saveItems(items);
 }

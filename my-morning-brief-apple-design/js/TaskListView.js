@@ -162,6 +162,8 @@ export function renderTaskList() {
   renderTaskListInto(container, getTodayStr(), null, renderTaskList);
   // 待辦的通知要用的清單，跟著畫面一起更新
   saveTaskSnapshot().catch(() => {});
+  // 日曆上「作息」那一欄的數字跟著更新（js/TodayView.js 在聽）
+  window.dispatchEvent(new CustomEvent('chenxu:tasks-changed'));
 
   const subtitle = document.getElementById('header-date');
   if (!subtitle) return;
