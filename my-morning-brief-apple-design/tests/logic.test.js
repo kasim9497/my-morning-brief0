@@ -25,6 +25,8 @@ const media = await import('../js/mediaTracker.js');
 const countdown = await import('../js/countdown.js');
 const weekly = await import('../js/weeklyReport.js');
 const sleepLog = await import('../js/sleepLog.js');
+const brief = await import('../js/dailyBrief.js');
+const quizHistory = await import('../js/quizHistory.js');
 const mistakes = await import('../js/quizMistakes.js');
 const fixed = await import('../js/fixedSchedule.js');
 const reminder = await import('../js/sleepReminder.js');
@@ -409,6 +411,18 @@ test('推播後端：時間到了才推，照手機的時區和星期算', () =>
   assert.equal(push.isDue({ tz: '亂寫的時區', items: sub.items }, new Date()), false);
 });
 
+test('推播後端：手機說今天這一項不用推（待辦都做完了），那一天就跳過，隔天照常', () => {
+  const cleaned = push.cleanSubscription({
+    subscription: { endpoint: 'https://web.push.apple.com/abc' }, tz: 'Asia/Shanghai',
+    items: [{ time: '21:30', weekdays: null, skipDay: '2026-10-08' }, { time: '23:00', weekdays: null, skipDay: '亂填' }],
+  });
+  assert.deepEqual(cleaned.items, [{ time: '21:30', weekdays: null, skipDay: '2026-10-08' }, { time: '23:00', weekdays: null }]);
+  // 2026-10-08 13:30 UTC = 南京 21:30
+  assert.equal(push.isDue(cleaned, new Date(Date.UTC(2026, 9, 8, 13, 30))), false);
+  assert.equal(push.isDue(cleaned, new Date(Date.UTC(2026, 9, 9, 13, 30))), true);
+  assert.equal(push.isDue(cleaned, new Date(Date.UTC(2026, 9, 8, 15, 0))), true, '同一天其他時間的提醒不受影響');
+});
+
 test('推播後端：只收真的推播服務的網址，時間格式不對的項目丟掉', () => {
   const ok = push.cleanSubscription({
     subscription: { endpoint: 'https://web.push.apple.com/abc' },
@@ -730,6 +744,123 @@ test('AI 的動作照實際結果回報：找不到、數字不合理就不算�
   assert.equal(countdown.removeCountdown('不存在的'), false);
   assert.equal(tasks.setTaskIntervalSchedule('不存在的', 3), false);
   assert.equal(tasks.setTaskWeekdaySchedule('不存在的', [1]), false);
+});
+
+test('日曆：農曆換算、連續天數、最近七晚的睡眠', () => {
+  assert.equal(brief.lunarText(new Date(2026, 1, 17)), '丙午年 正月初一', '2026 年春節');
+  assert.equal(brief.lunarText(new Date(2026, 10, 12)), '丙午年 十月初四');
+
+  const today = new Date(2027, 2, 10);
+  assert.equal(brief.streakOf(['2027-03-10', '2027-03-09', '2027-03-08', '2027-03-06'], today), 3);
+  assert.equal(brief.streakOf(['2027-03-09', '2027-03-08'], today), 2, '今天還沒做，從昨天往回數');
+  assert.equal(brief.streakOf(['2027-03-07'], today), 0, '斷了一天就歸零');
+
+  // now 是 3/10 早上：昨晚是 3/9 晚上。3/9 凌晨 01:00 上床那筆算 3/8 晚上
+  const night = (d, h, m, hours, extra = {}) => {
+    const bed = new Date(2027, 2, d, h, m);
+    return { bedAt: bed.toISOString(), wakeAt: new Date(bed.getTime() + hours * 3600000).toISOString(), ...extra };
+  };
+  const log = [night(9, 1, 0, 7.5), night(10, 1, 30, 6), { kind: 'nap', ...night(9, 15, 0, 0.3) }];
+  const summary = brief.sleepSummary(log, new Date(2027, 2, 10, 9, 0));
+  assert.equal(summary.lastHours, 6);
+  assert.deepEqual(summary.series.map((n) => n.hours), [null, null, null, null, null, 7.5, 6]);
+  assert.equal(summary.avgHours, 6.8);
+  assert.equal(summary.avgBedClock, '01:15');
+  assert.equal(summary.streak, 2);
+  assert.equal(summary.recorded, 2, '小睡不算一晚');
+  assert.match(brief.sleepInsight(summary), /最近 2 晚平均在床上 6.8 小時，平均 01:15 上床。/);
+  assert.equal(brief.sleepInsight(brief.sleepSummary([], new Date())), '');
+  // 凌晨兩點還沒睡：「昨晚」是前天晚上（3/9 凌晨上床的那筆），不是還沒發生的今晚
+  assert.equal(brief.sleepSummary(log, new Date(2027, 2, 10, 2, 0)).lastHours, 7.5);
+});
+
+test('宜忌：每一條都從紀錄和當天資料來；沒有資料就不寫那一條', () => {
+  const sleepShort = { last: { wakeType: 'early' }, lastHours: 6.2, avgBedMinutes: 13 * 60 + 40, recorded: 4 };
+  const rainy = { condition: '小雨', rainChance: '70%', tempMin: '8°C', tempMax: '17°C', uvIndex: '2' };
+  const tired = brief.composeBrief({
+    sleep: sleepShort, targetBed: '01:00', curfew: '23:00', weather: rainy,
+    quiz: { doneToday: false, due: 3, streak: 6 }, pendingTasks: ['運動：跑步 2km + 重訓'], countdowns: [{ label: '期末考', daysLeft: 5 }],
+  });
+  assert.match(tired.lead, /昨晚在床上 6.2 小時，偏少。錯題本有 3 題今天該複習。/);
+  assert.deepEqual(tired.yi, ['今晚提早上床', '午間閉眼二十分鐘', '帶傘'], '最多三條，睡眠排最前面');
+  assert.deepEqual(tired.ji, ['午後的咖啡因', '讓題庫連續 6 天中斷']);
+
+  const fine = brief.composeBrief({
+    sleep: { last: {}, lastHours: 8, avgBedMinutes: 13 * 60, recorded: 4 }, targetBed: '01:00', curfew: '23:00', weather: null,
+    quiz: { doneToday: true, due: 0, streak: 4 }, pendingTasks: [], countdowns: [{ label: '交換學期結束', daysLeft: 80 }],
+  });
+  assert.equal(fine.lead, '昨晚在床上 8 小時，睡得夠。題庫已經連續 4 天。');
+  assert.deepEqual(fine.yi, [], '沒有該提醒的事就空著，不硬湊');
+  assert.deepEqual(fine.ji, ['23:00 後滑手機']);
+
+  const late = brief.composeBrief({
+    sleep: { last: {}, lastHours: 7, avgBedMinutes: 14 * 60 + 10, recorded: 5 }, targetBed: '01:00', curfew: null,
+    weather: { isFallback: true, condition: '小雨' }, quiz: { doneToday: false, due: 0, streak: 0 }, pendingTasks: [], countdowns: [],
+  });
+  assert.deepEqual(late.ji, ['拖過 01:00 才上床'], '平均比設定晚 70 分鐘');
+  assert.deepEqual(late.yi, ['題庫十題'], '抓不到天氣就不寫帶傘');
+
+  const none = brief.composeBrief({ sleep: { last: null, lastHours: null, avgBedMinutes: null, recorded: 0 }, quiz: { doneToday: true, due: 0, streak: 0 } });
+  assert.equal(none.lead, '昨晚沒有睡眠紀錄。');
+  assert.deepEqual(none.yi, ['睡前記下上床時間']);
+});
+
+test('主動建議：一次一條，今天的事優先；按過先不用就安靜一陣子', async () => {
+  const { pickSuggestion } = await import('../js/suggestions.js');
+  const base = {
+    todayKey: '2027-03-10',
+    sleep: { lastHours: 7.5, recorded: 5, avgBedMinutes: 13 * 60, avgBedClock: '01:00' },
+    extras: [],
+    bed: { id: 'weekdayBed', time: '01:00', lead: 30 },
+    routines: [],
+    dismissed: {},
+  };
+  assert.equal(pickSuggestion(base), null, '沒事就不提');
+
+  const tired = pickSuggestion({ ...base, sleep: { ...base.sleep, lastHours: 5.4 }, extras: [{ instanceId: 'run', label: '運動：跑步 2km + 重訓' }] });
+  assert.equal(tired.kind, 'tired');
+  assert.match(tired.text, /昨晚只在床上 5.4 小時。今天排的「運動」/);
+  assert.deepEqual(tired.action.instanceIds, ['run']);
+
+  const late = pickSuggestion({ ...base, sleep: { ...base.sleep, avgBedMinutes: 14 * 60 + 5, avgBedClock: '02:05' } });
+  assert.equal(late.kind, 'late-bed');
+  assert.match(late.text, /平均 02:05 上床，比設定的 01:00 晚 65 分鐘/);
+  assert.equal(pickSuggestion({ ...base, sleep: { ...base.sleep, avgBedMinutes: 14 * 60 + 5 }, bed: { ...base.bed, lead: 60 } }), null, '已經提前 60 分鐘就不再提');
+
+  const routines = [
+    { defId: 'a', label: '運動：重訓', scheduled: true, recent: ['pending', 'skipped', 'pending'] },
+    { defId: 'b', label: '蔬果日', scheduled: true, recent: ['done', 'pending', 'pending'] },
+    { defId: 'c', label: '沒排的', scheduled: false, recent: ['pending', 'pending', 'pending'] },
+  ];
+  const stale = pickSuggestion({ ...base, routines });
+  assert.equal(stale.id, 'stale:a');
+  assert.match(stale.text, /「運動：重訓」最近三次都沒有打勾/, '寫全名，兩個運動項目才分得出來');
+  assert.equal(pickSuggestion({ ...base, routines, dismissed: { 'stale:any': '2027-03-12' } }), null, '剛處理過一條，幾天內不接著提下一條');
+  assert.equal(pickSuggestion({ ...base, routines, dismissed: { 'stale:a': '2027-03-20' } }), null, '還在安靜期');
+  assert.equal(pickSuggestion({ ...base, routines, dismissed: { 'stale:a': '2027-03-09' } }).id, 'stale:a', '安靜期過了再提');
+
+  // 只看已經有紀錄的日子：沒打開過的日子不算沒做
+  const id = tasks.addCustomTask('建議測試');
+  tasks.setTaskWeekdaySchedule(id, [0, 1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(tasks.getTaskHistory(id, '2027-08-10'), []);
+  tasks.getTasksForDate('2027-08-07');
+  tasks.getTasksForDate('2027-08-08');
+  tasks.toggleDone('2027-08-08', tasks.getTasksForDate('2027-08-08').find((t) => t.defId === id).instanceId);
+  assert.deepEqual(tasks.getTaskHistory(id, '2027-08-10'), ['done', 'pending']);
+  tasks.removeRoutineTask(id);
+
+  assert.equal(reminder.bedtimeNote({ lastHours: 5.9, recorded: 1, avgHours: 5.9 }), '昨晚只在床上 5.9 小時，今天早點睡');
+  assert.equal(reminder.bedtimeNote({ lastHours: 7, recorded: 4, avgHours: 6.6 }), '最近 4 晚平均 6.6 小時');
+  assert.equal(reminder.bedtimeNote({ lastHours: 8, recorded: 4, avgHours: 7.8 }), '');
+});
+
+test('題庫紀錄：做完的那天記一筆，同一天重做會更新', () => {
+  assert.equal(quizHistory.recordQuizDay(7, 10, new Date(2027, 2, 9)), true);
+  assert.equal(quizHistory.recordQuizDay(9, 10, new Date(2027, 2, 9)), true);
+  quizHistory.recordQuizDay(8, 10, new Date(2027, 2, 10));
+  assert.deepEqual(quizHistory.getQuizDays(), { '2027-03-09': { score: 9, total: 10 }, '2027-03-10': { score: 8, total: 10 } });
+  assert.equal(brief.streakOf(Object.keys(quizHistory.getQuizDays()), new Date(2027, 2, 10)), 2);
+  fakeStorage.delete('morningBrief.quizDays.v1');
 });
 
 test('連續新增：同一瞬間加的幾項不會撞到同一個編號', () => {

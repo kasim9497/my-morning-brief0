@@ -12,6 +12,8 @@
 
 import { getFixedSchedule, updateFixedItem, alertOf, getBedItem } from './fixedSchedule.js';
 import { getTasksForDate, getTodayStr, addDays } from './taskEngine.js';
+import { getSleepLog } from './sleepLog.js';
+import { sleepSummary, dayKey, logicalToday } from './dailyBrief.js';
 import { WORKER_URL } from './config.js';
 
 // 改了作息時間但還沒成功傳到後端時記著，設定頁會顯示，下次打開晨序會再試
@@ -139,9 +141,26 @@ async function callWorker(payload) {
 
 const keyBytes = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
 
+const pendingToday = () => getTasksForDate(getTodayStr()).filter((task) => task.status === 'pending').length;
+
+/**
+ * 就寢提醒上多帶的一句，依昨晚和最近的睡眠寫（只在今天有效，sw.js 會對日期）。沒有該講的就是空字串
+ */
+export function bedtimeNote(summary) {
+  if (summary.lastHours !== null && summary.lastHours < 6.5) return `昨晚只在床上 ${summary.lastHours} 小時，今天早點睡`;
+  if (summary.recorded >= 3 && summary.avgHours !== null && summary.avgHours < 7) return `最近 ${summary.recorded} 晚平均 ${summary.avgHours} 小時`;
+  return '';
+}
+
 /** 推播這條路：訂閱（第一次才需要）、把時間表存給 sw.js、把時間傳給後端 */
 async function syncPush(items) {
   const wanted = items.filter((item) => item.remind).map((item) => ({ item, alert: alertOf(item) }));
+  const now = new Date();
+  const tonight = getBedItem(now);
+  const note = bedtimeNote(sleepSummary(getSleepLog(), now));
+  // 今天的事都做完了：晚上那則「還沒做完的」今天就不用推（後端照 skipDay 跳過）
+  const skipEvening = pendingToday() === 0 ? getTodayStr() : null;
+  lastSkipEvening = skipEvening;
   const registration = await navigator.serviceWorker.register('./sw.js');
   await navigator.serviceWorker.ready;
 
@@ -157,7 +176,14 @@ async function syncPush(items) {
 
   const cache = await caches.open(SCHEDULE_CACHE);
   await cache.put(SCHEDULE_URL, new Response(JSON.stringify(wanted.map(({ item, alert }) => (
-    { label: item.label, time: alert.time, body: alert.body, tasks: item.kind === 'tasks' }
+    {
+      label: item.label,
+      time: alert.time,
+      body: alert.body,
+      tasks: item.kind === 'tasks',
+      // 只有今晚那一項就寢、而且今天算出來的才帶；隔天沒打開晨序的話 sw.js 不會顯示舊的
+      ...(tonight && item.id === tonight.id && note ? { note, noteDay: dayKey(logicalToday(now)) } : {}),
+    }
   )))));
 
   // 名稱不用傳上去，後端只需要知道幾點、星期幾
@@ -165,7 +191,11 @@ async function syncPush(items) {
     mode: 'push-sync',
     subscription: subscription.toJSON(),
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    items: wanted.map(({ alert }) => ({ time: alert.time, weekdays: alert.weekdays })),
+    items: wanted.map(({ item, alert }) => ({
+      time: alert.time,
+      weekdays: alert.weekdays,
+      ...(item.id === 'tasksEvening' && skipEvening ? { skipDay: skipEvening } : {}),
+    })),
   });
 }
 
@@ -211,6 +241,16 @@ export async function sendTestPush() {
   } catch (e) {
     throw new Error(e instanceof TypeError ? '連不上伺服器，開 VPN 再試一次' : e.message);
   }
+}
+
+// 上次同步時「晚上那則要不要跳過」是什麼；任務打勾讓它變了才需要再同步一次
+let lastSkipEvening;
+
+/** 任務有變動時呼叫：今天的事剛好全做完（或又有沒做的）而且開著晚上的待辦通知，就重新同步 */
+export function refreshTaskReminder() {
+  if (!getFixedSchedule().some((item) => item.id === 'tasksEvening' && item.remind)) return;
+  const skip = pendingToday() === 0 ? getTodayStr() : null;
+  if (lastSkipEvening !== undefined && skip !== lastSkipEvening) scheduleReminderIfEnabled();
 }
 
 function setPending(pending) {

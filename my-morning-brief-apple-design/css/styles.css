@@ -2665,3 +2665,8 @@ body[data-tab="today"] .page-head { display: none; }
 
 /* 今日頁選中的分頁用當天的墨色 */
 body[data-tab="today"] .tab-item.active { color: var(--day); }
+
+/* 根據紀錄提的建議：一句話加兩個動作 */
+.suggestion[hidden] { display: none; }
+.suggestion-text { font-size: var(--text-body); line-height: 1.5; color: var(--cal-ink); text-wrap: pretty; }
+.suggestion-actions { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem; }

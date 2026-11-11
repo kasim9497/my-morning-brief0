@@ -8,9 +8,14 @@ import { composeBrief, sleepSummary, sleepInsight, lunarText, streakOf, dayKey, 
 import { getSleepLog } from './sleepLog.js';
 import { getQuizDays } from './quizHistory.js';
 import { getDueMistakes } from './quizMistakes.js';
-import { getTasksForDate, getTodayStr, summarizeTasks, toggleDone } from './taskEngine.js';
+import {
+  getTasksForDate, getTodayStr, summarizeTasks, toggleDone, postponeTask,
+  getConfigurableTaskIds, getTaskDef, getRoutineConfig, getTaskHistory, setTaskWeekdaySchedule,
+} from './taskEngine.js';
+import { pickSuggestion, SNOOZE_DAYS, STALE_ANY, STALE_GAP_DAYS } from './suggestions.js';
 import { getCountdowns } from './countdown.js';
-import { getFixedSchedule, getBedItem } from './fixedSchedule.js';
+import { getFixedSchedule, getBedItem, leadOf, updateFixedItem } from './fixedSchedule.js';
+import { scheduleReminderIfEnabled } from './sleepReminder.js';
 import { getMediaItems } from './mediaTracker.js';
 import { switchTab, syncThemeColor } from './tabs.js';
 
@@ -19,6 +24,8 @@ const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const EVERYDAY_TASKS = ['supplement', 'watch'];
 // 今天這一頁看過了沒（看過就不再播撕日曆）。這支手機的狀態，不是紀錄
 const SEEN_KEY = 'chenxu.leafSeen';
+// 按過「先不用」的建議安靜到哪一天：{ 建議編號: 'YYYY-MM-DD' }
+const DISMISSED_KEY = 'chenxu.suggestionsDismissed';
 
 let weather = null;
 let greeting = '';
@@ -88,7 +95,73 @@ function gather(now = new Date()) {
     pendingTasks: tasks.filter((t) => t.status === 'pending' && !EVERYDAY_TASKS.includes(t.defId)).map((t) => t.label),
     countdowns: getCountdowns(),
   });
-  return { now, today, sleep, quiz, routine, brief };
+  const isScheduled = (config) => !!config && (config.mode === 'interval' || (config.days || []).length > 0);
+  const routineConfig = getRoutineConfig();
+  const suggestion = pickSuggestion({
+    todayKey: todayStr,
+    sleep,
+    extras: tasks.filter((t) => t.status === 'pending' && !EVERYDAY_TASKS.includes(t.defId)).map((t) => ({ instanceId: t.instanceId, label: t.label })),
+    bed: bed ? { id: bed.id, time: bed.time, lead: leadOf(bed) } : null,
+    routines: getConfigurableTaskIds().map((defId) => ({
+      defId,
+      label: getTaskDef(defId).label,
+      scheduled: isScheduled(routineConfig[defId]),
+      recent: getTaskHistory(defId, todayStr),
+    })),
+    dismissed: readDismissed(),
+  });
+  return { now, today, todayStr, sleep, quiz, routine, brief, suggestion };
+}
+
+function readDismissed() {
+  try {
+    return JSON.parse(localStorage.getItem(DISMISSED_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function snooze(suggestion, now) {
+  const after = (days) => dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + days));
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify({
+    ...readDismissed(),
+    [suggestion.id]: after(SNOOZE_DAYS[suggestion.kind]),
+    ...(suggestion.kind === 'stale' ? { [STALE_ANY]: after(STALE_GAP_DAYS) } : {}),
+  }));
+}
+
+function applySuggestion(suggestion, todayStr) {
+  const { action } = suggestion;
+  if (action.type === 'postpone') action.instanceIds.forEach((id) => postponeTask(todayStr, id, 'plus1'));
+  if (action.type === 'pause') setTaskWeekdaySchedule(action.defId, []);
+  if (action.type === 'lead') {
+    updateFixedItem(action.itemId, { lead: action.lead });
+    scheduleReminderIfEnabled();
+  }
+}
+
+function renderSuggestion(data) {
+  const el = document.getElementById('today-suggestion');
+  if (!el) return;
+  const { suggestion } = data;
+  el.hidden = !suggestion;
+  if (!suggestion) return;
+  el.innerHTML = `
+    <p class="suggestion-text">${escapeHtml(suggestion.text)}</p>
+    <div class="suggestion-actions">
+      <button type="button" class="btn-action btn-primary" data-suggest="apply">${suggestion.action.label}</button>
+      <button type="button" class="section-action" data-suggest="later">先不用</button>
+    </div>`;
+  el.querySelector('[data-suggest="apply"]').addEventListener('click', () => {
+    applySuggestion(suggestion, data.todayStr);
+    snooze(suggestion, data.now); // 做過了也安靜一陣子，免得同一條馬上又跳出來
+    // 任務清單、週曆、設定頁、睡眠頁都可能跟著變
+    window.dispatchEvent(new CustomEvent('chenxu:data-changed'));
+  });
+  el.querySelector('[data-suggest="later"]').addEventListener('click', () => {
+    snooze(suggestion, data.now);
+    renderTodayView();
+  });
 }
 
 function leafDateHtml(date) {
@@ -253,6 +326,7 @@ export function setTodayGreeting(text) {
 export function renderTodayView() {
   const data = gather();
   renderLeaf(data);
+  renderSuggestion(data);
   renderSleepCard(data);
   renderRoutineCard(data);
 }

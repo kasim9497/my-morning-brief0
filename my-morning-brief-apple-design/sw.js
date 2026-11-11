@@ -57,7 +57,12 @@ self.addEventListener('push', (event) => {
         // 時間放上面（粗體那行）、名稱放下面：使用者要一眼先看到還剩多久
         // tag 每個時間各用一個：同一個 tag 的新通知會「安靜地」換掉還留在通知中心的舊通知，不會響也不會跳出來，
         // 前一則沒滑掉的話，這一則看起來就像沒通知
-        notes.push({ title: fixed[0].body || `${fixed[0].time} 到了`, body: fixed.map((item) => item.label).join('、'), tag: `chenxu-${fixed[0].time}` });
+        // 就寢那一項可能多帶一句（昨晚睡太少之類），只在算出來的那一天顯示；凌晨 5 點前算前一天
+        const logical = new Date(Date.now() - 5 * 3600000);
+        const logicalDay = `${logical.getFullYear()}-${String(logical.getMonth() + 1).padStart(2, '0')}-${String(logical.getDate()).padStart(2, '0')}`;
+        const noted = fixed.find((item) => item.note && item.noteDay === logicalDay);
+        const labels = fixed.map((item) => item.label).join('、');
+        notes.push({ title: fixed[0].body || `${fixed[0].time} 到了`, body: noted ? `${labels}。${noted.note}` : labels, tag: `chenxu-${fixed[0].time}` });
       }
       if (tasks) notes.push({ ...(await taskNote(tasks)), tag: `chenxu-tasks-${tasks.time}` });
     } catch (e) {

@@ -85,6 +85,8 @@ export function cleanSubscription(body) {
     .map((item) => ({
       time: item.time,
       weekdays: Array.isArray(item.weekdays) ? item.weekdays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6) : null,
+      // 手機說「這一天這一項不用推」（今天的待辦都做完了，晚上那則就不吵）
+      ...(/^\d{4}-\d{2}-\d{2}$/.test(item.skipDay || '') ? { skipDay: item.skipDay } : {}),
     }));
   return { endpoint, tz: typeof body.tz === 'string' ? body.tz.slice(0, 64) : 'UTC', items };
 }
@@ -118,7 +120,7 @@ export function dueKeys(sub, now = new Date()) {
     const p = localParts(sub.tz, new Date(now.getTime() - back * 60000));
     if (!p) return [];
     const key = `${p.day} ${p.time}`;
-    const due = sub.items.some((item) => item.time === p.time && (!item.weekdays || item.weekdays.includes(p.weekday)));
+    const due = sub.items.some((item) => item.time === p.time && (!item.weekdays || item.weekdays.includes(p.weekday)) && item.skipDay !== p.day);
     if (due && !(sub.sent || []).includes(key) && !keys.includes(key)) keys.push(key);
   }
   return keys;

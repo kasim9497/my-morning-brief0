@@ -52,6 +52,9 @@
 
       <article class="leaf col-span-2" id="today-leaf" aria-label="今天"></article>
 
+      <!-- 根據紀錄主動提的建議，一次一條（js/suggestions.js 決定提哪一條，js/TodayView.js 畫） -->
+      <article class="card col-span-2 suggestion" id="today-suggestion" hidden></article>
+
       <!-- 早上那一塊（我起床了 → 怎麼醒的、精神），跟睡眠頁同一個（js/SleepView.js 的 renderMorningCheck） -->
       <article class="card col-span-2" id="wake-prompt" hidden>
         <div id="wake-prompt-content"></div>

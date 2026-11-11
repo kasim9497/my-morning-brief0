@@ -14,7 +14,7 @@ import {
   getPostponeOptions,
 } from './taskEngine.js';
 import { renderTaskIcon } from './taskIcons.js';
-import { saveTaskSnapshot } from './sleepReminder.js';
+import { saveTaskSnapshot, refreshTaskReminder } from './sleepReminder.js';
 import { switchTab } from './tabs.js';
 
 // 用過一次「⋯」選單就不再顯示那行說明。不是使用者紀錄，所以用 chenxu. 開頭
@@ -162,6 +162,7 @@ export function renderTaskList() {
   renderTaskListInto(container, getTodayStr(), null, renderTaskList);
   // 待辦的通知要用的清單，跟著畫面一起更新
   saveTaskSnapshot().catch(() => {});
+  refreshTaskReminder();
   // 日曆上「作息」那一欄的數字跟著更新（js/TodayView.js 在聽）
   window.dispatchEvent(new CustomEvent('chenxu:tasks-changed'));
 

@@ -4,8 +4,8 @@
 
 先讀這三份，不要從程式碼裡猜：
 
-- [PRODUCT.md](PRODUCT.md)：給誰用、最重要的事（每天的作息和任務有沒有做到）、不可以做的事。
-- [DESIGN.md](DESIGN.md)：樣式規範。北極星是「健康 App 的摘要頁」，元件手感「紮實、明確」。
+- [PRODUCT.md](PRODUCT.md)：給誰用、最重要的事（今日頁那張日曆；任務清單是配角）、不可以做的事。
+- [DESIGN.md](DESIGN.md)：樣式規範。**今日頁 2026-11-12 改成「撕頁日曆」的樣子**（白紙、平日綠／週末紅兩色、Barlow Condensed 的大數字），設計方向記在 `.impeccable/surfaces/`。其他四個分頁還是舊的「健康 App 摘要頁」樣子，等使用者確認今日頁再套用。
 - [docs/project-history.md](docs/project-history.md)：2026-09 到 2026-10-09 的完整開發紀錄（每個決定的原因、踩過的雷）。平常不用讀；要知道「為什麼這樣做」時再去查。裡面有很多已經作廢的做法（深色模式、Gemini、新聞、原生 App 為主、手動備份），以這份和程式碼為準。
 
 ## 怎麼跟使用者合作
@@ -28,11 +28,12 @@
 
 前端的模組（都在 `js/`）：
 
+- 今日頁：`TodayView.js`（畫日曆、三欄數字、睡眠七晚、建議卡、作息那一格）、`dailyBrief.js`（農曆、宜／忌、連續天數、睡眠摘要，純計算）、`suggestions.js`（現在該提哪一條建議，純計算）、`quizHistory.js`（哪幾天做完題庫）
 - 資料與邏輯：`taskEngine.js`（任務與作息）、`fixedSchedule.js`（固定時間點）、`sleepCalculator.js`、`sleepLog.js`（睡眠紀錄）、`sleepReminder.js`（提醒怎麼發）、`quizMistakes.js`（錯題本）、`countdown.js`、`mediaTracker.js`、`backup.js` + `cloudBackup.js`、`weeklyReport.js`、`chatBox.js`、`services/dataService.js`
 - 畫面：`app.js`（今日頁和初始化）、`tabs.js`、`TaskListView.js`、`CalendarView.js`、`CountdownView.js`、`SleepView.js`、`FixedScheduleView.js`、`SettingsView.js`、`ChatBoxView.js`、`taskIcons.js`、`swipeRow.js`、`motion.js`
 - `config.js`：Worker 的網址。`sw.js`（在網站根目錄）：只處理推播的 service worker。
 
-五個分頁：今日（任務 → 倒數 → 天氣、運勢、匯率 → 題庫 → 語錄）、週曆、倒數、睡眠（計算機 + 最近的睡眠 + 作息與提醒）、設定（每週安排、追劇讀書、本週摘要、雲端備份）。
+五個分頁：今日（日曆 → 建議 → 睡眠七晚 → 題庫 → 天氣、運勢、匯率＋倒數、語錄 → 作息）、週曆、倒數、睡眠（計算機 + 最近的睡眠 + 作息與提醒）、設定（每週安排、追劇讀書、本週摘要、雲端備份）。
 
 ## 一定要遵守的規則
 
@@ -45,6 +46,12 @@
 - 資料讀不出來、或讀得出來但結構不對（任務：每天的狀態只能是 pending/done/skipped/postponed、作息排法要對，見 `isValidStore`；追劇；倒數不是清單）：原樣另外存成 `<key>.unreadable`，今日頁出現一行提示，絕不自動刪。追劇只有幾筆壞掉時，其他好的照用。
 - 雲端還原（`backup.js` 的 `applyBackupData`）寫到一半失敗會放回原本的資料。沒有加密鑰匙的手機不上傳（不傳沒加密的內容）。
 - 這個 repo 是公開的。使用者的個人資料（出生資料、命盤等）不寫進任何會 commit 的檔案：放 `private/`（已在 .gitignore）或 GitHub Secret。運勢用的命盤是 Secret `BIRTH_CHART_SUMMARY`。
+
+**今日頁的「智能」都是照規則從紀錄算的，不是 AI 寫的**
+- 宜／忌和那句重點（`dailyBrief.js` 的 `composeBrief`）、建議（`suggestions.js`）每一條都要有紀錄或當天資料當依據；沒有依據就不出現。加新規則時同步加測試。
+- 建議一次只出一條，按了動作或「先不用」都會安靜一陣子（`chenxu.suggestionsDismissed`）；處理完一條作息建議，三天內不接著提下一條。
+- 有紀錄的事自動算完成：題庫做完、有睡眠紀錄算在「作息」那一欄；今天有記追劇進度會自動打勾「追劇」。
+- 通知：今晚的就寢提醒會多帶一句睡眠狀況（只在算出來的那天顯示）；今天的任務都做完時，晚上那則「還沒做完的」不推（手機傳 `skipDay` 給 Worker）。
 
 **內容不可以編**
 - 題庫只用公路局官方題庫（`data/questions.json`，798 題）。不補寫解析、不改答案。
@@ -71,7 +78,7 @@
 
 ## 測試與部署
 
-- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（46 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
+- 測試：在 `my-morning-brief-apple-design/` 跑 `node --test`（51 項，沒有相依套件）。**push 時部署流程會先跑測試，沒過就不部署。** 每天早上排程那一次，測試失敗只會標出來、不擋資料更新（2026-10-12 改的）。
 - 測試不可以依賴「今天是星期幾」或「某一天剛好排了什麼」。2026-10-09 就因為這樣停了一天。要用任務的測試自己建項目；改完用假日期多跑幾天（做法在 history 最後一段）。
 - 改了 `taskEngine.js`／`sleepCalculator.js`／`quizMistakes.js`／`fixedSchedule.js`／`cloudBackup.js`／Worker 的 `push.js`、`backup.js` 之後要跑測試。改了行為就同步改測試，不要為了讓它過而刪測試。
 - push 之前：`git stash push -- .claude/launch.json; git pull --rebase origin main; git stash pop`。Actions 會自己 commit 匯率歷史回 repo，不先拉會被拒絕。`.claude/launch.json` 和最外層那份題庫 PDF 不要 commit。
@@ -107,4 +114,4 @@
 - 運勢的文字是免費模型寫的，只有天象是算的。
 - 日本語錄的中文是我翻的。日本諺語 2026-10-18 依使用者要求砍到 55 句（留好懂的），每句有第四欄白話解釋（App 自己寫的，畫面上用細線跟原文隔開）。語錄共 693 句。
 
-接下來：使用者打算先照常用兩週，記下哪些沒在看、哪些卡，再跑一次 `/impeccable critique`（上次今日頁 22/40，之後修了全部五個優先問題）。在那之前不要主動加新功能。
+接下來（2026-11-12）：使用者說舊的樣子太陽春、不想打開，要求重做。今日頁已經照「撕頁日曆」重做並上線，等他在手機上看過。他滿意的話，把同一套樣子套到其他四個分頁，並把 DESIGN.md 整份改寫成新的。

@@ -304,6 +304,19 @@ export function getRoutineConfig() {
   return JSON.parse(JSON.stringify(store.routineConfig));
 }
 
+/**
+ * 某一項作息在今天之前最近幾次的狀態，新的在前。只讀已經存在的那幾天：
+ * 沒打開過晨序的日子沒有紀錄，不拿來當「沒做」的證據
+ */
+export function getTaskHistory(defId, beforeDateStr = getTodayStr(), limit = 6) {
+  return Object.keys(store.days)
+    .filter((dateStr) => dateStr < beforeDateStr && store.days[dateStr][defId])
+    .sort()
+    .reverse()
+    .slice(0, limit)
+    .map((dateStr) => store.days[dateStr][defId].status);
+}
+
 /** 回傳有沒有真的改到（AI 助理靠這個決定能不能說做好了） */
 export function setTaskWeekdaySchedule(defId, weekdays) {
   if (!getConfigurableTaskIds().includes(defId)) return false;
